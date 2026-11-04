@@ -1,0 +1,2465 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Start (to) count</title>
+<meta name="theme-color" content="#2954e2">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Start (to) count">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" id="manifestLink">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAEmElEQVR4Xu3cS87TSBiG0f4R24A5vR56lbCeZk4vhFaQjIxJ4ktd7HpzzjzlKvnJJ0eK/PbXBXz6/P3HBbZBoW9fP74VLlHslA0I+DWcEXi3oEX82nrF3TRoEXNPy7ibBC1ktmgR9rstF95DzGzVopVqE7rF5ngdtaZ1lQktZkrVaqhoQtfaBMyVTOvDE1rMtFLS1qGgSy4IWxxtbHfQRy8Eex1pbVfQRy4AJfY2tznovQtDLXva2xT0ngWhha0Nrga9dSFobUuLq0HDSJ4GveUbAT2tNfkw6LUPwlmetemRgyh3gzadubpHjf4RtJgZxb1WPXIQ5begTWdGs2zWhCaKoInyK2iPG4xq3q4JTRRBE+Vn0B43GN3UsAlNFEETRdBEefP8TBITmiiCJoqgiSJoogiaKIImiqCJImiiCJoogiaKoIkiaKIImijvo06z8O+XD1WP9/c//1Vdb4+ks7QU+ffR2jd/qWfYSWfpISro1je/Z9hJZ+kp5hm6dwA3ra7Zat1nzrhmCxFBn3kzal+79np7nHntWiKChsnwQV9hqtTaQ611SlxhDyWGDxrmhg76StOkdC+ln6/pSnvZa+igYUnQRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEETRdBEETRRhg665yu51pTupfTzNV1pL3sNHTQsDR/0FaZJrT3UWqfEFfZQYvigzzZ6AHMJZ4kIOuFGTJLOcgav0z2odXg9X/bS+iw9RQU9aR1DzwCSztJDZNCtwu4Z8lLtsM88S0vRQfN6In4UwkTQRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRHkfdZqFpP8QJ52lpcj/Q9e++Us9/xyfdJYeooJuffN7hp10lp5inqF7B3DT6pqt1n3mjGu2EBH0mTej9rVrr7fHmdeuJSJomAwf9BWmSq091FqnxBX2UGL4oGFu6KCvNE1K91L6+ZqutJe9hg4algRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEETRdBEETRRBE0UQRNl6KB7vpJrTeleSj9f05X2stfQQcPS8EFfYZrU2kOtdUpcYQ8lhg/6bKMHMJdwloigE27EJOksZ/A63YNah9fzZS+tz9JTVNCT1jH0DCDpLD1EBt0q7J4hL9UO+8yztBQdNK8n4kchTARNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRHn37evHt6gT8bJuLZvQRBE0UQRNlJ9Be45mdFPDJjRRBE2UX0F77GBU83ZNaKIImii/Be2xg9EsmzWhifJH0KY0o7jX6t0JLWqu7lGjHjmI8jBoU5qretbm0wktaq5mrUmPHERZDXrtGwG9bGlxNeibLQtBS1sb3BS0qDnT1phvNgctas6wJ+bdQYuanvbGfChoUdPDkZgPBy1qWjoa802Vl8x8+vz9R8sD8hpKQp7s+lH4SI2N8NpqNVRlQs+Z1uxRK+SqE3qu9gbJ1aKV6hPatGZNi5AnTYMWN5OWEc91C1rcr6dXxKcHveSHZIYzAl76H82XdFwYsDZ0AAAAAElFTkSuQmCC">
+<link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAFFElEQVR4Xu3dW3JTRxSG0ZhiGuGdjIeMMownvJOBkBJVpgwcS+fSN+9/rfd090H7U8spLJ7+WMzHT1+/LXYkGvry+cNTw+Uum3oYw87NzCiGB2DouWd0DMMCMPgcMSqE7gEYfK7oHUK3AAw+LfUKoXkABp+eWofwruVhDT+9tZ6xJjdA60PBHi1ug8s3gOFnlhazdymAFgeAK67O4OkArm4MrVyZxVMBXNkQejg7k4cDOLsR9HZmNg8FcGYDGOnojO4O4OjCMMuRWd0VwJEFYQV7Z/ZhAHsXgtXsmd2HAUBldwPYUxCs7NEMvxrAo/8Q3op7s+wjENE2A/DuTzWvzbQbgGi/BeDdn6q2ZtsNQLSfAvDuT3W/zrgbgGg/AvDuT4qXs+4GIJoAiPY9AB9/SPM8824AogmAaAIgmgCI9uQHYJK5AYgmAKIJgGgCIJoAiCYAogmAaAIgmgCIJgCiCYBoAiCaAIj2PuXp//3nz+aP+tff/zVf84zKz9Zb+b8O3WM4tsyIofKzjVL6I9CoAbkZudfo/UY/20glb4CZL1jvm6Dys81Q+gaYYeaA9lbx2coFsMKL1OsMvdY9YoUztFQqgJVenNZnab3eFSud5apSAcBRZQJY8V2p1ZlardPSimc6o0wAcIYAiCYAogmAaAIgmgCIJgCiCYBoAiCaAIgmAKIJgGgCIJoAiCYAogmAaAIgmgCIJgCiCYBoZQLo/Y1sZ7Q6U6t1WlrxTGeUCQDOEADRSgWw0rXc+iyt17tipbNcVSqAmxVenF5n6LXuESucoaVyAcyOoPeA9F7/npl791IygFkRjBqQUfu8NGPPEcoGMDqC0QMycr+Re41W8l+I2dLjy1xXGYzKz9ZbTACwpfRHIHhEAEQTANEEQDQBEE0ARBMA0QRANAEQTQBEEwDRBEA0ARBNAEQTANEEQLT3KU9f+bemKj9bb+V/I6zHcGyZ8euRlZ9tlNIfgUYNyM3IvUbvN/rZRip5A8x8wXrfBJWfbYbSN8AMMwe0t4rPVi6AFV6kXmfote4RK5yhpVIBrPTitD5L6/WuWOksV5UKAI4qE8CK70qtztRqnZZWPNMZZQKAMwRANAEQTQBEEwDRBEA0ARBNAEQTANEEQDQBEE0ARBMA0QRANAEQTQBEEwDRBEA0ARBNAEQrE0Dvb2Q7o9WZWq3T0opnOqNMAHCGAIhWKoCVruXWZ2m93hUrneWqUgHcrPDi9DpDr3WPWOEMLZULYHYEvQek9/r3zNy7l5IBzIpg1ICM2uelGXuOUDaA0RGMHpCR+43ca7SS/0LMlh5f5rrKYFR+tt5iAoAtpT8CwSMCIJoAiCYAogmAaAIgmgCIJgCiCYBoAiCaAIgmAKK9+/L5w1P0nwCxbrPvBiCaAIgmAKIJgGjfA/CDMGmeZ94NQDQBEO1HAD4GkeLlrLsBiPZTAG4Bqvt1xt0ARPstALcAVW3NthuAaJsBuAWo5rWZdgMQ7dUA3AJUcW+W794AIuCtezTDPgIR7WEAjwqCVe2Z3YcB3OxZCFayd2Z3BSAC3pK9w3+zOwAR8BYcGf7DAYiAlR0d/lMBiIAVnRn+0wGIgJWcHf5LAYiAFVwZ/ssBiICZrg7/TdPvBf346eu3mX8gZGgx+M8O/W/QR1oeDLa0nrGmN8BLbgNaaj34z7oF8EwIXNFr8IcFIATO6D34wwMQAnuMGvxpAfg5gV+NHvqXuv8McJSfGWqbOexb/gdI2oqm9CC3XAAAAABJRU5ErkJggg==">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+  :root {
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --border: #e7e9f1;
+    --text: #0f1730;
+    --text-dim: #6b7280;
+    --text-faint: #9aa1b3;
+    --blue: #2954e2;
+    --blue-soft: #e8edfd;
+    --green: #16a34a;
+    --green-soft: #e4f7eb;
+    --violet: #7c5cfc;
+    --violet-soft: #efecff;
+    --danger: #ef4444;
+    --danger-soft: #fde8e8;
+    --flat-soft: #f1f2f6;
+    --toggle-bg: #eef0f8;
+    --row-hover: #f8f9fd;
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(15,23,48,0.04), 0 4px 14px rgba(15,23,48,0.05);
+  }
+
+  body[data-theme="dark"] {
+    --bg: #0b0e1a;
+    --card: #141829;
+    --border: #262b42;
+    --text: #eef1f8;
+    --text-dim: #9aa1b8;
+    --text-faint: #6b7290;
+    --blue: #6f8dff;
+    --blue-soft: rgba(111,141,255,0.18);
+    --green: #3ecb7a;
+    --green-soft: rgba(62,203,122,0.16);
+    --violet: #a68cff;
+    --violet-soft: rgba(166,140,255,0.18);
+    --danger: #ff6b6b;
+    --danger-soft: rgba(255,107,107,0.16);
+    --flat-soft: #1c2138;
+    --toggle-bg: #1c2138;
+    --row-hover: #181c30;
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 4px 16px rgba(0,0,0,0.35);
+  }
+
+  body { transition: background 0.2s ease, color 0.2s ease; }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: max(20px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(60px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 520px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .brand-icon {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 14px; font-weight: 800;
+  }
+  h1 { font-size: 16px; margin: 0; font-weight: 700; letter-spacing: -0.01em; }
+  .eyebrow { font-size: 11px; color: var(--text-faint); font-weight: 500; }
+
+  .theme-toggle {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+    transition: transform 0.1s ease, background 0.2s ease, border-color 0.2s ease;
+    flex-shrink: 0;
+  }
+  .theme-toggle:active { transform: scale(0.9); }
+  .theme-toggle.spin { animation: spinOnce 0.4s ease; }
+  @keyframes spinOnce {
+    from { transform: rotate(0deg) scale(0.85); }
+    to { transform: rotate(180deg) scale(1); }
+  }
+
+  /* --- NAV TABS --- */
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .toggle-slider {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 0;
+    width: calc(33.333% - 6px);
+    transform: translateX(4px);
+    background: var(--blue);
+    border-radius: 7px;
+    z-index: 0;
+    transition: transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1), width 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
+  }
+  .nav-tab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 9px 0;
+    border-radius: 7px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color 0.18s ease;
+    position: relative;
+    z-index: 1;
+  }
+  .nav-tab.active { color: #fff; }
+
+  /* --- MAIN CARD --- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .stats-page.animate-in .card {
+    animation: fadeInUp 0.32s ease both;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.3); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes drawLine {
+    to { stroke-dashoffset: 0; }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  .meter {
+    padding: 18px 18px 14px;
+    margin-bottom: 14px;
+  }
+
+  .meter-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .meter-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+
+  .meter-display {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .trend {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .trend.up { color: var(--green); background: var(--green-soft); }
+  .trend.down { color: var(--danger); background: var(--danger-soft); }
+  .trend.flat { color: var(--text-faint); background: var(--flat-soft); }
+
+  .meter-sub {
+    display: flex;
+    gap: 18px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .sub-item { font-size: 12px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .sub-item .legend-dot { margin-right: 5px; }
+  .sub-item .val { font-weight: 700; color: var(--text); margin-left: 3px; }
+  .sub-item .lbl { color: var(--text-dim); }
+
+  /* --- DATE PICKER --- */
+  .date-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+  }
+  .date-row label { font-size: 12px; color: var(--text-dim); font-weight: 500; }
+  .date-row input[type="date"] {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+    flex: 1;
+  }
+  .today-btn {
+    background: var(--blue-soft);
+    border: none;
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+
+  /* --- QUICK ADD --- */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .cards.full { grid-template-columns: 1fr; }
+
+  .qcard {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .qcard-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .qcard-title { font-size: 13px; font-weight: 700; }
+  .qcard-price { font-size: 11px; color: var(--text-dim); }
+
+  .qcard-count {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .qcard.neu .qcard-count { color: var(--blue); }
+  .qcard.bestand .qcard-count { color: var(--green); }
+
+  .qcard-buttons { display: flex; gap: 8px; }
+
+  .btn-round {
+    flex: 1;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 0;
+    font-size: 17px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-round:active { transform: scale(0.93); }
+
+  .qcard.neu .plus { background: var(--blue); color: #fff; }
+  .qcard.neu .minus { background: var(--blue-soft); color: var(--blue); }
+  .qcard.bestand .plus { background: var(--green); color: #fff; }
+  .qcard.bestand .minus { background: var(--green-soft); color: var(--green); }
+  .qcard.storno .plus { background: var(--danger); color: #fff; }
+  .qcard.storno .minus { background: var(--danger-soft); color: var(--danger); }
+  .storno-toggle button.active { background: var(--danger); }
+
+  /* Rate toggle (z.B. Storno-Typ) */
+  .rate-toggle {
+    display: flex;
+    background: var(--toggle-bg);
+    border-radius: 7px;
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .rate-toggle button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+    min-width: 46px;
+    white-space: nowrap;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--text-dim);
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+  .rate-toggle button.active {
+    background: var(--violet);
+    color: white;
+  }
+
+  /* --- STATS (Tracker page) --- */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin: 14px 0 20px;
+  }
+  .stat { padding: 10px 8px; text-align: center; }
+  .stat-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 3px;
+    font-weight: 600;
+  }
+
+  /* --- HISTORY TABLE --- */
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0 0 10px 2px;
+    color: var(--text);
+  }
+
+  .table-card { padding: 4px 0; overflow: hidden; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-faint);
+    font-weight: 700;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  thead th.num, td.num { text-align: right; font-family: 'Space Grotesk', sans-serif; }
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--row-hover); }
+  td.total { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+  .del-btn {
+    background: none; border: none; color: var(--text-faint);
+    cursor: pointer; font-size: 13px; padding: 2px 5px;
+  }
+  .del-btn:hover { color: var(--danger); }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    padding: 26px 10px;
+  }
+
+  .storage-warn {
+    text-align: center;
+    color: var(--danger);
+    font-size: 12px;
+    padding: 10px;
+  }
+
+  .loading {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    padding: 40px 0;
+  }
+
+  /* --- STATISTIKEN PAGE --- */
+  .period-toggle-card { padding: 6px; margin-bottom: 14px; }
+  .period-toggle {
+    display: flex;
+    gap: 2px;
+    background: var(--toggle-bg);
+    border-radius: 8px;
+    padding: 2px;
+    position: relative;
+  }
+  .period-toggle .toggle-slider {
+    top: 2px;
+    bottom: 2px;
+    width: calc(33.333% - 3px);
+    transform: translateX(2px);
+    border-radius: 6px;
+  }
+  .period-toggle button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 9px 0;
+    border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color 0.18s ease;
+    position: relative;
+    z-index: 1;
+  }
+  .period-toggle button.active { color: #fff; }
+
+  .month-nav-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 6px; margin-bottom: 14px;
+  }
+  .month-nav-arrow {
+    border: none; background: var(--toggle-bg); color: var(--text);
+    width: 32px; height: 32px; border-radius: 8px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .month-nav-arrow:disabled { opacity: 0.35; cursor: default; }
+  .month-nav-label {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px;
+    color: var(--text); text-transform: capitalize;
+  }
+
+  .chart-card { padding: 16px; margin-bottom: 14px; }
+  .chart-card-head { margin-bottom: 10px; }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .chart-total { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; margin-top: 2px; }
+  .chart-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .chart-wrap { height: 190px; position: relative; }
+  .chart-wrap svg { display: block; width: 100%; height: 100%; }
+  .chart-wrap.short { height: 150px; }
+
+  .chart-legend { display: flex; gap: 22px; margin-bottom: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; flex-direction: column; gap: 3px; }
+  .legend-label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); font-weight: 600; }
+  .legend-value { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); }
+  .legend-item-total { margin-left: auto; padding-left: 18px; border-left: 1px solid var(--border); }
+  .legend-value-netto { font-size: 11px; color: var(--text-dim); margin-top: -2px; }
+
+  .chart-tip {
+    position: absolute;
+    display: block;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, calc(-100% - 6px));
+    background: var(--text);
+    color: var(--card);
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+    padding: 5px 9px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: var(--shadow);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+  }
+  .chart-tip.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, calc(-100% - 10px));
+  }
+  .chart-tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text);
+  }
+  .chart-empty {
+    padding: 28px 10px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat-box { padding: 12px 6px; text-align: center; }
+  .stat-box-label {
+    font-size: 9.5px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+  }
+  .stat-box-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 4px;
+    color: var(--text);
+  }
+  .stat-box-sub { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+  .breakdown-card { padding: 14px 16px; margin-bottom: 6px; }
+  .breakdown-row { margin-bottom: 14px; }
+  .breakdown-row:last-child { margin-bottom: 0; }
+  .breakdown-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .breakdown-label { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text); }
+  .breakdown-amount { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+  .breakdown-bar-bg { height: 6px; background: var(--toggle-bg); border-radius: 4px; overflow: hidden; }
+  .breakdown-bar { height: 100%; border-radius: 4px; }
+  .breakdown-row-storno { padding-top: 12px; margin-top: 2px; border-top: 1px dashed var(--border); }
+
+  .stornos-card { padding: 14px 16px; }
+  .storno-row { padding: 10px 0; }
+  .storno-row + .storno-row { border-top: 1px solid var(--border); }
+  .storno-row-head { display: flex; justify-content: space-between; align-items: center; }
+  .storno-row-label { font-size: 12px; font-weight: 600; color: var(--text); }
+  .storno-row-value { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: var(--danger); }
+  .storno-row-sub { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+
+  @media (max-width: 400px) {
+    .meter-display { font-size: 28px; }
+  }
+
+  /* --- DASHBOARD --- */
+  @media (min-width: 900px) {
+    .wrap.wrap-wide { max-width: 1180px; }
+  }
+
+  .dashboard-page.animate-in .dash-card {
+    animation: fadeInUp 0.32s ease both;
+  }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 900px) {
+    .dash-grid { grid-template-columns: 2.1fr 1fr; align-items: start; }
+  }
+
+  .dash-main, .dash-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  .dash-card { padding: 20px; }
+  .dash-card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .dash-collapsible-head { cursor: pointer; user-select: none; }
+  .dash-collapse-chevron { font-size: 14px; color: var(--text-dim); transition: transform 0.2s; flex-shrink: 0; margin-left: 8px; }
+  .dash-collapse-chevron.open { transform: rotate(180deg); }
+  .dash-card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .dash-card-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  .dash-donut-area { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+  .donut-wrap { position: relative; width: 200px; height: 200px; flex-shrink: 0; margin: 0 auto; }
+  .donut-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; pointer-events: none;
+  }
+  .donut-center-pct {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 30px; font-weight: 700; color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .donut-center-label { font-size: 12px; color: var(--text-dim); margin-top: 2px; max-width: 120px; }
+
+  .dash-donut-legend { flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 12px; }
+  .dash-legend-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text-dim); font-weight: 600;
+  }
+  .dash-legend-row b { color: var(--text); font-family: 'Space Grotesk', sans-serif; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .dash-legend-pct { width: 42px; text-align: right; color: var(--text-faint); font-size: 12px; }
+
+  .dash-lists { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 640px) {
+    .dash-lists { grid-template-columns: 1fr 1fr; }
+  }
+
+  .dash-list { display: flex; flex-direction: column; }
+  .dash-list-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .dash-list-row:last-child { border-bottom: none; }
+  .dash-avatar {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; flex-shrink: 0;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .dash-list-info { flex: 1; min-width: 0; }
+  .dash-list-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .dash-list-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+  .dash-list-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px; font-weight: 700; color: var(--text);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0; white-space: nowrap;
+  }
+
+  .dash-total-card { background: linear-gradient(135deg, var(--blue), var(--violet)); color: #fff; border: none; }
+  .dash-total-card .dash-card-sub { color: rgba(255,255,255,0.8); }
+  .dash-view-toggle {
+    display: flex; gap: 4px; background: rgba(255,255,255,0.15); border-radius: 8px;
+    padding: 3px; margin-bottom: 10px;
+  }
+  .dash-view-toggle button {
+    flex: 1; border: none; background: transparent; color: rgba(255,255,255,0.8);
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 11px;
+    padding: 7px 4px; border-radius: 6px; cursor: pointer; transition: background 0.18s ease, color 0.18s ease;
+  }
+  .dash-view-toggle button.active { background: rgba(255,255,255,0.9); color: var(--blue); }
+  .dash-total-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 34px; font-weight: 700; margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .dash-badge {
+    display: inline-flex; align-items: center; gap: 2px;
+    margin-top: 8px; padding: 3px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    background: rgba(255,255,255,0.2); color: #fff;
+  }
+  .dash-badge.down { background: rgba(0,0,0,0.2); }
+
+  .dash-chip-row { display: flex; gap: 8px; margin-top: 18px; }
+  .dash-chip {
+    flex: 1; background: rgba(255,255,255,0.15); border-radius: 10px;
+    padding: 10px 6px; text-align: center;
+  }
+  .dash-chip-value { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; }
+  .dash-chip-label { font-size: 10px; margin-top: 2px; opacity: 0.9; }
+
+  .dash-bar-row + .dash-bar-row { margin-top: 14px; }
+  .dash-bar-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+  .dash-bar-top span:first-child { display: flex; align-items: center; gap: 6px; color: var(--text); font-weight: 600; }
+  .dash-bar-track { height: 6px; background: var(--toggle-bg); border-radius: 4px; overflow: hidden; }
+  .dash-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+  .dash-kv-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; font-size: 12px; color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  .dash-kv-row:last-child { border-bottom: none; }
+  .dash-kv-row b { color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 13px; }
+
+  .dash-month-list { display: flex; flex-direction: column; gap: 12px; }
+  .dash-month-row { display: grid; grid-template-columns: 56px 1fr 64px; align-items: center; gap: 10px; }
+  .dash-month-label { font-size: 12px; color: var(--text-dim); font-weight: 600; display: flex; flex-direction: column; gap: 1px; line-height: 1.3; }
+  .dash-month-current { color: var(--violet); font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .dash-month-bar-track { height: 8px; background: var(--toggle-bg); border-radius: 4px; overflow: hidden; }
+  .dash-month-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .dash-month-value { font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 700; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+
+  .dash-total-netto { font-size: 12px; color: rgba(255,255,255,0.85); margin-top: 2px; }
+
+  .dash-fix-inputs { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 12px; }
+  .dash-fix-inputs label {
+    display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-dim);
+    font-weight: 600; flex: 1; min-width: 110px;
+  }
+  .dash-fix-inputs input {
+    background: var(--toggle-bg); border: none; border-radius: 7px; padding: 8px 10px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: var(--text);
+    width: 100%; box-sizing: border-box;
+  }
+  .dash-fix-track { height: 10px; background: var(--toggle-bg); border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
+  .dash-fix-fill { height: 100%; border-radius: 5px; background: var(--danger); transition: width 0.4s ease, background 0.3s ease; }
+  .dash-fix-fill.reached { background: var(--green); }
+  .dash-fix-saldo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; }
+  .dash-fix-saldo.neg { color: var(--danger); }
+  .dash-fix-saldo.pos { color: var(--green); }
+  .dash-fix-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  .dash-payout-list { display: flex; flex-direction: column; gap: 10px; }
+  .dash-payout-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .dash-payout-row:last-child { border-bottom: none; }
+  .dash-payout-written { font-size: 12px; font-weight: 700; color: var(--text); }
+  .dash-payout-due { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .dash-payout-right { text-align: right; }
+  .dash-payout-amount { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); }
+  .dash-payout-status { font-size: 11px; font-weight: 700; margin-top: 2px; }
+  .dash-payout-tracked { font-size: 10px; color: var(--text-faint); margin-top: 2px; }
+
+  .dash-settle-summary { margin-bottom: 12px; }
+  .dash-settle-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .dash-settle-upload-status { font-size: 11px; color: var(--text-dim); }
+  .dash-settle-form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .dash-settle-form input, .dash-settle-form select {
+    background: var(--toggle-bg); border: none; border-radius: 7px; padding: 8px 10px;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: var(--text);
+    flex: 1; min-width: 90px; box-sizing: border-box;
+  }
+  .dash-settle-form select { min-width: 150px; }
+  .dash-settle-form button { flex-shrink: 0; }
+
+  .firework-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden;
+  }
+  .firework-particle {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    animation: firework-burst 1.1s ease-out forwards;
+  }
+  @keyframes firework-burst {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--fx), var(--fy)) scale(0.3); opacity: 0; }
+  }
+</style>
+</head>
+<body data-theme="light">
+<div class="wrap" id="wrap">
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none">
+          <rect x="3" y="3" width="7" height="7" rx="2" fill="#fff"/>
+          <rect x="14" y="3" width="7" height="7" rx="2" fill="#fff"/>
+          <rect x="3" y="14" width="7" height="7" rx="2" fill="#fff"/>
+          <rect x="14" y="14" width="7" height="7" rx="2" fill="#fff"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Start (to) count</h1>
+        <div class="eyebrow">Energie Direktvertrieb</div>
+      </div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Darstellung wechseln">🌙</button>
+  </header>
+
+  <div class="nav-tabs" id="nav-tabs">
+    <div class="toggle-slider" id="nav-slider"></div>
+    <button class="nav-tab" id="tab-dashboard" onclick="switchPage('dashboard')">Dashboard</button>
+    <button class="nav-tab" id="tab-tracker" onclick="switchPage('tracker')">Tracker</button>
+  </div>
+
+  <div class="card period-toggle-card" id="period-toggle-root" style="display:none;">
+    <div class="period-toggle">
+      <div class="toggle-slider" id="period-slider"></div>
+      <button id="btn-woche" onclick="setStatsPeriod('woche')">Zeitraum</button>
+      <button id="btn-monat" onclick="setStatsPeriod('monat')">Monat</button>
+      <button id="btn-gesamt" onclick="setStatsPeriod('gesamt')">Jahr</button>
+    </div>
+  </div>
+
+  <div class="card month-nav-card" id="month-nav-root" style="display:none;">
+    <button class="month-nav-arrow" onclick="shiftMonat(1)" title="Vorheriger Monat">‹</button>
+    <div class="month-nav-label" id="month-nav-label"></div>
+    <button class="month-nav-arrow" id="month-nav-next" onclick="shiftMonat(-1)" title="Nächster Monat">›</button>
+  </div>
+
+  <div class="card month-nav-card" id="zeitraum-info-root" style="display:none;">
+    <button class="month-nav-arrow" onclick="shiftZeitraum(1)" title="Vorheriger Zeitraum">‹</button>
+    <div class="month-nav-label" id="zeitraum-info-label"></div>
+    <button class="month-nav-arrow" id="zeitraum-info-next" onclick="shiftZeitraum(-1)" title="Nächster Zeitraum">›</button>
+  </div>
+
+  <div class="card month-nav-card" id="jahr-nav-root" style="display:none;">
+    <button class="month-nav-arrow" onclick="shiftJahr(1)" title="Vorheriges Jahr">‹</button>
+    <div class="month-nav-label" id="jahr-nav-label"></div>
+    <button class="month-nav-arrow" id="jahr-nav-next" onclick="shiftJahr(-1)" title="Nächstes Jahr">›</button>
+  </div>
+
+  <div id="app" class="loading">Lade Daten …</div>
+</div>
+
+<script>
+const STORAGE_KEY = 'tagesumsatz-v3';
+const LEGACY_KEY = 'tagesumsatz-eintraege-v2';
+const THEME_KEY = 'tagesumsatz-theme';
+const PREIS_NEUKUNDE = 110;
+const PREIS_BESTANDSKUNDE = 15;
+
+let data = {};       // { 'YYYY-MM-DD': {neu, bestand, storno_neu, storno_bestand} }
+let events = [];     // [{date:'YYYY-MM-DD', hour:0-23, type:'neu'|'bestand'|'storno_neu'|'storno_bestand'}]
+let selectedDate = todayKey();
+let stornoType = 'neu'; // 'neu' | 'bestand'
+let storageOk = true;
+let currentPage = 'dashboard'; // 'dashboard' | 'tracker'
+let statsPeriod = 'woche';   // 'woche' | 'monat' | 'gesamt'
+let monatOffset = 0;         // Monate zurück ab aktuellem Monat, nur für Dashboard-Monatsnavigation
+let zeitraumOffset = 0;      // Abrechnungs-Schreibfenster zurück ab aktuellem Fenster, nur für Dashboard-Zeitraumnavigation
+let jahrOffset = 0;          // Jahre zurück ab aktuellem Jahr, nur für Dashboard-Jahresnavigation
+let dashboardView = 'brutto'; // 'brutto' (getrackte Schätzung) | 'ausgezahlt' (bestätigt aus Abrechnungen)
+let settlementsOpen = false; // Abrechnungen-Karte im Dashboard: eingeklappt (Dropdown) oder ausgeklappt
+let settlements = [];        // [{id, label, betrag, auftraege}] - echte Abrechnungen/Auszahlungen
+const STEUER_PROZENT = 30;   // % Steuern, die immer automatisch abgezogen (Netto) bzw. auf Fixkosten aufgeschlagen werden
+let settings = {
+  fixkosten: 0,          // € Fixkosten-Basisbetrag pro Auszahlungsfenster (1.-15. / 16.-Monatsende)
+  fireworksWindow: null  // z.B. '2026-11-A' - für welches Auszahlungsfenster das Feuerwerk schon gezeigt wurde
+};
+
+function todayKey(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function fmtEuro(n) {
+  return Math.round(n).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €';
+}
+
+function fmtDateLabel(key) {
+  const d = new Date(key + 'T00:00:00');
+  return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function fmtDateShort(key) {
+  const d = new Date(key + 'T00:00:00');
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
+function blankEntry() {
+  return { neu: 0, bestand: 0, storno_neu: 0, storno_bestand: 0 };
+}
+
+function getEntry(key) {
+  if (!data[key]) data[key] = blankEntry();
+  const e = data[key];
+  if (e.storno_neu === undefined) e.storno_neu = 0;
+  if (e.storno_bestand === undefined) e.storno_bestand = 0;
+  return e;
+}
+
+function dayTotal(entry) {
+  if (!entry) return 0;
+  return entry.neu * PREIS_NEUKUNDE
+    + entry.bestand * PREIS_BESTANDSKUNDE
+    - (entry.storno_neu || 0) * PREIS_NEUKUNDE
+    - (entry.storno_bestand || 0) * PREIS_BESTANDSKUNDE;
+}
+
+function defaultSettings() {
+  return { fixkosten: 0, fireworksWindow: null };
+}
+
+async function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      data = parsed.days || {};
+      events = parsed.events || [];
+      settlements = parsed.settlements || [];
+      settings = Object.assign(defaultSettings(), parsed.settings || {});
+      return;
+    }
+  } catch (e) { /* noch keine v3 Daten vorhanden */ }
+  data = {};
+  events = [];
+  settlements = [];
+  settings = defaultSettings();
+  try {
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) data = JSON.parse(legacy) || {};
+  } catch (e) { /* keine alten Daten vorhanden */ }
+}
+
+async function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ days: data, events: events, settlements: settlements, settings: settings }));
+    storageOk = true;
+  } catch (e) {
+    storageOk = false;
+  }
+}
+
+async function changeCount(field, delta) {
+  const entry = getEntry(selectedDate);
+  entry[field] = Math.max(0, entry[field] + delta);
+  if (delta > 0) {
+    events.push({ date: selectedDate, hour: new Date().getHours(), type: field });
+  } else {
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (events[i].date === selectedDate && events[i].type === field) { events.splice(i, 1); break; }
+    }
+  }
+  if (!entry.neu && !entry.bestand && !entry.storno_neu && !entry.storno_bestand) delete data[selectedDate];
+  await saveData();
+  render();
+  checkFireworksTrigger();
+}
+
+async function changeStorno(delta) {
+  const field = stornoType === 'neu' ? 'storno_neu' : 'storno_bestand';
+  await changeCount(field, delta);
+}
+
+function setStornoType(type) {
+  stornoType = type;
+  render();
+}
+
+async function deleteDay(key) {
+  delete data[key];
+  events = events.filter(e => e.date !== key);
+  await saveData();
+  render();
+}
+
+function setToday() {
+  selectedDate = todayKey();
+  render();
+}
+
+function switchPage(p) {
+  if (currentPage === 'dashboard' && p !== 'dashboard') { monatOffset = 0; zeitraumOffset = 0; jahrOffset = 0; }
+  currentPage = p;
+  render();
+}
+
+function setStatsPeriod(p) {
+  statsPeriod = p;
+  render();
+}
+
+function shiftMonat(delta) {
+  monatOffset = Math.max(0, monatOffset + delta);
+  render();
+}
+
+function shiftZeitraum(delta) {
+  zeitraumOffset = Math.max(0, zeitraumOffset + delta);
+  render();
+}
+
+function shiftJahr(delta) {
+  jahrOffset = Math.max(0, jahrOffset + delta);
+  render();
+}
+
+function windowOffsetBack(n) {
+  let win = payoutWindowOf(todayKey());
+  for (let i = 0; i < n; i++) {
+    const prevDay = new Date(win.schreibStart);
+    prevDay.setDate(prevDay.getDate() - 1);
+    win = payoutWindowOf(todayKey(prevDay));
+  }
+  return win;
+}
+
+function setDashboardView(v) {
+  dashboardView = v;
+  render();
+}
+
+function toggleSettlements() {
+  settlementsOpen = !settlementsOpen;
+  render();
+}
+
+function nettoOf(brutto) {
+  return brutto * (1 - STEUER_PROZENT / 100);
+}
+
+function fixkostenSchwelle() {
+  // Auf die eingetragenen Fixkosten werden automatisch immer +30% Steuern aufgeschlagen
+  return (settings.fixkosten || 0) * (1 + STEUER_PROZENT / 100);
+}
+
+function currentMonthBruttoLive() {
+  // Immer der echte, laufende Kalendermonat - unabhängig von der Dashboard-Monatsnavigation
+  return currentMonthDays().reduce((sum, k) => sum + dayTotal(data[k]), 0);
+}
+
+// Fixkosten gelten pro Auszahlung, nicht pro Kalendermonat - es gibt ja zwei pro Monat
+// (1.-15. und 16.-Monatsende, siehe payoutWindowOf). Diese Funktion summiert nur die
+// getrackten Tage innerhalb des aktuell laufenden Schreibfensters.
+function currentWindowBruttoLive() {
+  const win = payoutWindowOf(todayKey());
+  let sum = 0;
+  const cur = new Date(win.schreibStart);
+  while (cur <= win.schreibEnd) {
+    const key = todayKey(cur);
+    if (data[key]) sum += dayTotal(data[key]);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return sum;
+}
+
+function checkFireworksTrigger() {
+  const schwelle = fixkostenSchwelle();
+  if (schwelle <= 0) return;
+  const win = payoutWindowOf(todayKey());
+  const saldo = currentWindowBruttoLive() - schwelle;
+  if (saldo >= 0 && settings.fireworksWindow !== win.id) {
+    settings.fireworksWindow = win.id;
+    saveData();
+    playFireworks();
+  }
+}
+
+function playFireworks() {
+  if (typeof document === 'undefined' || !document.body) return;
+  const colors = ['#5c6ac4', '#008060', '#9c6ade', '#d72c0d', '#ffc107', '#17c3b2'];
+  const overlay = document.createElement('div');
+  overlay.className = 'firework-overlay';
+  document.body.appendChild(overlay);
+
+  const bursts = 5;
+  for (let b = 0; b < bursts; b++) {
+    const originX = 15 + Math.random() * 70; // vw
+    const originY = 20 + Math.random() * 40; // vh
+    const delay = b * 160;
+    setTimeout(() => {
+      const particles = 22;
+      for (let i = 0; i < particles; i++) {
+        const el = document.createElement('div');
+        el.className = 'firework-particle';
+        const angle = (Math.PI * 2 * i) / particles + Math.random() * 0.3;
+        const dist = 60 + Math.random() * 90;
+        el.style.setProperty('--fx', (Math.cos(angle) * dist) + 'px');
+        el.style.setProperty('--fy', (Math.sin(angle) * dist) + 'px');
+        el.style.left = originX + 'vw';
+        el.style.top = originY + 'vh';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        overlay.appendChild(el);
+      }
+    }, delay);
+  }
+
+  setTimeout(() => {
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+  }, bursts * 160 + 1400);
+}
+
+function setFixkosten(v) {
+  settings.fixkosten = Math.max(0, parseFloat(v) || 0);
+  saveData();
+  render();
+  checkFireworksTrigger();
+}
+
+function addSettlement() {
+  const labelEl = document.getElementById('settlementLabel');
+  const betragEl = document.getElementById('settlementBetrag');
+  const auftrEl = document.getElementById('settlementAuftraege');
+  const neuEl = document.getElementById('settlementNeu');
+  const bestandEl = document.getElementById('settlementBestand');
+  const stornoEl = document.getElementById('settlementStorno');
+  const windowEl = document.getElementById('settlementWindow');
+  const label = ((labelEl && labelEl.value) || '').trim() || 'Abrechnung';
+  const betrag = Math.max(0, parseFloat(betragEl && betragEl.value) || 0);
+  const neuMenge = Math.max(0, parseInt(neuEl && neuEl.value, 10) || 0);
+  const bestandMenge = Math.max(0, parseInt(bestandEl && bestandEl.value, 10) || 0);
+  const stornoMenge = Math.max(0, parseInt(stornoEl && stornoEl.value, 10) || 0);
+  // Wenn eine Aufschlüsselung (Neukunden/Bestand/Storno) eingetragen ist, zählt sie als Quelle
+  // der Wahrheit für "Aufträge" - sonst greift das klassische manuelle Aufträge-Feld.
+  const hasSplit = neuMenge > 0 || bestandMenge > 0 || stornoMenge > 0;
+  const manuellAuftraege = Math.max(0, parseInt(auftrEl && auftrEl.value, 10) || 0);
+  const auftraege = hasSplit ? Math.max(0, neuMenge + bestandMenge - stornoMenge) : manuellAuftraege;
+  const windowId = (windowEl && windowEl.value) || null;
+  if (betrag <= 0 && auftraege <= 0) return;
+  settlements.push({
+    id: Date.now() + '-' + Math.random().toString(36).slice(2),
+    label, betrag, auftraege, windowId,
+    neuMenge: hasSplit ? neuMenge : null,
+    bestandMenge: hasSplit ? bestandMenge : null,
+    stornoMenge: hasSplit ? stornoMenge : null,
+  });
+  saveData();
+  render();
+}
+
+function deleteSettlement(id) {
+  settlements = settlements.filter(s => s.id !== id);
+  saveData();
+  render();
+}
+
+// Summiert alle Abrechnungen zu einer Gesamtübersicht, inkl. Neukunden/Bestand/Storno-Aufschlüsselung
+// (soweit vorhanden) - Grundlage für die Ausgezahlt-Ansicht der Kundenmix-/Umsatz-Mix-/Kennzahlen-Karten.
+function settlementsAggregate() {
+  return settlements.reduce((acc, s) => {
+    acc.betrag += s.betrag || 0;
+    acc.auftraege += s.auftraege || 0;
+    if (s.neuMenge != null || s.bestandMenge != null || s.stornoMenge != null) {
+      acc.neu += s.neuMenge || 0;
+      acc.bestand += s.bestandMenge || 0;
+      acc.storno += s.stornoMenge || 0;
+      acc.hasSplit = true;
+    }
+    return acc;
+  }, { betrag: 0, auftraege: 0, neu: 0, bestand: 0, storno: 0, hasSplit: false });
+}
+
+const PDFJS_VERSION = '3.11.174';
+
+function ensurePdfJsLoaded() {
+  if (window.pdfjsLib) return Promise.resolve();
+  if (window.__pdfjsLoadingPromise) return window.__pdfjsLoadingPromise;
+  window.__pdfjsLoadingPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.min.js`;
+    script.onload = () => {
+      try {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.worker.min.js`;
+        resolve();
+      } catch (e) { reject(e); }
+    };
+    script.onerror = () => reject(new Error('PDF-Bibliothek konnte nicht geladen werden (Internetverbindung nötig).'));
+    document.head.appendChild(script);
+  });
+  return window.__pdfjsLoadingPromise;
+}
+
+// Deutsches Zahlenformat, mit oder ohne Tausenderpunkt, mit optionalem führenden Minus.
+// Kein €/EUR-Zeichen nötig - viele Abrechnungen (z.B. Gutschriften) haben das € nur in der Spaltenüberschrift.
+const AMOUNT_PATTERN = '(-?\\d{1,3}(?:\\.\\d{3})*,\\d{2})';
+
+function parseEuroToNumber(str) {
+  let s = String(str).trim();
+  const neg = /^-/.test(s);
+  s = s.replace(/[^0-9.,]/g, '');
+  if (s.includes(',') && s.includes('.')) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (s.includes(',')) {
+    s = s.replace(',', '.');
+  }
+  const n = parseFloat(s);
+  if (isNaN(n)) return null;
+  return neg ? -Math.abs(n) : n;
+}
+
+function findAmountNear(text, keywords) {
+  for (const kw of keywords) {
+    const re = new RegExp(kw + '[\\s\\S]{0,40}?' + AMOUNT_PATTERN, 'i');
+    const m = text.match(re);
+    if (m) {
+      const val = parseEuroToNumber(m[1]);
+      if (val != null) return val;
+    }
+  }
+  return null;
+}
+
+function findMengeNear(text, keywords) {
+  for (const kw of keywords) {
+    const re = new RegExp(kw + '[\\s\\S]{0,60}?(\\d{1,4})\\s*(?:Stück|Stk\\.?)', 'i');
+    const m = text.match(re);
+    if (m) return parseInt(m[1], 10);
+  }
+  return null;
+}
+
+function parseAbrechnungText(text) {
+  // 1. Betrag: zuerst nach typischen "Endsumme"-Begriffen suchen (ohne €-Pflicht),
+  //    Priorität: Gesamtbetrag > Auszahlungsbetrag/-Auszahlung > Zwischensumme als Rückfall.
+  let betrag = findAmountNear(text, [
+    'gesamtbetrag',
+    'auszahlungsbetrag',
+    'gesamtauszahlung',
+    'netto[-\\s]?auszahlung',
+    'überweisungsbetrag',
+    'zu zahlender betrag',
+    'zwischensumme\\s*\\(netto\\)',
+    'zwischensumme',
+    'gesamtsumme',
+  ]);
+  if (betrag == null) {
+    // Letzter Rückfall: größter im Dokument gefundener Betrag (mit oder ohne € davor/danach)
+    const allAmounts = [];
+    const re = new RegExp(AMOUNT_PATTERN, 'g');
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const v = parseEuroToNumber(m[1]);
+      if (v != null && v > 0) allAmounts.push(v);
+    }
+    if (allAmounts.length) betrag = Math.max(...allAmounts);
+  }
+
+  // 2. Aufträge: typische Zeilen von Energie-Direktvertrieb-Abrechnungen
+  //    ("Vermittlung Neukunde ... 20 Stück", "Tarifoptimierung Bestandskunde ... 38 Stück",
+  //     "Storno ... 3 Stück") werden erkannt und zu einer bestätigten Netto-Anzahl verrechnet.
+  const neuMenge = findMengeNear(text, ['Vermittlung\\s+Neukunde', 'Neukunde']);
+  const bestandMenge = findMengeNear(text, ['Tarifoptimierung\\s+Bestandskunde', 'Bestandskunde']);
+  const stornoMenge = findMengeNear(text, ['Storno']);
+
+  let auftraege = null;
+  if (neuMenge != null || bestandMenge != null) {
+    auftraege = Math.max(0, (neuMenge || 0) + (bestandMenge || 0) - (stornoMenge || 0));
+  } else {
+    // Generischer Rückfall für andere Abrechnungs-Layouts
+    const countMatch = text.match(/(\d{1,4})\s?(?:aufträge|auftrag|verträge|vertrag|abschlüsse|abschluss|stück)/i);
+    if (countMatch) auftraege = parseInt(countMatch[1], 10);
+  }
+
+  // 3. Zeitraum/Label: "Leistungszeitraum: September 2026 - Teil 2" direkt übernehmen,
+  //    sonst Monatsname+Jahr, sonst ein Datum im Dokument.
+  let label = null;
+  const lzMatch = text.match(/Leistungszeitraum:?\s*([^\n]{3,45}?)(?=\s{2,}|RE-Korrekturnr|Rechnungsnr|Kundennr|Datum:|$)/i);
+  if (lzMatch) {
+    label = lzMatch[1].trim();
+  } else {
+    const monthNames = ['januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
+    const monthRegex = new RegExp('(' + monthNames.join('|') + ')\\s+(\\d{4})(\\s*-\\s*Teil\\s*\\d)?', 'i');
+    const monthMatch = text.match(monthRegex);
+    if (monthMatch) {
+      label = monthMatch[1].charAt(0).toUpperCase() + monthMatch[1].slice(1).toLowerCase() + ' ' + monthMatch[2] + (monthMatch[3] || '');
+    } else {
+      const dateMatch = text.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+      if (dateMatch) label = dateMatch[0];
+    }
+  }
+
+  return { label, betrag, auftraege, neuMenge, bestandMenge, stornoMenge };
+}
+
+// Erkennt aus einem Abrechnungstext (z.B. "... September 2026 - Teil 2 ...") das passende
+// Auszahlungs-Fenster (siehe payoutWindowOf) anhand von Monat + Jahr + "Teil 1"/"Teil 2".
+function detectWindowIdFromText(text) {
+  const monthNames = ['januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
+  const re = new RegExp('(' + monthNames.join('|') + ')\\s+(\\d{4})\\s*-\\s*teil\\s*(\\d)', 'i');
+  const m = text.match(re);
+  if (!m) return null;
+  const monthIdx = monthNames.indexOf(m[1].toLowerCase());
+  if (monthIdx < 0) return null;
+  const year = parseInt(m[2], 10);
+  const suffix = m[3] === '1' ? 'A' : 'B';
+  return `${year}-${String(monthIdx + 1).padStart(2, '0')}-${suffix}`;
+}
+
+async function handlePdfUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  const statusEl = document.getElementById('pdfUploadStatus');
+  if (!file) return;
+  if (statusEl) statusEl.textContent = 'Lese PDF …';
+  try {
+    await ensurePdfJsLoaded();
+    const buf = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+    let fullText = '';
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      fullText += content.items.map(it => it.str).join(' ') + '\n';
+    }
+    const parsed = parseAbrechnungText(fullText);
+    const windowId = detectWindowIdFromText(fullText);
+    const labelEl = document.getElementById('settlementLabel');
+    const betragEl = document.getElementById('settlementBetrag');
+    const auftrEl = document.getElementById('settlementAuftraege');
+    const neuEl = document.getElementById('settlementNeu');
+    const bestandEl = document.getElementById('settlementBestand');
+    const stornoEl = document.getElementById('settlementStorno');
+    const windowEl = document.getElementById('settlementWindow');
+    if (labelEl && parsed.label) labelEl.value = parsed.label;
+    if (betragEl && parsed.betrag != null) betragEl.value = parsed.betrag;
+    if (auftrEl && parsed.auftraege != null) auftrEl.value = parsed.auftraege;
+    if (neuEl && parsed.neuMenge != null) neuEl.value = parsed.neuMenge;
+    if (bestandEl && parsed.bestandMenge != null) bestandEl.value = parsed.bestandMenge;
+    if (stornoEl && parsed.stornoMenge != null) stornoEl.value = parsed.stornoMenge;
+    let windowMatched = false;
+    if (windowEl && windowId && windowEl.options) {
+      for (let i = 0; i < windowEl.options.length; i++) {
+        if (windowEl.options[i].value === windowId) { windowEl.value = windowId; windowMatched = true; break; }
+      }
+    }
+    if (statusEl) {
+      const splitInfo = (parsed.neuMenge != null || parsed.bestandMenge != null)
+        ? ` (${parsed.neuMenge || 0} NK / ${parsed.bestandMenge || 0} Bestand${parsed.stornoMenge ? ' / ' + parsed.stornoMenge + ' Storno' : ''})`
+        : '';
+      statusEl.textContent = parsed.betrag != null
+        ? `Erkannt: ${parsed.betrag} €${parsed.auftraege != null ? ' · ' + parsed.auftraege + ' Aufträge' + splitInfo : ''}${windowMatched ? ' · Zeitfenster zugeordnet' : ''} – bitte kurz prüfen, dann "Hinzufügen".`
+        : 'Konnte keinen Betrag automatisch erkennen – bitte Werte manuell eintragen.';
+    }
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'PDF konnte nicht gelesen werden: ' + (e && e.message ? e.message : 'Unbekannter Fehler');
+  } finally {
+    event.target.value = '';
+  }
+}
+
+function weekKeyOf(key) {
+  const d = new Date(key + 'T00:00:00');
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  return todayKey(d);
+}
+
+function prevDayKey(key) {
+  const d = new Date(key + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  return todayKey(d);
+}
+
+function lastNDays(n, endDate) {
+  const arr = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(endDate);
+    d.setDate(d.getDate() - i);
+    arr.push(todayKey(d));
+  }
+  return arr;
+}
+
+// Alle Tages-Keys zwischen startDate und endDate (inklusive) - z.B. für ein Abrechnungs-Schreibfenster.
+function daysInRange(startDate, endDate) {
+  const arr = [];
+  const cur = new Date(startDate);
+  while (cur <= endDate) {
+    arr.push(todayKey(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return arr;
+}
+
+function currentMonthDays() {
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const first = new Date(year, month, 1);
+  const todayStr = todayKey(now);
+  const arr = [];
+  let d = new Date(first);
+  while (d.getMonth() === month) {
+    const key = todayKey(d);
+    arr.push(key);
+    if (key === todayStr) break;
+    d.setDate(d.getDate() + 1);
+  }
+  return arr;
+}
+
+function monthDaysForOffset(offset) {
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+  const year = base.getFullYear(), month = base.getMonth();
+  const todayStr = todayKey(now);
+  const arr = [];
+  let d = new Date(year, month, 1);
+  while (d.getMonth() === month) {
+    const key = todayKey(d);
+    if (offset === 0 && key > todayStr) break; // aktueller Monat: nicht in die Zukunft
+    arr.push(key);
+    d.setDate(d.getDate() + 1);
+  }
+  return arr;
+}
+
+function monthOffsetLabel(offset) {
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+  return base.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+}
+
+function zeitraumOffsetLabel(offset) {
+  const win = windowOffsetBack(offset);
+  return 'Abrechnungszeitraum: ' + fmtWindowRange(win.schreibStart, win.schreibEnd) + ' ' + win.schreibStart.getFullYear();
+}
+
+function jahrOffsetLabel(offset) {
+  return String(new Date().getFullYear() - offset);
+}
+
+function allMonthsAgg() {
+  const keys = Object.keys(data).sort();
+  const map = {};
+  keys.forEach(k => {
+    const mk = k.slice(0, 7);
+    map[mk] = (map[mk] || 0) + dayTotal(data[k]);
+  });
+  const sortedMonths = Object.keys(map).sort();
+  const labels = sortedMonths.map(m => new Date(m + '-01T00:00:00').toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }));
+  const values = sortedMonths.map(m => map[m]);
+  return { labels, values };
+}
+
+function entryCount(entry) {
+  if (!entry) return 0;
+  return (entry.neu || 0) + (entry.bestand || 0);
+}
+
+function allMonthsEntriesAgg() {
+  const keys = Object.keys(data).sort();
+  const map = {};
+  keys.forEach(k => {
+    const mk = k.slice(0, 7);
+    map[mk] = (map[mk] || 0) + entryCount(data[k]);
+  });
+  const sortedMonths = Object.keys(map).sort();
+  return sortedMonths.map(m => map[m]);
+}
+
+function bestandRevenue(entry) {
+  if (!entry) return 0;
+  return (entry.bestand || 0) * PREIS_BESTANDSKUNDE;
+}
+
+function allMonthsBestandAgg() {
+  const keys = Object.keys(data).sort();
+  const map = {};
+  keys.forEach(k => {
+    const mk = k.slice(0, 7);
+    map[mk] = (map[mk] || 0) + bestandRevenue(data[k]);
+  });
+  const sortedMonths = Object.keys(map).sort();
+  return sortedMonths.map(m => map[m]);
+}
+
+function neuRevenue(entry) {
+  if (!entry) return 0;
+  return (entry.neu || 0) * PREIS_NEUKUNDE;
+}
+
+function allMonthsNeuAgg() {
+  const keys = Object.keys(data).sort();
+  const map = {};
+  keys.forEach(k => {
+    const mk = k.slice(0, 7);
+    map[mk] = (map[mk] || 0) + neuRevenue(data[k]);
+  });
+  const sortedMonths = Object.keys(map).sort();
+  return sortedMonths.map(m => map[m]);
+}
+
+function stornoLossOf(entry) {
+  if (!entry) return 0;
+  return (entry.storno_neu || 0) * PREIS_NEUKUNDE + (entry.storno_bestand || 0) * PREIS_BESTANDSKUNDE;
+}
+
+function allMonthsStornoAgg() {
+  const keys = Object.keys(data).sort();
+  const map = {};
+  keys.forEach(k => {
+    const mk = k.slice(0, 7);
+    map[mk] = (map[mk] || 0) + stornoLossOf(data[k]);
+  });
+  const sortedMonths = Object.keys(map).sort();
+  return sortedMonths.map(m => map[m]);
+}
+
+function getPeriodDates() {
+  // 'woche' zeigt jetzt den aktuellen Abrechnungszeitraum (1.-15. bzw. 16.-Monatsende)
+  // statt einer starren 7-Tage-Woche, da Auftraggeber/Abrechnung so takten.
+  if (statsPeriod === 'woche') {
+    const win = windowOffsetBack(currentPage === 'dashboard' ? zeitraumOffset : 0);
+    return daysInRange(win.schreibStart, win.schreibEnd);
+  }
+  if (statsPeriod === 'monat') return monthDaysForOffset(currentPage === 'dashboard' ? monatOffset : 0);
+  // 'gesamt' = ausgewähltes Kalenderjahr (Standard: aktuelles Jahr)
+  const year = String(new Date().getFullYear() - (currentPage === 'dashboard' ? jahrOffset : 0));
+  return Object.keys(data).filter(k => k.startsWith(year)).sort();
+}
+
+function hourCounts(periodDates) {
+  const counts = new Array(24).fill(0);
+  const set = periodDates ? new Set(periodDates) : null;
+  events.forEach(e => {
+    if (!set || set.has(e.date)) counts[e.hour]++;
+  });
+  return counts;
+}
+
+function computeHighlights(periodDates, hCounts) {
+  let bestDay = null, bestVal = -1;
+  periodDates.forEach(k => {
+    const t = dayTotal(data[k]);
+    if (t > bestVal) { bestVal = t; bestDay = k; }
+  });
+  let bestHour = 0, bestHourVal = -1;
+  hCounts.forEach((c, h) => { if (c > bestHourVal) { bestHourVal = c; bestHour = h; } });
+  let customerCount = 0;
+  periodDates.forEach(k => {
+    const e = data[k];
+    if (e) customerCount += (e.neu || 0) + (e.bestand || 0);
+  });
+  return { bestDay, bestVal, bestHour, bestHourVal, customerCount };
+}
+
+function computeStreak() {
+  let streak = 0;
+  let d = new Date();
+  while (true) {
+    const key = todayKey(d);
+    const t = dayTotal(data[key]);
+    if (t > 0) { streak++; d.setDate(d.getDate() - 1); } else break;
+  }
+  return streak;
+}
+
+function breakdown(periodDates) {
+  let neu = 0, bestand = 0;
+  periodDates.forEach(k => {
+    const e = data[k];
+    if (!e) return;
+    neu += (e.neu || 0) * PREIS_NEUKUNDE;
+    bestand += (e.bestand || 0) * PREIS_BESTANDSKUNDE;
+  });
+  const total = neu + bestand;
+  return [
+    { label: 'Neukunden', value: neu, color: 'var(--blue)' },
+    { label: 'Bestandskunden', value: bestand, color: 'var(--green)' }
+  ].sort((a, b) => b.value - a.value)
+   .map(c => ({ ...c, pct: total ? Math.round((c.value / total) * 100) : 0 }));
+}
+
+function hexToRgba(hex, alpha) {
+  hex = hex.trim().replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const r = parseInt(hex.substring(0, 2), 16), g = parseInt(hex.substring(2, 4), 16), b = parseInt(hex.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function buildStatsData() {
+  const periodDates = getPeriodDates();
+  let chartLabels, chartValues, entryValues, bestandValues, neuValues, stornoValues;
+  if (statsPeriod === 'gesamt') {
+    const agg = allMonthsAgg();
+    chartLabels = agg.labels; chartValues = agg.values;
+    entryValues = allMonthsEntriesAgg();
+    bestandValues = allMonthsBestandAgg();
+    neuValues = allMonthsNeuAgg();
+    stornoValues = allMonthsStornoAgg();
+  } else if (statsPeriod === 'woche') {
+    chartLabels = periodDates.map(k => new Date(k + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short' }));
+    chartValues = periodDates.map(k => dayTotal(data[k]));
+    entryValues = periodDates.map(k => entryCount(data[k]));
+    bestandValues = periodDates.map(k => bestandRevenue(data[k]));
+    neuValues = periodDates.map(k => neuRevenue(data[k]));
+    stornoValues = periodDates.map(k => stornoLossOf(data[k]));
+  } else {
+    chartLabels = periodDates.map(k => String(parseInt(k.slice(8, 10), 10)));
+    chartValues = periodDates.map(k => dayTotal(data[k]));
+    entryValues = periodDates.map(k => entryCount(data[k]));
+    bestandValues = periodDates.map(k => bestandRevenue(data[k]));
+    neuValues = periodDates.map(k => neuRevenue(data[k]));
+    stornoValues = periodDates.map(k => stornoLossOf(data[k]));
+  }
+  // 'gesamt' ist jetzt das aktuelle Jahr (nicht mehr wirklich alles), also immer auf periodDates einschränken
+  const hCounts = hourCounts(periodDates);
+  const hLabels = Array.from({ length: 24 }, (_, h) => h + 'h');
+  const hi = computeHighlights(periodDates, hCounts);
+  const streak = computeStreak();
+  const bd = breakdown(periodDates);
+  const periodTotal = chartValues.reduce((a, b) => a + b, 0);
+  const entriesTotal = entryValues.reduce((a, b) => a + b, 0);
+  const bestandTotal = bestandValues.reduce((a, b) => a + b, 0);
+  const neuTotal = neuValues.reduce((a, b) => a + b, 0);
+
+  let neuCount = 0, bestandCount = 0, stornoNeuCount = 0, stornoBestandCount = 0;
+  periodDates.forEach(k => {
+    const e = data[k];
+    if (!e) return;
+    neuCount += e.neu || 0;
+    bestandCount += e.bestand || 0;
+    stornoNeuCount += e.storno_neu || 0;
+    stornoBestandCount += e.storno_bestand || 0;
+  });
+  const stornoCount = stornoNeuCount + stornoBestandCount;
+  const stornoLoss = stornoNeuCount * PREIS_NEUKUNDE + stornoBestandCount * PREIS_BESTANDSKUNDE;
+  const neuStornoQuote = neuCount > 0 ? Math.round((stornoNeuCount / neuCount) * 100) : 0;
+  const bestandStornoQuote = bestandCount > 0 ? Math.round((stornoBestandCount / bestandCount) * 100) : 0;
+  const neuStornoRatio = stornoNeuCount > 0 ? Math.round(neuCount / stornoNeuCount) : 0;
+  const bestandStornoRatio = stornoBestandCount > 0 ? Math.round(bestandCount / stornoBestandCount) : 0;
+
+  return {
+    periodDates, chartLabels, chartValues, entryValues, bestandValues, neuValues, stornoValues, hCounts, hLabels,
+    hi, streak, bd, periodTotal, entriesTotal, bestandTotal, neuTotal,
+    neuCount, bestandCount, stornoNeuCount, stornoBestandCount, stornoCount, stornoLoss,
+    neuStornoQuote, bestandStornoQuote, neuStornoRatio, bestandStornoRatio
+  };
+}
+
+function renderTrackerContent() {
+  const entry = data[selectedDate] ? getEntry(selectedDate) : blankEntry();
+  const total = dayTotal(entry);
+  const neuRevenue = entry.neu * PREIS_NEUKUNDE;
+  const bestandRevenue = entry.bestand * PREIS_BESTANDSKUNDE;
+  const stornoCount = (entry.storno_neu || 0) + (entry.storno_bestand || 0);
+  const stornoLoss = (entry.storno_neu || 0) * PREIS_NEUKUNDE + (entry.storno_bestand || 0) * PREIS_BESTANDSKUNDE;
+
+  const prevTotal = dayTotal(data[prevDayKey(selectedDate)]);
+  let trendHtml = '';
+  if (prevTotal > 0) {
+    const diff = Math.round(((total - prevTotal) / prevTotal) * 100);
+    if (diff > 0) trendHtml = `<span class="trend up">▲ ${diff}%</span>`;
+    else if (diff < 0) trendHtml = `<span class="trend down">▼ ${Math.abs(diff)}%</span>`;
+    else trendHtml = `<span class="trend flat">– 0%</span>`;
+  }
+
+  const keys = Object.keys(data).sort().reverse();
+  const monthPrefix = selectedDate.slice(0, 7);
+  const weekKey = weekKeyOf(selectedDate);
+
+  let monthTotal = 0, weekTotal = 0, allTotal = 0, dayCount = 0;
+  keys.forEach(k => {
+    const t = dayTotal(data[k]);
+    allTotal += t;
+    dayCount++;
+    if (k.startsWith(monthPrefix)) monthTotal += t;
+    if (weekKeyOf(k) === weekKey) weekTotal += t;
+  });
+  const avg = dayCount ? Math.round(allTotal / dayCount) : 0;
+
+  let rowsHtml = '';
+  if (keys.length === 0) {
+    rowsHtml = `<tr><td colspan="6"><div class="empty-state">Noch keine Einträge. Leg direkt oben los.</div></td></tr>`;
+  } else {
+    rowsHtml = keys.slice(0, 30).map(k => {
+      const e = getEntry(k);
+      const t = dayTotal(e);
+      const stC = (e.storno_neu || 0) + (e.storno_bestand || 0);
+      return `
+        <tr>
+          <td style="font-family:'Space Grotesk', sans-serif;">${fmtDateShort(k)}</td>
+          <td class="num">${e.neu}</td>
+          <td class="num">${e.bestand}</td>
+          <td class="num" style="color:${stC > 0 ? 'var(--danger)' : 'inherit'};">${stC > 0 ? '−' + stC : stC}</td>
+          <td class="num total">${fmtEuro(t)}</td>
+          <td class="num"><button class="del-btn" onclick="deleteDay('${k}')" title="Tag löschen">✕</button></td>
+        </tr>`;
+    }).join('');
+  }
+
+  return `
+    <div class="card meter">
+      <div class="meter-label">Umsatz am ${fmtDateLabel(selectedDate)}</div>
+      <div class="meter-top">
+        <div class="meter-display">${total.toLocaleString('de-DE')} €</div>
+        ${trendHtml}
+      </div>
+      <div class="meter-sub">
+        <span class="sub-item"><span class="legend-dot" style="background:var(--blue)"></span><span class="lbl">Neukunden</span><span class="val">${fmtEuro(neuRevenue)}</span></span>
+        <span class="sub-item"><span class="legend-dot" style="background:var(--green)"></span><span class="lbl">Bestand</span><span class="val">${fmtEuro(bestandRevenue)}</span></span>
+        ${stornoCount > 0 ? `<span class="sub-item"><span class="legend-dot" style="background:var(--danger)"></span><span class="lbl">Storno</span><span class="val" style="color:var(--danger);">−${fmtEuro(stornoLoss)}</span></span>` : ''}
+      </div>
+    </div>
+
+    <div class="card date-row">
+      <label>Datum wählen</label>
+      <input type="date" id="datePicker" value="${selectedDate}">
+      <button class="today-btn" onclick="setToday()">Heute</button>
+    </div>
+
+    <div class="cards">
+      <div class="card qcard neu">
+        <div class="qcard-head">
+          <div class="qcard-title">Neukunde</div>
+        </div>
+        <div class="qcard-price">110 €</div>
+        <div class="qcard-count">${entry.neu}</div>
+        <div class="qcard-buttons">
+          <button class="btn-round minus" onclick="changeCount('neu', -1)">−</button>
+          <button class="btn-round plus" onclick="changeCount('neu', 1)">+</button>
+        </div>
+      </div>
+      <div class="card qcard bestand">
+        <div class="qcard-head">
+          <div class="qcard-title">Bestandskunde</div>
+        </div>
+        <div class="qcard-price">15 €</div>
+        <div class="qcard-count">${entry.bestand}</div>
+        <div class="qcard-buttons">
+          <button class="btn-round minus" onclick="changeCount('bestand', -1)">−</button>
+          <button class="btn-round plus" onclick="changeCount('bestand', 1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards full">
+      <div class="card qcard storno">
+        <div class="qcard-head">
+          <div class="qcard-title">Storno</div>
+          <div class="rate-toggle storno-toggle">
+            <button class="${stornoType === 'neu' ? 'active' : ''}" onclick="setStornoType('neu')">Neukunde</button>
+            <button class="${stornoType === 'bestand' ? 'active' : ''}" onclick="setStornoType('bestand')">Bestand</button>
+          </div>
+        </div>
+        <div class="qcard-price">Aktuell: −${stornoType === 'neu' ? PREIS_NEUKUNDE : PREIS_BESTANDSKUNDE} € pro Storno · heute ${stornoCount}× (Neukunde: ${entry.storno_neu || 0}, Bestand: ${entry.storno_bestand || 0})</div>
+        <div class="qcard-count" style="color:var(--danger);">${stornoType === 'neu' ? (entry.storno_neu || 0) : (entry.storno_bestand || 0)}</div>
+        <div class="qcard-buttons">
+          <button class="btn-round minus" onclick="changeStorno(-1)">−</button>
+          <button class="btn-round plus" onclick="changeStorno(1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="card stat"><div class="stat-value">${fmtEuro(weekTotal)}</div><div class="stat-label">Woche</div></div>
+      <div class="card stat"><div class="stat-value">${fmtEuro(monthTotal)}</div><div class="stat-label">Monat</div></div>
+      <div class="card stat"><div class="stat-value">${fmtEuro(avg)}</div><div class="stat-label">Ø / Tag</div></div>
+    </div>
+
+    <div class="section-title">Verlauf</div>
+    <div class="card table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th class="num">Neu</th>
+            <th class="num">Bestand</th>
+            <th class="num">Storno</th>
+            <th class="num">Gesamt</th>
+            <th class="num"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+    ${storageOk ? '' : '<div class="storage-warn">Speichern hat gerade nicht geklappt — Änderungen gelten evtl. nur für diese Sitzung.</div>'}
+  `;
+}
+
+function getThemeColors() {
+  const styles = getComputedStyle(document.body);
+  const get = (v, fallback) => (styles.getPropertyValue(v).trim() || fallback);
+  return {
+    blue: get('--blue', '#5c6ac4'),
+    green: get('--green', '#008060'),
+    violet: get('--violet', '#9c6ade'),
+    danger: get('--danger', '#d72c0d'),
+    border: get('--border', '#e3e4e6'),
+    textDim: get('--text-dim', '#6d7175'),
+    textFaint: get('--text-faint', '#9a9ea1')
+  };
+}
+
+
+function previousPeriodDates() {
+  if (statsPeriod === 'woche') {
+    // Vorperiode = das vorherige Abrechnungs-Schreibfenster
+    const offset = (currentPage === 'dashboard' ? zeitraumOffset : 0) + 1;
+    const prevWin = windowOffsetBack(offset);
+    return daysInRange(prevWin.schreibStart, prevWin.schreibEnd);
+  }
+  if (statsPeriod === 'monat') {
+    const offset = (currentPage === 'dashboard' ? monatOffset : 0) + 1;
+    const now = new Date();
+    const prevMonth = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+    const month = prevMonth.getMonth();
+    const arr = [];
+    let d = new Date(prevMonth);
+    while (d.getMonth() === month) {
+      arr.push(todayKey(d));
+      d.setDate(d.getDate() + 1);
+    }
+    return arr;
+  }
+  // 'gesamt' = ausgewähltes Jahr -> Vorperiode ist das Jahr davor
+  const year = new Date().getFullYear() - (currentPage === 'dashboard' ? jahrOffset : 0) - 1;
+  return Object.keys(data).filter(k => k.startsWith(String(year))).sort();
+}
+
+// Auszahlungs-Rhythmus: 1.-15. geschrieben -> Auszahlung 20.-25. im selben Monat
+//                        16.-Monatsende geschrieben -> Auszahlung 7.-12. im Folgemonat
+function payoutWindowOf(key) {
+  const d = new Date(key + 'T00:00:00');
+  const year = d.getFullYear(), month = d.getMonth(), day = d.getDate();
+  if (day <= 15) {
+    return {
+      id: `${year}-${String(month + 1).padStart(2, '0')}-A`,
+      schreibStart: new Date(year, month, 1),
+      schreibEnd: new Date(year, month, 15),
+      auszahlStart: new Date(year, month, 20),
+      auszahlEnd: new Date(year, month, 25),
+    };
+  }
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const payoutBase = new Date(year, month + 1, 1);
+  return {
+    id: `${year}-${String(month + 1).padStart(2, '0')}-B`,
+    schreibStart: new Date(year, month, 16),
+    schreibEnd: new Date(year, month, lastDay),
+    auszahlStart: new Date(payoutBase.getFullYear(), payoutBase.getMonth(), 7),
+    auszahlEnd: new Date(payoutBase.getFullYear(), payoutBase.getMonth(), 12),
+  };
+}
+
+function payoutStatus(win) {
+  const now = new Date();
+  if (now <= win.schreibEnd) return 'offen';
+  if (now < win.auszahlStart) return 'erwartet';
+  if (now <= win.auszahlEnd) return 'faellig';
+  return 'ueberfaellig';
+}
+
+const PAYOUT_STATUS_LABELS = {
+  offen: { text: 'Läuft noch', color: 'var(--text-dim)' },
+  erwartet: { text: 'Auszahlung erwartet', color: 'var(--blue)' },
+  faellig: { text: 'Jetzt fällig', color: 'var(--green)' },
+  ueberfaellig: { text: 'Fenster vorbei', color: 'var(--danger)' },
+};
+
+function fmtWindowRange(start, end) {
+  const monthFmt = (d) => d.toLocaleDateString('de-DE', { month: 'short' });
+  if (start.getMonth() === end.getMonth()) {
+    return `${start.getDate()}.–${end.getDate()}. ${monthFmt(end)}`;
+  }
+  return `${start.getDate()}. ${monthFmt(start)} – ${end.getDate()}. ${monthFmt(end)}`;
+}
+
+function buildPayoutWindows(daysBack = 70, limit = 4) {
+  const now = new Date();
+  const map = {};
+  for (let i = 0; i < daysBack; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = todayKey(d);
+    const win = payoutWindowOf(key);
+    if (!map[win.id]) map[win.id] = Object.assign({ brutto: 0, count: 0 }, win);
+    const e = data[key];
+    if (e) {
+      map[win.id].brutto += dayTotal(e);
+      map[win.id].count += (e.neu || 0) + (e.bestand || 0);
+    }
+  }
+  return Object.values(map)
+    .sort((a, b) => b.schreibStart - a.schreibStart)
+    .slice(0, limit);
+}
+
+function monthlyHistoryData(months = 6) {
+  const now = new Date();
+  const result = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthIdx = d.getMonth();
+    const year = d.getFullYear();
+    let total = 0, neu = 0, bestand = 0, storno = 0;
+    let cur = new Date(year, monthIdx, 1);
+    while (cur.getMonth() === monthIdx) {
+      const key = todayKey(cur);
+      const e = data[key];
+      if (e) {
+        total += dayTotal(e);
+        neu += e.neu || 0;
+        bestand += e.bestand || 0;
+        storno += (e.storno_neu || 0) + (e.storno_bestand || 0);
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    const label = d.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+    const isCurrent = i === 0;
+    result.push({ label, total, neu, bestand, storno, isCurrent });
+  }
+  return result;
+}
+
+// Wie monthlyHistoryData, aber auf Basis bestätigter Abrechnungen (über deren windowId
+// dem jeweiligen Monat zugeordnet) statt getrackter Tageswerte - für die Ausgezahlt-Ansicht.
+function monthlySettlementData(months = 6) {
+  const now = new Date();
+  const result = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const total = settlements
+      .filter(s => s.windowId && s.windowId.startsWith(monthKey))
+      .reduce((sum, s) => sum + (s.betrag || 0), 0);
+    const label = d.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+    result.push({ label, total, isCurrent: i === 0 });
+  }
+  return result;
+}
+
+function buildDonutChartSVG(segments, opts) {
+  const o = Object.assign({ size: 200, strokeWidth: 24, track: 'var(--border)' }, opts || {});
+  const r = (o.size - o.strokeWidth) / 2;
+  const cx = o.size / 2, cy = o.size / 2;
+  const circumference = 2 * Math.PI * r;
+  const total = segments.reduce((a, s) => a + s.value, 0);
+  let offsetAcc = 0;
+  const gap = total > 0 ? Math.min(3, circumference * 0.01) : 0;
+  const arcs = segments.filter(s => s.value > 0).map(s => {
+    const frac = s.value / total;
+    const len = Math.max(0, frac * circumference - gap);
+    const dasharray = `${len.toFixed(2)} ${(circumference - len).toFixed(2)}`;
+    const dashoffset = (-offsetAcc).toFixed(2);
+    offsetAcc += frac * circumference;
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${o.strokeWidth}" stroke-dasharray="${dasharray}" stroke-dashoffset="${dashoffset}" stroke-linecap="round" class="donut-arc"/>`;
+  }).join('');
+  return `
+    <svg viewBox="0 0 ${o.size} ${o.size}" width="${o.size}" height="${o.size}" class="donut-svg">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${o.track}" stroke-width="${o.strokeWidth}"/>
+      <g transform="rotate(-90 ${cx} ${cy})">${arcs}</g>
+    </svg>`;
+}
+
+function renderDashboardContent(b, animate) {
+  const colors = getThemeColors();
+  const periodLabel = statsPeriod === 'woche' ? 'diesen Abrechnungszeitraum' : statsPeriod === 'monat' ? 'diesen Monat' : 'dieses Jahr';
+
+  // Brutto/Ausgezahlt-Umschalter - bestimmt ab hier, welche Zahlen Kundenmix, Umsatz-Mix,
+  // Kennzahlen und Monats-Performance anzeigen (getrackte Schätzung vs. bestätigte Abrechnungen).
+  const agg = settlementsAggregate();
+  const isAusgezahltView = dashboardView === 'ausgezahlt';
+  const viewNeuCount = isAusgezahltView ? agg.neu : b.neuCount;
+  const viewBestandCount = isAusgezahltView ? agg.bestand : b.bestandCount;
+  const viewStornoCount = isAusgezahltView ? agg.storno : b.stornoCount;
+  const kundenmixNoData = isAusgezahltView && !agg.hasSplit;
+
+  // Abrechnungen melden Neukunden/Bestand als Bruttomenge (Stornos sind darin bereits enthalten),
+  // daher müssen Stornos hier abgezogen werden, damit "X Kunden" zur bestätigten Aufträge-Zahl
+  // passt (so wie es schon bei "Aufträge" / settleAuftraegeTotal gemacht wird).
+  const grossCustomers = viewNeuCount + viewBestandCount;
+  const totalCustomers = isAusgezahltView ? Math.max(0, grossCustomers - viewStornoCount) : grossCustomers;
+  const neuPct = totalCustomers > 0 ? Math.min(100, Math.round((viewNeuCount / totalCustomers) * 100)) : 0;
+  const bestandPct = totalCustomers > 0 ? Math.max(0, 100 - neuPct) : 0;
+  const stornoShare = grossCustomers > 0 ? Math.round((viewStornoCount / grossCustomers) * 100) : 0;
+
+  const donutSvg = buildDonutChartSVG([
+    { label: 'Neukunden', value: viewNeuCount, color: colors.blue },
+    { label: 'Bestandskunden', value: viewBestandCount, color: colors.green }
+  ], { size: 200, strokeWidth: 24 });
+
+  const dominant = viewNeuCount >= viewBestandCount
+    ? { label: 'Neukunden', pct: neuPct }
+    : { label: 'Bestandskunden', pct: bestandPct };
+  const donutCenterLabel = totalCustomers > 0 ? dominant.label : 'Keine Daten';
+  const donutCenterPct = totalCustomers > 0 ? dominant.pct + '%' : '–';
+
+  const kundenmixSub = isAusgezahltView
+    ? (kundenmixNoData ? 'Keine Aufschlüsselung in den Abrechnungen hinterlegt' : `${totalCustomers} bestätigte Kunden (alle Abrechnungen)`)
+    : `${totalCustomers} Kunden ${periodLabel}`;
+
+  // Auftrags-Mix nach Anzahl (nicht €) für die Ausgezahlt-Ansicht, da Abrechnungen
+  // keinen Umsatz-Split pro Typ liefern, nur Stückzahlen.
+  const ausgezahltMixData = (() => {
+    if (totalCustomers === 0) return [];
+    return [
+      { label: 'Neukunden', pct: neuPct, color: colors.blue },
+      { label: 'Bestandskunden', pct: bestandPct, color: colors.green },
+    ];
+  })();
+  const umsatzMixTitle = isAusgezahltView ? 'Auftrags-Mix (bestätigt)' : 'Umsatz-Mix';
+
+  let trendBadge = '';
+  const prevDates = previousPeriodDates();
+  if (prevDates) {
+    const prevTotal = prevDates.reduce((sum, k) => sum + dayTotal(data[k]), 0);
+    if (prevTotal > 0) {
+      const diff = Math.round(((b.periodTotal - prevTotal) / prevTotal) * 100);
+      const up = diff >= 0;
+      trendBadge = `<span class="dash-badge ${up ? 'up' : 'down'}">${up ? '+' : ''}${diff}% vs. Vorperiode</span>`;
+    }
+  }
+
+  const revBarsHtml = (isAusgezahltView ? ausgezahltMixData : b.bd).map(c => `
+    <div class="dash-bar-row">
+      <div class="dash-bar-top">
+        <span><span class="legend-dot" style="background:${c.color}"></span>${c.label}</span>
+        <span>${c.pct}%</span>
+      </div>
+      <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${c.pct}%; background:${c.color};"></div></div>
+    </div>`).join('');
+
+  const daysWithEntries = [...b.periodDates].filter(k => data[k] && dayTotal(data[k]) > 0);
+  const top5 = daysWithEntries.sort((a, c) => dayTotal(data[c]) - dayTotal(data[a])).slice(0, 5);
+  const top5Html = top5.length ? top5.map(k => {
+    const e = data[k];
+    return `
+      <div class="dash-list-row">
+        <div class="dash-avatar" style="background:${colors.blue}22; color:${colors.blue};">${fmtDateShort(k).slice(0, 5)}</div>
+        <div class="dash-list-info">
+          <div class="dash-list-name">${fmtDateLabel(k)}</div>
+          <div class="dash-list-sub">${e.neu || 0} NK · ${e.bestand || 0} Bestand</div>
+        </div>
+        <div class="dash-list-value">${fmtEuro(dayTotal(e))}</div>
+      </div>`;
+  }).join('') : `<div class="empty-state">Noch keine Einträge in diesem Zeitraum.</div>`;
+
+  const stornoDays = b.periodDates
+    .filter(k => data[k] && ((data[k].storno_neu || 0) + (data[k].storno_bestand || 0)) > 0)
+    .sort((a, c) => ((data[c].storno_neu || 0) + (data[c].storno_bestand || 0)) - ((data[a].storno_neu || 0) + (data[a].storno_bestand || 0)))
+    .slice(0, 5);
+  const stornoHtml = stornoDays.length ? stornoDays.map(k => {
+    const e = data[k];
+    const sc = (e.storno_neu || 0) + (e.storno_bestand || 0);
+    return `
+      <div class="dash-list-row">
+        <div class="dash-avatar" style="background:${colors.danger}22; color:${colors.danger};">${fmtDateShort(k).slice(0, 5)}</div>
+        <div class="dash-list-info">
+          <div class="dash-list-name">${fmtDateLabel(k)}</div>
+          <div class="dash-list-sub">${sc}× storniert</div>
+        </div>
+        <div class="dash-list-value" style="color:var(--danger);">−${fmtEuro(stornoLossOf(e))}</div>
+      </div>`;
+  }).join('') : `<div class="empty-state">Keine Stornos in diesem Zeitraum 🎉</div>`;
+
+  const fixSchwelle = fixkostenSchwelle();
+  const fixLiveBrutto = currentWindowBruttoLive();
+  const fixSaldo = fixLiveBrutto - fixSchwelle;
+  const fixPct = fixSchwelle > 0 ? Math.min(100, Math.round((fixLiveBrutto / fixSchwelle) * 100)) : 0;
+  const fixReached = fixSchwelle > 0 && fixSaldo >= 0;
+  // Fixkosten gelten pro Auszahlung (1.-15. / 16.-Monatsende), nicht pro Kalendermonat
+  const fixWin = payoutWindowOf(todayKey());
+  const fixMonthLabel = fmtWindowRange(fixWin.schreibStart, fixWin.schreibEnd);
+
+  const trackedAll = Object.keys(data).reduce((sum, k) => sum + dayTotal(data[k]), 0);
+  const trackedCountAll = Object.keys(data).reduce((sum, k) => sum + (data[k].neu || 0) + (data[k].bestand || 0), 0);
+  const settlePaidTotal = settlements.reduce((s, x) => s + x.betrag, 0);
+  const settleAuftraegeTotal = settlements.reduce((s, x) => s + x.auftraege, 0);
+  const settleDiff = settlePaidTotal - trackedAll;
+  const settleQuote = trackedCountAll > 0 ? Math.round((settleAuftraegeTotal / trackedCountAll) * 100) : 0;
+
+  // (isAusgezahltView bereits oben für Kundenmix/Umsatz-Mix berechnet)
+  const totalCardValue = isAusgezahltView ? settlePaidTotal : b.periodTotal;
+  const totalCardSub = isAusgezahltView ? 'Ausgezahlt insgesamt (bestätigt)' : `Umsatz ${periodLabel}`;
+  const totalCardChips = isAusgezahltView
+    ? [
+        { value: settlements.length, label: 'Abrechnungen' },
+        { value: settleAuftraegeTotal, label: 'Aufträge' },
+        { value: `${settleDiff >= 0 ? '+' : ''}${fmtEuro(settleDiff)}`, label: 'vs. getrackt' },
+      ]
+    : [
+        { value: b.neuCount, label: 'Neukunden' },
+        { value: b.bestandCount, label: 'Bestand' },
+        { value: b.stornoCount, label: 'Stornos' },
+      ];
+  const settlementsHtml = settlements.length ? settlements.slice().reverse().map(s => `
+    <div class="dash-list-row">
+      <div class="dash-avatar" style="background:${colors.green}22; color:${colors.green};">${Math.round(s.betrag)}€</div>
+      <div class="dash-list-info">
+        <div class="dash-list-name">${s.label}</div>
+        <div class="dash-list-sub">${s.auftraege} bestätigte Aufträge</div>
+      </div>
+      <div class="dash-list-value"><button class="del-btn" onclick="deleteSettlement('${s.id}')" title="Abrechnung löschen">✕</button></div>
+    </div>`).join('') : `<div class="empty-state">Noch keine Abrechnung eingetragen.</div>`;
+
+  const payoutWindowsFull = buildPayoutWindows(170, 8); // größerer Pool für Auswahl-Dropdown + Abgleich
+  const payoutWindows = payoutWindowsFull.slice(0, 4);
+  const payoutWindowsHtml = payoutWindows.map(w => {
+    const matched = settlements.filter(s => s.windowId === w.id);
+    const matchedTotal = matched.reduce((s, x) => s + x.betrag, 0);
+    const isSettled = matched.length > 0;
+    const status = payoutStatus(w);
+    const st = isSettled ? { text: 'Abgerechnet ✓', color: 'var(--green)' } : PAYOUT_STATUS_LABELS[status];
+    const showTrackedHint = isSettled && Math.round(matchedTotal) !== Math.round(w.brutto);
+    return `
+      <div class="dash-payout-row">
+        <div class="dash-payout-info">
+          <div class="dash-payout-written">Geschrieben ${fmtWindowRange(w.schreibStart, w.schreibEnd)}</div>
+          <div class="dash-payout-due">Auszahlung ${fmtWindowRange(w.auszahlStart, w.auszahlEnd)}</div>
+        </div>
+        <div class="dash-payout-right">
+          <div class="dash-payout-amount">${fmtEuro(isSettled ? matchedTotal : w.brutto)}</div>
+          <div class="dash-payout-status" style="color:${st.color};">${st.text}</div>
+          ${showTrackedHint ? `<div class="dash-payout-tracked">getrackt: ${fmtEuro(w.brutto)}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  const settlementWindowOptionsHtml = ['<option value="">– Zeitraum wählen (optional) –</option>'].concat(
+    payoutWindowsFull.map(w => `<option value="${w.id}">${fmtWindowRange(w.schreibStart, w.schreibEnd)} ${w.schreibStart.getFullYear()}</option>`)
+  ).join('');
+
+  const monthHistory = isAusgezahltView ? monthlySettlementData(6) : monthlyHistoryData(6);
+  const maxMonthTotal = Math.max(1, ...monthHistory.map(m => m.total));
+  const monthHistoryHtml = monthHistory.map(m => {
+    const pct = Math.round((m.total / maxMonthTotal) * 100);
+    return `
+      <div class="dash-month-row">
+        <div class="dash-month-label"><span>${m.label}</span>${m.isCurrent ? '<span class="dash-month-current">läuft</span>' : ''}</div>
+        <div class="dash-month-bar-track"><div class="dash-month-bar-fill" style="width:${pct}%; background:${m.isCurrent ? colors.violet : colors.blue};"></div></div>
+        <div class="dash-month-value">${fmtEuro(m.total)}</div>
+      </div>`;
+  }).join('');
+  const monthCardTitle = isAusgezahltView ? 'Performance der letzten Monate (ausgezahlt)' : 'Performance der letzten Monate';
+
+  const kennzahlenHtml = isAusgezahltView ? `
+    <div class="dash-kv-row"><span>Storno-Quote (Abrechnungen)</span><b>${grossCustomers > 0 ? stornoShare + '%' : '–'}</b></div>
+    <div class="dash-kv-row"><span>Anzahl Abrechnungen</span><b>${settlements.length}</b></div>
+    <div class="dash-kv-row"><span>Ø pro Abrechnung</span><b>${settlements.length ? fmtEuro(agg.betrag / settlements.length) : '–'}</b></div>
+  ` : `
+    <div class="dash-kv-row"><span>Storno-Quote Neukunden</span><b>${b.neuStornoQuote}%</b></div>
+    <div class="dash-kv-row"><span>Storno-Quote Bestand</span><b>${b.bestandStornoQuote}%</b></div>
+    <div class="dash-kv-row"><span>Bester Tag</span><b>${b.hi.bestDay ? fmtEuro(b.hi.bestVal) : '–'}</b></div>
+    <div class="dash-kv-row"><span>Serie aktiv</span><b>${b.streak} Tage</b></div>
+  `;
+
+  return `
+    <div class="dashboard-page ${animate ? 'animate-in' : ''}">
+      <div class="dash-grid">
+        <div class="dash-main">
+          <div class="card dash-card">
+            <div class="dash-card-head">
+              <div>
+                <div class="dash-card-title">Kundenmix</div>
+                <div class="dash-card-sub">${kundenmixSub}</div>
+              </div>
+            </div>
+            <div class="dash-donut-area">
+              <div class="donut-wrap">
+                ${donutSvg}
+                <div class="donut-center">
+                  <div class="donut-center-pct">${donutCenterPct}</div>
+                  <div class="donut-center-label">${donutCenterLabel}</div>
+                </div>
+              </div>
+              <div class="dash-donut-legend">
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.blue}"></span>Neukunden<b>${viewNeuCount}</b><span class="dash-legend-pct">${neuPct}%</span></div>
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.green}"></span>Bestandskunden<b>${viewBestandCount}</b><span class="dash-legend-pct">${bestandPct}%</span></div>
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.danger}"></span>Stornos<b>${viewStornoCount}</b><span class="dash-legend-pct">${stornoShare}%</span></div>
+              </div>
+            </div>
+            ${kundenmixNoData ? `<div class="dash-card-sub" style="margin-top:8px;">Tipp: beim Hinzufügen einer Abrechnung die Felder "davon Neukunden/Bestand/Storno" ausfüllen, dann ist der Kundenmix auch hier bestätigt.</div>` : ''}
+          </div>
+
+          <div class="dash-lists">
+            <div class="card dash-card">
+              <div class="dash-card-title">Beste Tage</div>
+              <div class="dash-list">${top5Html}</div>
+            </div>
+            <div class="card dash-card">
+              <div class="dash-card-title">Tage mit Stornos</div>
+              <div class="dash-list">${stornoHtml}</div>
+            </div>
+          </div>
+
+          <div class="card dash-card">
+            <div class="dash-card-title">${monthCardTitle}</div>
+            <div class="dash-month-list">${monthHistoryHtml}</div>
+          </div>
+
+          <div class="card dash-card dash-fix-card">
+            <div class="dash-card-head">
+              <div>
+                <div class="dash-card-title">Fixkosten ${fixMonthLabel}</div>
+                <div class="dash-card-sub">${fixSchwelle > 0 ? (fixReached ? 'Fixkosten erreicht 🎉' : fmtEuro(Math.abs(fixSaldo)) + ' bis Fixkosten erreicht sind') : 'Noch keine Fixkosten hinterlegt'}</div>
+              </div>
+            </div>
+            <div class="dash-fix-inputs">
+              <label>Fixkosten (€)<input type="number" min="0" step="10" value="${settings.fixkosten || 0}" onchange="setFixkosten(this.value)"></label>
+            </div>
+            ${fixSchwelle > 0 ? `
+            <div class="dash-fix-track"><div class="dash-fix-fill ${fixReached ? 'reached' : ''}" style="width:${fixPct}%;"></div></div>
+            <div class="dash-fix-saldo ${fixReached ? 'pos' : 'neg'}">${fixReached ? '+' : '−'}${fmtEuro(Math.abs(fixSaldo))}</div>
+            <div class="dash-fix-sub">Schwelle inkl. automatisch +${STEUER_PROZENT}% Steuer: ${fmtEuro(fixSchwelle)} · bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
+            ` : ''}
+          </div>
+
+          <div class="card dash-card">
+            <div class="dash-card-title">Wann kommt mein Geld?</div>
+            <div class="dash-card-sub">1.–15. → Auszahlung 20.–25. selber Monat · 16.–Monatsende → Auszahlung 7.–12. Folgemonat</div>
+            <div class="dash-payout-list">${payoutWindowsHtml}</div>
+          </div>
+
+          <div class="card dash-card">
+            <div class="dash-card-head dash-collapsible-head" onclick="toggleSettlements()">
+              <div>
+                <div class="dash-card-title">Abrechnungen</div>
+                <div class="dash-card-sub">${settlementsOpen ? 'Was wirklich ausgezahlt wurde, im Vergleich zum getrackten Umsatz' : `${settlements.length} Abrechnung${settlements.length === 1 ? '' : 'en'} · ${fmtEuro(settlePaidTotal)} ausgezahlt`}</div>
+              </div>
+              <div class="dash-collapse-chevron ${settlementsOpen ? 'open' : ''}">▾</div>
+            </div>
+            ${settlementsOpen ? `
+            <div class="dash-settle-summary">
+              <div class="dash-kv-row"><span>Getrackt (Brutto, gesamt)</span><b>${fmtEuro(trackedAll)}</b></div>
+              <div class="dash-kv-row"><span>Ausgezahlt (Brutto, gesamt)</span><b>${fmtEuro(settlePaidTotal)}</b></div>
+              <div class="dash-kv-row"><span>Differenz</span><b style="color:${settleDiff < 0 ? 'var(--danger)' : 'var(--green)'};">${settleDiff >= 0 ? '+' : ''}${fmtEuro(settleDiff)}</b></div>
+              <div class="dash-kv-row"><span>Ausgezahlt netto (−${STEUER_PROZENT}% Steuer)</span><b>${fmtEuro(nettoOf(settlePaidTotal))}</b></div>
+              <div class="dash-kv-row"><span>Bestätigungsquote</span><b>${trackedCountAll > 0 ? settleQuote + '%' : '–'}</b></div>
+            </div>
+            <div class="dash-settle-upload">
+              <input type="file" id="settlementPdfInput" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event)">
+              <button class="today-btn" onclick="document.getElementById('settlementPdfInput').click()">📄 PDF hochladen &amp; auslesen</button>
+              <span class="dash-settle-upload-status" id="pdfUploadStatus"></span>
+            </div>
+            <div class="dash-settle-form">
+              <input type="text" id="settlementLabel" placeholder="z.B. Oktober 2026">
+              <input type="number" id="settlementBetrag" placeholder="Ausgezahlt €" min="0" step="10">
+              <input type="number" id="settlementAuftraege" placeholder="Aufträge (gesamt)" min="0" step="1">
+              <input type="number" id="settlementNeu" placeholder="davon Neukunden" min="0" step="1">
+              <input type="number" id="settlementBestand" placeholder="davon Bestand" min="0" step="1">
+              <input type="number" id="settlementStorno" placeholder="davon Storno" min="0" step="1">
+              <select id="settlementWindow">${settlementWindowOptionsHtml}</select>
+              <button class="today-btn" onclick="addSettlement()">+ Hinzufügen</button>
+            </div>
+            <div class="dash-card-sub" style="margin-top:-4px; margin-bottom:8px;">Tipp: "davon Neukunden/Bestand/Storno" ausfüllen (oder per PDF automatisch erkannt), dann zeigt die Ausgezahlt-Ansicht auch den Kundenmix bestätigt an.</div>
+            <div class="dash-list">${settlementsHtml}</div>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="dash-side">
+          <div class="card dash-card dash-total-card">
+            <div class="dash-view-toggle">
+              <button class="${!isAusgezahltView ? 'active' : ''}" onclick="setDashboardView('brutto')">Brutto (Schätzung)</button>
+              <button class="${isAusgezahltView ? 'active' : ''}" onclick="setDashboardView('ausgezahlt')">Ausgezahlt</button>
+            </div>
+            <div class="dash-card-sub">${totalCardSub}</div>
+            <div class="dash-total-value">${fmtEuro(totalCardValue)}</div>
+            <div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue))} netto (−${STEUER_PROZENT}% Steuer)</div>
+            ${!isAusgezahltView ? trendBadge : ''}
+            <div class="dash-chip-row">
+              ${totalCardChips.map(c => `<div class="dash-chip"><div class="dash-chip-value">${c.value}</div><div class="dash-chip-label">${c.label}</div></div>`).join('')}
+            </div>
+          </div>
+
+          <div class="card dash-card">
+            <div class="dash-card-title">${umsatzMixTitle}</div>
+            ${revBarsHtml}
+          </div>
+
+          <div class="card dash-card">
+            <div class="dash-card-title">Kennzahlen</div>
+            ${kennzahlenHtml}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+let lastRenderedPage = null;
+
+function render() {
+  let html = '';
+
+  if (currentPage === 'dashboard') {
+    const enteringDashboard = lastRenderedPage !== 'dashboard';
+    html += renderDashboardContent(buildStatsData(), enteringDashboard);
+  } else {
+    html += renderTrackerContent();
+  }
+
+  document.getElementById('app').innerHTML = html;
+  lastRenderedPage = currentPage;
+
+  const wrapEl = document.getElementById('wrap');
+  if (wrapEl) wrapEl.classList.toggle('wrap-wide', currentPage === 'dashboard');
+
+  if (currentPage === 'tracker') {
+    const dp = document.getElementById('datePicker');
+    if (dp) dp.addEventListener('change', (e) => {
+      selectedDate = e.target.value || todayKey();
+      render();
+    });
+  }
+
+  updateNavTabs();
+  updatePeriodToggle();
+  updateMonthNav();
+  updateZeitraumInfo();
+  updateJahrNav();
+}
+
+function updateMonthNav() {
+  const root = document.getElementById('month-nav-root');
+  if (!root) return;
+  const show = currentPage === 'dashboard' && statsPeriod === 'monat' && dashboardView !== 'ausgezahlt';
+  root.style.display = show ? '' : 'none';
+  if (!show) return;
+  const label = document.getElementById('month-nav-label');
+  if (label) label.textContent = monthOffsetLabel(monatOffset);
+  const nextBtn = document.getElementById('month-nav-next');
+  if (nextBtn) nextBtn.disabled = monatOffset === 0;
+}
+
+function updateZeitraumInfo() {
+  const root = document.getElementById('zeitraum-info-root');
+  if (!root) return;
+  const show = currentPage === 'dashboard' && statsPeriod === 'woche' && dashboardView !== 'ausgezahlt';
+  root.style.display = show ? '' : 'none';
+  if (!show) return;
+  const label = document.getElementById('zeitraum-info-label');
+  if (label) label.textContent = zeitraumOffsetLabel(zeitraumOffset);
+  const nextBtn = document.getElementById('zeitraum-info-next');
+  if (nextBtn) nextBtn.disabled = zeitraumOffset === 0;
+}
+
+function updateJahrNav() {
+  const root = document.getElementById('jahr-nav-root');
+  if (!root) return;
+  const show = currentPage === 'dashboard' && statsPeriod === 'gesamt' && dashboardView !== 'ausgezahlt';
+  root.style.display = show ? '' : 'none';
+  if (!show) return;
+  const label = document.getElementById('jahr-nav-label');
+  if (label) label.textContent = jahrOffsetLabel(jahrOffset);
+  const nextBtn = document.getElementById('jahr-nav-next');
+  if (nextBtn) nextBtn.disabled = jahrOffset === 0;
+}
+
+function updateNavTabs() {
+  const tabTracker = document.getElementById('tab-tracker');
+  const tabDashboard = document.getElementById('tab-dashboard');
+  if (!tabTracker || !tabDashboard) return;
+  tabTracker.classList.toggle('active', currentPage === 'tracker');
+  tabDashboard.classList.toggle('active', currentPage === 'dashboard');
+  const map = { tracker: tabTracker, dashboard: tabDashboard };
+  positionSlider('nav-slider', map[currentPage]);
+}
+
+function updatePeriodToggle() {
+  const root = document.getElementById('period-toggle-root');
+  if (!root) return;
+  // In der Ausgezahlt-Ansicht des Dashboards ergibt Woche/Monat/Gesamt keinen Sinn,
+  // da Abrechnungen nicht nach diesen Zeiträumen gefiltert werden.
+  const showsPeriod = currentPage === 'dashboard' && dashboardView !== 'ausgezahlt';
+  root.style.display = showsPeriod ? '' : 'none';
+  if (!showsPeriod) return;
+  const btnWoche = document.getElementById('btn-woche');
+  const btnMonat = document.getElementById('btn-monat');
+  const btnGesamt = document.getElementById('btn-gesamt');
+  if (!btnWoche || !btnMonat || !btnGesamt) return;
+  btnWoche.classList.toggle('active', statsPeriod === 'woche');
+  btnMonat.classList.toggle('active', statsPeriod === 'monat');
+  btnGesamt.classList.toggle('active', statsPeriod === 'gesamt');
+  const activeBtn = statsPeriod === 'woche' ? btnWoche : (statsPeriod === 'monat' ? btnMonat : btnGesamt);
+  positionSlider('period-slider', activeBtn);
+}
+
+function positionSlider(sliderId, activeBtn) {
+  const slider = document.getElementById(sliderId);
+  if (!slider || !activeBtn) return;
+  slider.style.width = activeBtn.offsetWidth + 'px';
+  slider.style.transform = 'translateX(' + activeBtn.offsetLeft + 'px)';
+}
+
+window.changeCount = changeCount;
+window.changeStorno = changeStorno;
+window.setStornoType = setStornoType;
+window.deleteDay = deleteDay;
+window.setToday = setToday;
+window.toggleTheme = toggleTheme;
+window.switchPage = switchPage;
+window.setStatsPeriod = setStatsPeriod;
+window.shiftMonat = shiftMonat;
+window.setDashboardView = setDashboardView;
+window.setFixkosten = setFixkosten;
+window.addSettlement = addSettlement;
+window.deleteSettlement = deleteSettlement;
+window.handlePdfUpload = handlePdfUpload;
+
+
+async function applyTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+async function toggleTheme() {
+  const current = document.body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  await applyTheme(next);
+  const btn = document.getElementById('themeToggle');
+  if (btn) {
+    btn.classList.remove('spin');
+    void btn.offsetWidth;
+    btn.classList.add('spin');
+  }
+  try {
+    localStorage.setItem(THEME_KEY, next);
+  } catch (e) { /* Präferenz konnte nicht gespeichert werden, gilt nur für diese Sitzung */ }
+  render();
+}
+
+async function loadTheme() {
+  let theme = 'light';
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'dark' || stored === 'light') theme = stored;
+  } catch (e) { /* kein gespeichertes Theme, Standard bleibt light */ }
+  await applyTheme(theme);
+}
+
+function setupManifest() {
+  // Erzeugt die Web-App-Manifest-Datei zur Laufzeit als Blob, damit die App
+  // weiterhin eine einzelne HTML-Datei bleibt (keine zweite Datei nötig) und
+  // sich trotzdem wie eine echte App vom Homescreen starten lässt (Android;
+  // bei iPhone/Safari reichen dafür schon die apple-mobile-web-app Meta-Tags).
+  try {
+    const manifest = {
+      name: 'Start (to) count',
+      short_name: 'Start count',
+      start_url: location.href.split('#')[0],
+      display: 'standalone',
+      background_color: '#f5f6fa',
+      theme_color: '#2954e2',
+      icons: [
+        { src: 'data:image/png;base64,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', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.getElementById('manifestLink');
+    if (link) link.setAttribute('href', url);
+  } catch (e) { /* Manifest ist ein Nice-to-have, kein Problem wenn es fehlschlägt */ }
+}
+
+(async function init() {
+  setupManifest();
+  await loadTheme();
+  await loadData();
+  render();
+})();
+</script>
+</body>
+</html>
