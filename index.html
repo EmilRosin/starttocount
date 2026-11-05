@@ -4527,7 +4527,7 @@ async function teamToggleNotify() {
 }
 function teamEventsCard() {
   const uid = cl.session.user.id;
-  const list = team.events.slice(0, 30).map(e => `<div class="tm-ev"><div class="tm-ev-dot">${e.kind === 'neu' ? '🎉' : '✅'}</div><div class="tm-ev-t">${escapeHtml(teamKindText(e, e.user_id === uid))}<small>${teamAgo(e.created_at)}</small></div></div>`).join('');
+  const list = team.events.slice(0, 5).map(e => `<div class="tm-ev"><div class="tm-ev-dot">${e.kind === 'neu' ? '🎉' : '✅'}</div><div class="tm-ev-t">${escapeHtml(teamKindText(e, e.user_id === uid))}<small>${teamAgo(e.created_at)}</small></div></div>`).join('');
   const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
   const hint = teamNotifyOn()
     ? (perm === 'granted' ? 'Du bekommst eine Meldung, sobald jemand im Team einen Kunden schreibt (auch wenn die App im Hintergrund offen ist).' : perm === 'denied' ? 'Hinweis in der App erscheint weiterhin. Systemmeldungen sind im Browser blockiert – erlaube sie in den Seiteneinstellungen.' : 'Meldungen erscheinen in der App. Für Systemmeldungen erlaube sie im Browser.')
