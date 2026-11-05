@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Start (to) count</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js" defer></script>
 <meta name="theme-color" content="#2954e2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3859,8 +3859,8 @@ function deleteProfile(id) {
 // ---------- Konto (E-Mail + Passwort) mit Cloud-Sync über Supabase ----------
 // Trage hier die Projekt-URL und den "anon public"-Schlüssel deines Supabase-Projekts ein
 // (der Schlüssel ist öffentlich gedacht; geschützt sind die Daten durch Row Level Security).
-const CLOUD_URL = '';
-const CLOUD_KEY = '';
+const CLOUD_URL = 'https://lywowkmyzrxltmgvweum.supabase.co';
+const CLOUD_KEY = 'sb_publishable_DXN2SdyDaCrPtiFOLPFzAw_R_6zPzbs';
 const CLOUD_LINK_KEY = 'tagesumsatz-cloud-link';   // { uid, profileId, ts, dirty }
 const CLOUD_CFG_KEY = 'tagesumsatz-cloud-cfg';     // optionaler Zugang, direkt in der App eingetragen
 let cl = { client: null, session: null, email: '', pw: '', msg: '', err: '', busy: false, conflict: null, recovery: false, newPw: '', cfgOpen: false, cfgUrl: '', cfgKey: '', lastSync: null };
