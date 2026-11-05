@@ -178,6 +178,7 @@
   .abr-sum { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:12px 0 2px; border-top:1.5px solid var(--text-dim); margin-top:2px; }
   .abr-sum span { font-weight:800; }
   .abr-sum b { font-family:'Space Grotesk',sans-serif; font-size:22px; color:var(--green); white-space:nowrap; }
+  .dash-fix-reserve .ust-row { border-top:1px dashed var(--border); margin-top:6px; padding-top:6px; color:var(--text-dim); }
   .abr-net { color:var(--text-dim); font-size:12.5px; text-align:right; }
 
   /* --- MAIN CARD --- */
@@ -1143,6 +1144,7 @@ function defaultSettings() {
     preisNeu: 110,        // € Provision pro Neukunde
     preisBestand: 15,     // € Provision pro Bestandskunde
     steuer: 30,           // % Steuern
+    ustPflicht: false,    // umsatzsteuerpflichtig? 19 % USt werden mitüberwiesen und müssen ans Finanzamt
     overheadNeu: 0,       // € Overhead pro Neukunden-Auftrag des Teams (nur Teamleiter)
     stornoAufschlag: false, // Ø Storno-Quote der Abrechnungen auf die Fixkosten-Schwelle aufschlagen?
     goalName: '',         // persönliches Finanzziel (z. B. "Rücklage", "Urlaub")
@@ -2714,6 +2716,7 @@ function renderDashboardContent(b, animate) {
               ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}%)</span><b>${fmtEuro(fixLiveBrutto * (1 - fixStornoPct / 100) * STEUER_PROZENT / 100)}</b></div>` : ''}
               ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (geschätzt nach den letzten Abrechnungen, ${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
               <div class="pocket"><span>💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 || fixAufbau.goal > 0 ? ' (nach Abzügen)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0) - fixAufbau.goal)}</b></div>
+              ${settings.ustPflicht ? `<div class="ust-row"><span>🏛️ + Umsatzsteuer 19 % (wird mitüberwiesen) – ans Finanzamt weiterleiten</span><b>${fmtEuro(fixLiveBrutto * 0.19)}</b></div>` : ''}
             </div>` : ''}
             ` : ''}
           </div>
@@ -2840,6 +2843,10 @@ function shiftAbrYear(d) { abrYear += d; render(); }
 const ABR_MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const ABR_MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
+// Umsatzsteuer: ist der Betrag aus der Abrechnung inkl. 19 %, steckt darin Betrag − Betrag/1,19 (gehört dem Finanzamt)
+function abrUst(total) { return settings.ustPflicht ? total - total / 1.19 : 0; }
+function abrNet(total) { return nettoOf(total - abrUst(total)); }
+
 function abrYearData(y) {
   return Array.from({ length: 12 }, (_, i) => {
     const mk = `${y}-${String(i + 1).padStart(2, '0')}`;
@@ -2909,13 +2916,13 @@ function abrChartSvg(data) {
   const base = y(0);
   const area = runs.map(r => `<path d="${curve(r, d => d.total)} L${x(r[r.length - 1].i).toFixed(1)} ${base} L${x(r[0].i).toFixed(1)} ${base} Z" fill="url(#abrGrad)"/>`).join('');
   const lineBrutto = runs.map(r => `<path d="${curve(r, d => d.total)}" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
-  const lineNetto = withTax ? runs.map(r => `<path d="${curve(r, d => nettoOf(d.total))}" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="1 6" stroke-linecap="round"/>`).join('') : '';
+  const lineNetto = withTax ? runs.map(r => `<path d="${curve(r, d => abrNet(d.total))}" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="1 6" stroke-linecap="round"/>`).join('') : '';
   const eur = v => Math.round(v).toLocaleString('de-DE') + ' €';
   const dots = data.filter(d => d.has).map(d => {
     const isBest = best && d.i === best.i;
-    return `<g><title>${ABR_MONTHS_LONG[d.i]}: ${eur(d.total)}${withTax ? ' (ca. ' + eur(nettoOf(d.total)) + ' netto)' : ''}</title>
+    return `<g><title>${ABR_MONTHS_LONG[d.i]}: ${eur(d.total)}${withTax ? ' (ca. ' + eur(abrNet(d.total)) + ' netto)' : ''}</title>
       <circle cx="${x(d.i)}" cy="${y(d.total)}" r="${isBest ? 6 : 4.5}" fill="var(--card)" stroke="var(--blue)" stroke-width="${isBest ? 3 : 2.5}"/>
-      ${withTax ? `<circle cx="${x(d.i)}" cy="${y(nettoOf(d.total))}" r="3" fill="var(--green)"/>` : ''}</g>`;
+      ${withTax ? `<circle cx="${x(d.i)}" cy="${y(abrNet(d.total))}" r="3" fill="var(--green)"/>` : ''}</g>`;
   }).join('');
   const labels = data.filter(d => d.has).map(d => {
     const t = Math.round(d.total).toLocaleString('de-DE');
@@ -2952,7 +2959,8 @@ function renderAbrechnungenContent() {
         <div class="dash-card-title">${ABR_MONTHS_LONG[d.i]} ${y}</div>
         ${rows}
         <div class="abr-sum"><span>Verdient im ${ABR_MONTHS_LONG[d.i]}</span><b>${d.has ? fmtEuro(d.total) : '–'}</b></div>
-        ${d.has && STEUER_PROZENT > 0 ? `<div class="abr-net">≈ ${fmtEuro(nettoOf(d.total))} netto (−${STEUER_PROZENT}% Steuer)</div>` : ''}
+        ${d.has && settings.ustPflicht ? `<div class="abr-net">🏛️ darin Umsatzsteuer (19 %): ${fmtEuro(abrUst(d.total))} – ans Finanzamt</div>` : ''}
+        ${d.has && STEUER_PROZENT > 0 ? `<div class="abr-net">≈ ${fmtEuro(abrNet(d.total))} netto (−${STEUER_PROZENT}% Steuer${settings.ustPflicht ? ', ohne USt' : ''})</div>` : ''}
       </div>`;
   }).join('');
   const loose = settlements.filter(x => !x.windowId || !/^\d{4}-\d{2}-[AB]$/.test(x.windowId));
@@ -2973,7 +2981,7 @@ function renderAbrechnungenContent() {
       </div>
       <div class="card dash-card abr-chart">
         <div class="abr-chart-head">
-          <div><div class="dash-card-title">Verdienst ${y}</div><div class="dash-card-sub">Gesamt ${fmtEuro(yearTotal)}${STEUER_PROZENT > 0 ? ` · ≈ ${fmtEuro(nettoOf(yearTotal))} netto` : ''}</div></div>
+          <div><div class="dash-card-title">Verdienst ${y}</div><div class="dash-card-sub">Gesamt ${fmtEuro(yearTotal)}${STEUER_PROZENT > 0 ? ` · ≈ ${fmtEuro(abrNet(yearTotal))} netto` : ''}</div></div>
           <div class="abr-year-nav">
             <button class="month-nav-arrow" onclick="shiftAbrYear(-1)" title="Vorheriges Jahr">‹</button>
             <b>${y}</b>
@@ -3045,9 +3053,9 @@ async function downloadAbrechnungenPdf() {
     for (let i = 0; i < 11; i++) if (data[i].has && data[i + 1].has) line(px(i), py(fn(data[i])), px(i + 1), py(fn(data[i + 1])), rgb, w, dash);
   };
   seg(d => d.total, BLUE, 1.8);
-  if (withTax) seg(d => nettoOf(d.total), GREEN, 1.4, true);
+  if (withTax) seg(d => abrNet(d.total), GREEN, 1.4, true);
   data.filter(d => d.has).forEach(d => {
-    if (withTax) circle(px(d.i), py(nettoOf(d.total)), 2.4, GREEN);
+    if (withTax) circle(px(d.i), py(abrNet(d.total)), 2.4, GREEN);
     circle(px(d.i), py(d.total), 2.8, BLUE);
     text(Math.round(d.total).toLocaleString('de-DE'), px(d.i) - pdfTextW(Math.round(d.total).toLocaleString('de-DE'), 7) / 2, py(d.total) + 6, 7, true);
   });
@@ -3068,14 +3076,15 @@ async function downloadAbrechnungenPdf() {
     text(d.hasA ? pdfEuro(d.a) : 'offen', cA, ty, 10, false, true, d.hasA ? undefined : GREY);
     text(d.hasB ? pdfEuro(d.b) : 'offen', cB, ty, 10, false, true, d.hasB ? undefined : GREY);
     text(pdfEuro(d.total), cT + 40, ty, 10, true, true);
-    if (withTax) text(pdfEuro(nettoOf(d.total)), cN + 45, ty, 10, false, true);
+    if (withTax) text(pdfEuro(abrNet(d.total)), cN + 45, ty, 10, false, true);
     ty -= 6; line(50, ty, 545, ty, LIGHT, 0.5); ty -= 16;
   });
   const total = data.reduce((t, d) => t + d.total, 0);
   line(50, ty + 10, 545, ty + 10, GREY, 1);
   text('Summe ' + y, 50, ty - 6, 11, true);
   text(pdfEuro(total), cT + 40, ty - 6, 11, true, true);
-  if (withTax) text(pdfEuro(nettoOf(total)), cN + 45, ty - 6, 11, true, true);
+  if (withTax) text(pdfEuro(abrNet(total)), cN + 45, ty - 6, 11, true, true);
+  if (settings.ustPflicht) text('Darin enthaltene Umsatzsteuer (19 %): ' + pdfEuro(abrUst(total)) + ' – ans Finanzamt weiterleiten', 50, ty - 24, 9, false, false, GREY);
   text('Beträge sind die ausgezahlten Brutto-Beträge aus deinen Abrechnungen.' + (withTax ? ' Netto = abzüglich ' + STEUER_PROZENT + '% Steuer (Schätzung).' : ''), 50, 40, 8, false, false, GREY);
 
   const content = ops.join('\n');
@@ -3350,6 +3359,7 @@ function openOnboarding(mode) {
     // Steuersatz ist optional: leer = keine Netto-/Steuer-Anzeige. Bei 0 bleibt das Feld ebenfalls leer.
     steuer: !prefill ? '' : (settings.steuer > 0 ? fmtNumInput(settings.steuer) : ''),
     fixkosten: settings.fixkosten ? fmtNumInput(settings.fixkosten) : '',
+    ust: !!settings.ustPflicht,
     stornoAufschlag: !!settings.stornoAufschlag,
     runden: !!settings.zielAufrunden,
     goalName: settings.goalName || '',
@@ -3411,6 +3421,12 @@ function obBreakdownInner() {
 
 function obSetChip(field, value) {
   obSet(field, value);
+  renderOnboarding();
+}
+
+function obSetUst(on) {
+  if (!ob) return;
+  ob.ust = !!on;
   renderOnboarding();
 }
 
@@ -3478,6 +3494,7 @@ async function obFinish() {
   settings.steuer = parseNum(ob.steuer) >= 0 && parseNum(ob.steuer) < 100 ? parseNum(ob.steuer) : 0; // leer = keine Steuer
   settings.fixkosten = parseNum(ob.fixkosten) >= 0 ? parseNum(ob.fixkosten) : 0;
   settings.stornoAufschlag = !!ob.stornoAufschlag;
+  settings.ustPflicht = !!ob.ust;
   settings.zielAufrunden = !!ob.runden;
   settings.goalName = String(ob.goalName || '').trim().slice(0, 40);
   settings.mineAmount = parseNum(ob.mine) >= 0 ? parseNum(ob.mine) : 0;
@@ -3649,6 +3666,10 @@ function obStepContent(step) {
         <small class="ob-hint">${ob.goalPeriod === 'jahr' ? 'Pro Jahr wird automatisch auf den Monat heruntergerechnet (÷ 12).' : ob.goalPeriod === 'woche' ? 'Pro Woche wird automatisch auf den Monat hochgerechnet (× 52 ÷ 12).' : ob.goalPeriod === 'custom' ? 'Gesamtbetrag über den ganzen Zeitraum – die App rechnet ihn auf den Monat herunter.' : 'Die App teilt den Monatsbetrag auf die zwei Abrechnungszeiträume pro Monat auf.'}</small>
       </div>
       <div class="ob-section-title" style="margin-top:20px;">💼 Steuern & Fixkosten <em>(optional)</em></div>
+      <div class="ob-field"><span>Umsatzsteuerpflichtig (19 %)?</span>
+        <div class="ob-chips" style="margin-top:4px"><button type="button" class="ob-chip ${ob.ust ? 'active' : ''}" onclick="obSetUst(true)">Ja</button><button type="button" class="ob-chip ${!ob.ust ? 'active' : ''}" onclick="obSetUst(false)">Nein</button></div>
+        <small class="ob-hint">Bei „Ja“ werden die 19 % Umsatzsteuer mit überwiesen. Die App zeigt dir, wie viel du davon zur Seite legen und ans Finanzamt weiterleiten musst – das Geld gehört nicht dir.</small>
+      </div>
       ${obInput('steuer', 'Steuersatz (optional)', { unit: '%', placeholder: 'z. B. 30', hint: 'Wird für die Netto-Anzeige abgezogen. Leer lassen = es werden keine Steuern angezeigt.' })}
       ${obInput('fixkosten', 'Fixkosten pro Abrechnungsperiode (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Abrechnungsperiode (1.–15. bzw. 16.–Monatsende). Steuern schlägt die App automatisch drauf – bei Erreichen gibt’s ein Feuerwerk 🎆' })}
       <label class="ob-check">
@@ -3666,6 +3687,7 @@ function obStepContent(step) {
     if (ob.role === 'teamleiter') {
       rows.push(['Overhead pro Neukunde (Team)', fmtNumPlain(parseNum(ob.overheadNeu) || 0)]);
     }
+    rows.push(['Umsatzsteuerpflichtig (19 %)', ob.ust ? 'Ja' : 'Nein']);
     rows.push(['Steuersatz', parseNum(ob.steuer) > 0 ? parseNum(ob.steuer).toLocaleString('de-DE') + ' %' : '–']);
     rows.push(['Fixkosten pro Abrechnungsperiode', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
     rows.push(['Nur für mich / Monat', parseNum(ob.mine) > 0 ? fmtNumPlain(parseNum(ob.mine)) : '–']);
