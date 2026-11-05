@@ -961,7 +961,7 @@ function fmtDateShort(key) {
 }
 
 function blankEntry() {
-  return { neu: 0, bestand: 0, storno_neu: 0, storno_bestand: 0, team_neu: 0, team_bestand: 0 };
+  return { neu: 0, bestand: 0, storno_neu: 0, storno_bestand: 0, team_neu: 0 };
 }
 
 function getEntry(key) {
@@ -970,24 +970,23 @@ function getEntry(key) {
   if (e.storno_neu === undefined) e.storno_neu = 0;
   if (e.storno_bestand === undefined) e.storno_bestand = 0;
   if (e.team_neu === undefined) e.team_neu = 0;
-  if (e.team_bestand === undefined) e.team_bestand = 0;
   return e;
 }
 
 function isEntryEmpty(entry) {
   return !entry.neu && !entry.bestand && !entry.storno_neu && !entry.storno_bestand
-    && !entry.team_neu && !entry.team_bestand;
+    && !entry.team_neu;
 }
 
 function isTeamleiter() {
   return settings.role === 'teamleiter';
 }
 
-// Overhead (nur Teamleiter): Team-Aufträge × Overhead-Satz pro Fall
+// Overhead (nur Teamleiter): Neukunden-Aufträge des Teams × Overhead-Satz.
+// Für Bestandskunden gibt es keinen Overhead.
 function overheadOf(entry) {
   if (!entry || !isTeamleiter()) return 0;
-  return (entry.team_neu || 0) * (settings.overheadNeu || 0)
-    + (entry.team_bestand || 0) * (settings.overheadBestand || 0);
+  return (entry.team_neu || 0) * (settings.overheadNeu || 0);
 }
 
 function dayTotal(entry) {
@@ -1009,8 +1008,7 @@ function defaultSettings() {
     preisNeu: 110,        // € Provision pro Neukunde
     preisBestand: 15,     // € Provision pro Bestandskunde
     steuer: 30,           // % Steuern
-    overheadNeu: 0,       // € Overhead pro Neukunden-Auftrag des Teams (nur Teamleiter)
-    overheadBestand: 0    // € Overhead pro Bestandskunden-Auftrag des Teams (nur Teamleiter)
+    overheadNeu: 0        // € Overhead pro Neukunden-Auftrag des Teams (nur Teamleiter)
   };
 }
 
@@ -1696,7 +1694,8 @@ function breakdown(periodDates) {
     { label: 'Neukunden', value: neu, color: 'var(--blue)' },
     { label: 'Bestandskunden', value: bestand, color: 'var(--green)' }
   ];
-  if (overhead > 0) items.push({ label: 'Overhead (Team)', value: overhead, color: 'var(--violet)' });
+  // Für Teamleiter immer anzeigen (auch bei 0 %), damit klar ist, wie viel des Umsatzes Overhead ist
+  if (isTeamleiter()) items.push({ label: 'Overhead (Team)', value: overhead, color: 'var(--violet)', isOverhead: true });
   return items.sort((a, b) => b.value - a.value)
    .map(c => ({ ...c, pct: total ? Math.round((c.value / total) * 100) : 0 }));
 }
@@ -1816,7 +1815,7 @@ function renderTrackerContent() {
           <td class="num">${e.neu}</td>
           <td class="num">${e.bestand}</td>
           <td class="num" style="color:${stC > 0 ? 'var(--danger)' : 'inherit'};">${stC > 0 ? '−' + stC : stC}</td>
-          ${teamMode ? `<td class="num" style="color:var(--violet);">${(e.team_neu || 0) + (e.team_bestand || 0)}</td>` : ''}
+          ${teamMode ? `<td class="num" style="color:var(--violet);">${e.team_neu || 0}</td>` : ''}
           <td class="num total">${fmtEuro(t)}</td>
           <td class="num"><button class="del-btn" onclick="deleteDay('${k}')" title="Tag löschen">✕</button></td>
         </tr>`;
@@ -1870,27 +1869,16 @@ function renderTrackerContent() {
     </div>
 
     ${teamMode ? `
-    <div class="cards">
+    <div class="cards full">
       <div class="card qcard team">
         <div class="qcard-head">
           <div class="qcard-title">Team-Neukunde</div>
         </div>
-        <div class="qcard-price">Overhead ${fmtPrice(settings.overheadNeu || 0)} pro Fall</div>
+        <div class="qcard-price">Overhead ${fmtPrice(settings.overheadNeu || 0)} pro Neukunden-Auftrag deines Teams · Bestandskunden bringen keinen Overhead</div>
         <div class="qcard-count">${entry.team_neu || 0}</div>
         <div class="qcard-buttons">
           <button class="btn-round minus" onclick="changeTeam('team_neu', -1)">−</button>
           <button class="btn-round plus" onclick="changeTeam('team_neu', 1)">+</button>
-        </div>
-      </div>
-      <div class="card qcard team">
-        <div class="qcard-head">
-          <div class="qcard-title">Team-Bestand</div>
-        </div>
-        <div class="qcard-price">Overhead ${fmtPrice(settings.overheadBestand || 0)} pro Fall</div>
-        <div class="qcard-count">${entry.team_bestand || 0}</div>
-        <div class="qcard-buttons">
-          <button class="btn-round minus" onclick="changeTeam('team_bestand', -1)">−</button>
-          <button class="btn-round plus" onclick="changeTeam('team_bestand', 1)">+</button>
         </div>
       </div>
     </div>` : ''}
@@ -2303,6 +2291,10 @@ function renderDashboardContent(b, animate) {
     <div class="dash-kv-row"><span>Anzahl Abrechnungen</span><b>${settlements.length}</b></div>
     <div class="dash-kv-row"><span>Ø pro Abrechnung</span><b>${settlements.length ? fmtEuro(agg.betrag / settlements.length) : '–'}</b></div>
   ` : `
+    ${isTeamleiter() ? (() => {
+      const oh = b.bd.find(x => x.isOverhead);
+      return oh ? `<div class="dash-kv-row"><span>Overhead-Anteil am Umsatz</span><b>${oh.pct}% · ${fmtEuro(oh.value)}</b></div>` : '';
+    })() : ''}
     <div class="dash-kv-row"><span>Storno-Quote Neukunden</span><b>${b.neuStornoQuote}%</b></div>
     <div class="dash-kv-row"><span>Storno-Quote Bestand</span><b>${b.bestandStornoQuote}%</b></div>
     <div class="dash-kv-row"><span>Bester Tag</span><b>${b.hi.bestDay ? fmtEuro(b.hi.bestVal) : '–'}</b></div>
@@ -2677,7 +2669,6 @@ function openOnboarding(mode) {
     steuer: !prefill ? '' : (settings.steuer > 0 ? fmtNumInput(settings.steuer) : ''),
     fixkosten: settings.fixkosten ? fmtNumInput(settings.fixkosten) : '',
     overheadNeu: settings.overheadNeu ? fmtNumInput(settings.overheadNeu) : '',
-    overheadBestand: settings.overheadBestand ? fmtNumInput(settings.overheadBestand) : '',
     error: ''
   };
   renderOnboarding();
@@ -2714,7 +2705,6 @@ function obValidateStep() {
   if (step === 'overhead') {
     const n = parseNum(ob.overheadNeu);
     if (!(n >= 0)) return 'Bitte gib den Overhead pro Neukunden-Auftrag in € ein.';
-    if (String(ob.overheadBestand).trim() !== '' && !(parseNum(ob.overheadBestand) >= 0)) return 'Der Overhead pro Bestandskunde muss eine Zahl sein (oder leer bleiben).';
   }
   if (step === 'weiteres') {
     if (String(ob.steuer).trim() !== '') {
@@ -2752,7 +2742,6 @@ async function obFinish() {
   settings.steuer = parseNum(ob.steuer) >= 0 && parseNum(ob.steuer) < 100 ? parseNum(ob.steuer) : 0; // leer = keine Steuer
   settings.fixkosten = parseNum(ob.fixkosten) >= 0 ? parseNum(ob.fixkosten) : 0;
   settings.overheadNeu = parseNum(ob.overheadNeu) >= 0 ? parseNum(ob.overheadNeu) : 0;
-  settings.overheadBestand = parseNum(ob.overheadBestand) >= 0 ? parseNum(ob.overheadBestand) : 0;
   settings.onboarded = true;
   applySettings();
   await saveData();
@@ -2827,9 +2816,8 @@ function renderOnboarding() {
   } else if (step === 'overhead') {
     body = `
       <h2 class="ob-title">Dein Team-Overhead</h2>
-      <p class="ob-sub">Was bekommst du pro Auftrag, den dein Team schreibt? Die Team-Aufträge trägst du später im Tracker über die violetten Team-Karten ein.</p>
-      ${obInput('overheadNeu', 'Overhead pro Neukunden-Auftrag', { placeholder: 'z. B. 15', chips: [5, 15] })}
-      ${obInput('overheadBestand', 'Overhead pro Bestandskunden-Auftrag (optional)', { placeholder: 'z. B. 5', chips: [5, 15] })}`;
+      <p class="ob-sub">Was bekommst du pro Neukunden-Auftrag, den dein Team schreibt? (Auf Bestandskunden gibt es keinen Overhead.) Die Team-Aufträge trägst du später im Tracker über die violette Team-Karte ein.</p>
+      ${obInput('overheadNeu', 'Overhead pro Neukunden-Auftrag', { placeholder: 'z. B. 15', chips: [5, 15] })}`;
   } else if (step === 'weiteres') {
     body = `
       <h2 class="ob-title">Noch ein paar Details</h2>
@@ -2845,8 +2833,7 @@ function renderOnboarding() {
     rows.push(['Neukunde', fmtNumPlain(parseNum(ob.preisNeu) || 0)]);
     rows.push(['Bestandskunde', fmtNumPlain(parseNum(ob.preisBestand) || 0)]);
     if (ob.role === 'teamleiter') {
-      rows.push(['Overhead Neukunde (Team)', fmtNumPlain(parseNum(ob.overheadNeu) || 0)]);
-      rows.push(['Overhead Bestand (Team)', fmtNumPlain(parseNum(ob.overheadBestand) || 0)]);
+      rows.push(['Overhead pro Neukunde (Team)', fmtNumPlain(parseNum(ob.overheadNeu) || 0)]);
     }
     rows.push(['Steuersatz', parseNum(ob.steuer) > 0 ? parseNum(ob.steuer).toLocaleString('de-DE') + ' %' : '–']);
     rows.push(['Fixkosten / Zeitraum', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
