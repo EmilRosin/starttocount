@@ -758,6 +758,8 @@
   .dash-fix-reserve .sum { border-top:1px solid var(--border); padding-top:8px; font-size:14px; }
   .dash-fix-reserve .sum span { color: var(--text); font-weight:700; }
   .dash-fix-reserve .top { padding-bottom:8px; border-bottom:1px dashed var(--border); font-size:13.5px; }
+  .dash-fix-reserve .pocket { border-top:1.5px solid var(--text-dim, #888); margin-top:4px; padding-top:8px; font-size:14px; }
+  .dash-fix-reserve .pocket span, .dash-fix-reserve .pocket b { color:var(--text); font-weight:800; }
   .dash-fix-reserve .top b { font-size:15px; }
   .dash-fix-reserve span { color: var(--text-dim); }
   .dash-fix-reserve b { font-variant-numeric: tabular-nums; white-space:nowrap; }
@@ -2699,13 +2701,14 @@ function renderDashboardContent(b, animate) {
             <div class="dash-fix-track"><div class="dash-fix-fill ${fixReached ? 'reached' : ''}" style="width:${fixPct}%;"></div></div>
             <div class="dash-fix-saldo ${fixReached ? 'pos' : 'neg'}">${fixReached ? '+' : '−'}${fmtEuro(Math.abs(fixSaldo))}</div>
             <div class="dash-fix-sub">Bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
-            ${(STEUER_PROZENT > 0 || fixStornoPct > 0 || (settings.fixkosten || 0) > 0) && fixLiveBrutto > 0 ? `
+            ${(STEUER_PROZENT > 0 || fixStornoPct > 0 || (settings.fixkosten || 0) > 0 || fixAufbau.goal > 0) && fixLiveBrutto > 0 ? `
             <div class="dash-fix-reserve">
               <div class="top"><span>📈 Geschätzter Umsatz (Brutto)</span><b>${fmtEuro(fixLiveBrutto)}</b></div>
               ${(settings.fixkosten || 0) > 0 ? `<div><span>🏠 Fixkosten abziehen</span><b>${fmtEuro(settings.fixkosten)}</b></div>` : ''}
+              ${fixAufbau.goal > 0 ? `<div><span>🎯 Finanzziel${settings.goalName ? ' (' + escapeHtml(settings.goalName) + ')' : ''} zurücklegen</span><b>${fmtEuro(fixAufbau.goal)}</b></div>` : ''}
               ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}%)</span><b>${fmtEuro(fixLiveBrutto * (1 - fixStornoPct / 100) * STEUER_PROZENT / 100)}</b></div>` : ''}
               ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (geschätzt nach den letzten Abrechnungen, ${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
-              <div><span>💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 ? ' (nach Fixkosten)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0))}</b></div>
+              <div class="pocket"><span>= 💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 || fixAufbau.goal > 0 ? ' (nach Abzügen)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0) - fixAufbau.goal)}</b></div>
             </div>` : ''}
             ` : ''}
           </div>
