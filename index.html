@@ -805,6 +805,30 @@
   .dash-fix-reserve b { font-variant-numeric: tabular-nums; white-space:nowrap; }
   .dash-fix-reserve span { text-align:left; }
   .pf-list { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+  #auth-gate:empty { display:none; }
+  #auth-gate { position:fixed; inset:0; z-index:9998; background:var(--bg); overflow:auto; }
+  .auth-page { max-width:460px; margin:0 auto; padding:24px 20px 40px; }
+  .auth-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; }
+  .auth-brand { display:flex; align-items:center; gap:12px; }
+  .auth-name { font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:17px; line-height:1.1; }
+  .auth-tag { font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .auth-theme { width:44px; height:44px; border-radius:14px; border:1px solid var(--border); background:var(--card); cursor:pointer; font-size:17px; }
+  .auth-card2 { background:var(--card); border:1px solid var(--border); border-radius:28px; padding:32px 28px 28px; }
+  .auth-h { font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:30px; letter-spacing:-.02em; margin:0 0 6px; text-align:left; }
+  .auth-p { margin:0 0 26px; color:var(--text-dim); font-size:14px; text-align:left; }
+  .auth-l { display:block; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); margin-bottom:18px; text-align:left; }
+  .auth-in { display:block; width:100%; margin-top:8px; padding:16px 18px; border-radius:16px; border:1px solid var(--border); background:rgba(127,127,127,.09); color:var(--text); font:inherit; font-size:16px; font-weight:500; letter-spacing:0; text-transform:none; outline:none; }
+  .auth-in:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(41,84,226,.15); }
+  .auth-pw { position:relative; display:block; }
+  .auth-pw .auth-in { padding-right:52px; }
+  .auth-eye { position:absolute; right:10px; top:calc(50% + 4px); transform:translateY(-50%); background:none; border:none; color:var(--text-dim); cursor:pointer; padding:8px; line-height:0; }
+  .auth-chk { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text-dim); margin:2px 0 22px; cursor:pointer; text-align:left; }
+  .auth-chk input { width:18px; height:18px; accent-color:var(--blue); }
+  .auth-btn { display:block; width:100%; padding:17px; border:none; border-radius:16px; background:var(--blue); color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:16px; cursor:pointer; }
+  .auth-btn:disabled { opacity:.6; cursor:default; }
+  .auth-link { display:block; margin:20px auto 0; background:none; border:none; color:var(--text-dim); font:inherit; font-size:13px; text-decoration:underline; cursor:pointer; }
+  .auth-link.inline { display:inline; margin:0; color:var(--blue); }
+  .auth-switch { text-align:center; margin-top:18px; font-size:13px; color:var(--text-dim); }
   .cl-box { background:var(--bg-soft, rgba(127,127,127,.08)); border:1px solid var(--border); border-radius:14px; padding:14px; margin:4px 0 14px; text-align:left; }
   .cl-box .ob-input { width:100%; }
   .cl-title { font-weight:800; font-size:14px; margin-bottom:4px; }
@@ -986,7 +1010,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="theme-toggle settings-btn" id="profileBtn" onclick="openProfiles()" title="Konto & Profile">👤</button>
+      <button class="theme-toggle settings-btn" id="profileBtn" onclick="openProfiles()" title="Konto">👤</button>
       <button class="theme-toggle settings-btn" id="settingsBtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Darstellung wechseln">🌙</button>
     </div>
@@ -3776,40 +3800,17 @@ function getPfRoot() {
   return root;
 }
 
-function openProfiles() { loadProfiles(); pf = { newName: '', error: '', confirmDelete: null }; renderProfiles(); }
+function openProfiles() { pf = { newName: '', error: '', confirmDelete: null }; renderProfiles(); }
 function closeProfiles() { pf = null; getPfRoot().innerHTML = ''; }
 
 function renderProfiles() {
   if (!pf) return;
-  const rows = profiles.list.map(p => {
-    const active = p.id === profiles.active;
-    const confirming = pf.confirmDelete === p.id;
-    return `<div class="pf-row ${active ? 'active' : ''}">
-      <button type="button" class="pf-main" onclick="switchProfile('${p.id}')">
-        <span class="pf-avatar">${escapeHtml((p.name[0] || '?').toUpperCase())}</span>
-        <span class="pf-name">${escapeHtml(p.name)}${p.id === 'main' ? '<small>Hauptprofil</small>' : ''}</span>
-        ${active ? '<span class="pf-badge">aktiv</span>' : ''}
-      </button>
-      ${p.id === 'main' ? '' : (confirming
-        ? `<button type="button" class="pf-del confirm" onclick="deleteProfile('${p.id}')">Wirklich löschen?</button>`
-        : `<button type="button" class="pf-del" onclick="pfAskDelete('${p.id}')" title="Profil löschen">🗑️</button>`)}
-    </div>`;
-  }).join('');
   getPfRoot().innerHTML = `
     <div class="ob-overlay" onclick="if(event.target===this)closeProfiles()">
       <div class="ob-card card">
-        <h2 class="ob-title">Konto & Profile</h2>
+        <h2 class="ob-title">Konto</h2>
         ${cloudSectionHtml()}
-        <p class="ob-sub">Jedes Profil hat seine eigenen Zahlen und Einstellungen – ideal zum Ausprobieren wie ein neuer Nutzer. Ohne Konto bleibt alles auf diesem Gerät.</p>
-        <div class="pf-list">${rows}</div>
-        <label class="ob-field"><span>Neues Profil anlegen</span>
-          <input class="ob-input" type="text" id="pf-new" maxlength="40" placeholder="Name" value="${escapeHtml(pf.newName)}"
-            oninput="pf.newName=this.value;pf.error=''" onkeydown="if(event.key==='Enter')createProfile()"></label>
-        ${pf.error ? `<div class="ob-error">${escapeHtml(pf.error)}</div>` : ''}
-        <div class="ob-actions">
-          <button type="button" class="ob-btn secondary" onclick="closeProfiles()">Schließen</button>
-          <button type="button" class="ob-btn" onclick="createProfile()">Anlegen & starten</button>
-        </div>
+        <div class="ob-actions"><button type="button" class="ob-btn secondary" onclick="closeProfiles()">Schließen</button></div>
       </div>
     </div>`;
 }
@@ -3863,8 +3864,12 @@ const CLOUD_URL = 'https://lywowkmyzrxltmgvweum.supabase.co';
 const CLOUD_KEY = 'sb_publishable_DXN2SdyDaCrPtiFOLPFzAw_R_6zPzbs';
 const CLOUD_LINK_KEY = 'tagesumsatz-cloud-link';   // { uid, profileId, ts, dirty }
 const CLOUD_CFG_KEY = 'tagesumsatz-cloud-cfg';     // optionaler Zugang, direkt in der App eingetragen
-let cl = { client: null, session: null, email: '', pw: '', msg: '', err: '', busy: false, conflict: null, recovery: false, newPw: '', cfgOpen: false, cfgUrl: '', cfgKey: '', lastSync: null };
+const EMAIL_KEY = 'tagesumsatz-last-email';
+let cl = { mode: 'login', remember: true, showPw: false, loading: true, client: null, session: null, email: '', pw: '', msg: '', err: '', busy: false, conflict: null, recovery: false, newPw: '', cfgOpen: false, cfgUrl: '', cfgKey: '', lastSync: null };
 let cloudTimer = null;
+
+function cloudRememberedEmail() { try { return localStorage.getItem(EMAIL_KEY) || ''; } catch (e) { return ''; } }
+cl.email = cloudRememberedEmail();
 
 function cloudCfg() {
   let url = CLOUD_URL, key = CLOUD_KEY;
@@ -3882,7 +3887,8 @@ function getCloud() {
   cl.client = window.supabase.createClient(cfg.url, cfg.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'tagesumsatz-auth' } });
   cl.client.auth.onAuthStateChange((evt, session) => {
     cl.session = session || null;
-    if (evt === 'PASSWORD_RECOVERY') { cl.recovery = true; if (!pf) openProfiles(); else renderProfiles(); }
+    if (evt === 'PASSWORD_RECOVERY') { cl.recovery = true; if (!gateOn && !pf) openProfiles(); else cloudRerender(); }
+    if (evt === 'SIGNED_OUT' && !gateOn) cloudForceLogout();
   });
   return cl.client;
 }
@@ -3914,10 +3920,10 @@ async function cloudPush() {
   if (!sb || !cl.session || !l || l.profileId !== profiles.active) return false;
   const ts = new Date().toISOString();
   const { error } = await sb.from('user_data').upsert({ user_id: cl.session.user.id, payload: cloudPayload(), updated_at: ts });
-  if (error) { cl.err = 'Sync fehlgeschlagen: ' + cloudErrText(error); if (pf) renderProfiles(); return false; }
+  if (error) { cl.err = 'Sync fehlgeschlagen: ' + cloudErrText(error); cloudRerender(); return false; }
   l.ts = ts; l.dirty = false; cloudSetLink(l);
   cl.lastSync = new Date(); cl.err = '';
-  if (pf) renderProfiles();
+  cloudRerender();
   return true;
 }
 
@@ -3957,16 +3963,16 @@ async function cloudResolve(useCloud) {
   cl.conflict = null;
   if (useCloud) await cloudApply(c.payload, c.ts);
   else { const l = cloudLink(); l.ts = c.ts; l.dirty = true; cloudSetLink(l); await cloudPush(); }
-  if (pf) renderProfiles();
+  if (gateOn) await startApp(); else cloudRerender();
 }
 
 async function cloudAuth(mode) {
   const sb = getCloud();
-  if (!sb) { cl.err = 'Die Cloud ist auf diesem Gerät gerade nicht erreichbar.'; renderProfiles(); return; }
+  if (!sb) { cl.err = 'Die Cloud ist auf diesem Gerät gerade nicht erreichbar.'; cloudRerender(); return; }
   const email = String(cl.email || '').trim();
-  if (!email || !/.+@.+\..+/.test(email)) { cl.err = 'Bitte gib eine gültige E-Mail-Adresse ein.'; renderProfiles(); return; }
-  if (mode !== 'reset' && String(cl.pw || '').length < 6) { cl.err = 'Das Passwort braucht mindestens 6 Zeichen.'; renderProfiles(); return; }
-  cl.busy = true; cl.err = ''; cl.msg = ''; renderProfiles();
+  if (!email || !/.+@.+\..+/.test(email)) { cl.err = 'Bitte gib eine gültige E-Mail-Adresse ein.'; cloudRerender(); return; }
+  if (mode !== 'reset' && String(cl.pw || '').length < 6) { cl.err = 'Das Passwort braucht mindestens 6 Zeichen.'; cloudRerender(); return; }
+  cl.busy = true; cl.err = ''; cl.msg = ''; cloudRerender();
   try {
     if (mode === 'reset') {
       const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0].split('?')[0] });
@@ -3975,51 +3981,71 @@ async function cloudAuth(mode) {
     } else if (mode === 'signup') {
       const { data: d, error } = await sb.auth.signUp({ email, password: cl.pw });
       if (error) throw error;
-      if (d.session) { cl.session = d.session; cl.pw = ''; await cloudReconcile(); }
-      else cl.msg = 'Fast geschafft: Bestätige deine E-Mail über den Link, den wir dir geschickt haben, und melde dich dann an.';
+      if (d.session) { cl.session = d.session; cl.pw = ''; await cloudReconcile(); if (gateOn && !cl.conflict) await startApp(); }
+      else { cl.msg = 'Fast geschafft: Bestätige deine E-Mail über den Link, den wir dir geschickt haben, und melde dich dann an.'; cl.mode = 'login'; cl.pw = ''; }
     } else {
       const { data: d, error } = await sb.auth.signInWithPassword({ email, password: cl.pw });
       if (error) throw error;
       cl.session = d.session; cl.pw = '';
+      try { if (cl.remember) localStorage.setItem(EMAIL_KEY, email); else localStorage.removeItem(EMAIL_KEY); } catch (e) { /* ignorieren */ }
       await cloudReconcile();
+      if (gateOn && !cl.conflict) await startApp();
     }
   } catch (e) { cl.err = cloudErrText(e); }
-  cl.busy = false; renderProfiles();
+  cl.busy = false; cloudRerender();
 }
 
 async function cloudSignOut() {
   const sb = getCloud();
   clearTimeout(cloudTimer);
+  cl.busy = true; cloudRerender();
   if (sb && cl.session && cloudLink() && cloudLink().dirty) await cloudPush();
   try { if (sb) await sb.auth.signOut(); } catch (e) { /* ignorieren */ }
-  cl.session = null; cl.msg = 'Abgemeldet. Deine Daten bleiben auf diesem Gerät.'; cl.err = '';
+  cloudForceLogout('Abgemeldet. Auf diesem Gerät bleiben keine Daten zurück.');
+}
+
+// Löscht alle lokalen Daten und zeigt wieder die Anmeldung
+function cloudForceLogout(msg) {
+  clearTimeout(cloudTimer);
+  try {
+    profiles.list.forEach(p => localStorage.removeItem(storageKeyFor(p.id)));
+    localStorage.removeItem(storageKeyFor('main'));
+    localStorage.removeItem(PROFILES_KEY);
+    localStorage.removeItem(LEGACY_KEY);
+  } catch (e) { /* ignorieren */ }
   cloudSetLink(null);
-  renderProfiles();
+  profiles = { active: 'main', list: [{ id: 'main', name: 'Mein Profil' }] };
+  STORAGE_KEY = storageKeyFor('main');
+  data = {}; events = []; settlements = []; settings = defaultSettings();
+  cl.session = null; cl.busy = false; cl.conflict = null; cl.err = ''; cl.msg = msg || ''; cl.email = cloudRememberedEmail(); cl.pw = ''; cl.mode = 'login';
+  if (pf) closeProfiles();
+  const ob = document.getElementById('onboarding-root'); if (ob) ob.innerHTML = '';
+  showGate();
 }
 
 async function cloudSyncNow() {
-  cl.busy = true; cl.err = ''; renderProfiles();
+  cl.busy = true; cl.err = ''; cloudRerender();
   await cloudReconcile();
-  cl.busy = false; renderProfiles();
+  cl.busy = false; cloudRerender();
 }
 
 async function cloudSetNewPassword() {
   const sb = getCloud();
-  if (String(cl.newPw || '').length < 6) { cl.err = 'Das Passwort braucht mindestens 6 Zeichen.'; renderProfiles(); return; }
-  cl.busy = true; renderProfiles();
+  if (String(cl.newPw || '').length < 6) { cl.err = 'Das Passwort braucht mindestens 6 Zeichen.'; cloudRerender(); return; }
+  cl.busy = true; cloudRerender();
   const { error } = await sb.auth.updateUser({ password: cl.newPw });
   cl.busy = false;
   if (error) cl.err = cloudErrText(error);
-  else { cl.recovery = false; cl.newPw = ''; cl.msg = 'Dein neues Passwort ist gespeichert.'; await cloudReconcile(); }
-  renderProfiles();
+  else { cl.recovery = false; cl.newPw = ''; cl.msg = 'Dein neues Passwort ist gespeichert.'; await cloudReconcile(); if (gateOn && !cl.conflict) { await startApp(); return; } }
+  cloudRerender();
 }
 
 function cloudSaveCfg() {
   const url = String(cl.cfgUrl || '').trim().replace(/\/+$/, ''), key = String(cl.cfgKey || '').trim();
-  if (!/^https:\/\/.+/.test(url) || key.length < 20) { cl.err = 'Bitte trage die Projekt-URL (https://…) und den anon-Schlüssel ein.'; renderProfiles(); return; }
+  if (!/^https:\/\/.+/.test(url) || key.length < 20) { cl.err = 'Bitte trage die Projekt-URL (https://…) und den anon-Schlüssel ein.'; cloudRerender(); return; }
   try { localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify({ url, key })); } catch (e) { /* ignorieren */ }
   cl.client = null; cl.err = ''; cl.cfgOpen = false; cl.msg = 'Cloud-Zugang gespeichert.';
-  initCloud(); renderProfiles();
+  initCloud(); cloudRerender();
 }
 
 function cloudSectionHtml() {
@@ -4027,14 +4053,14 @@ function cloudSectionHtml() {
   const msg = (cl.msg ? `<div class="cl-msg">${escapeHtml(cl.msg)}</div>` : '') + (cl.err ? `<div class="ob-error">${escapeHtml(cl.err)}</div>` : '');
   if (!cloudCfg()) {
     return box(`<div class="cl-title">☁️ Konto</div>
-      <div class="cl-sub">Mit einem Konto (E-Mail + Passwort) liegen deine Daten sicher in der Cloud und sind auf allen Geräten da. Die Cloud ist noch nicht eingerichtet.</div>
-      <button type="button" class="cl-link" onclick="cl.cfgOpen=!cl.cfgOpen;renderProfiles()">Cloud-Zugang eintragen (Admin)</button>
+      <div class="cl-sub">Die Anmeldung ist noch nicht eingerichtet, deshalb kann die App gerade nicht genutzt werden.</div>
+      <button type="button" class="cl-link" onclick="cl.cfgOpen=!cl.cfgOpen;cloudRerender()">Cloud-Zugang eintragen (Admin)</button>
       ${cl.cfgOpen ? `<input class="ob-input" type="text" placeholder="Projekt-URL https://xxxx.supabase.co" value="${escapeHtml(cl.cfgUrl)}" oninput="cl.cfgUrl=this.value">
       <input class="ob-input" type="text" placeholder="anon public key" value="${escapeHtml(cl.cfgKey)}" oninput="cl.cfgKey=this.value" style="margin-top:6px">
       <button type="button" class="ob-btn" style="margin-top:8px" onclick="cloudSaveCfg()">Speichern</button>` : ''}${msg}`);
   }
   if (!cloudAvailable()) {
-    return box(`<div class="cl-title">☁️ Konto</div><div class="cl-sub">Für Anmeldung und Cloud-Sync brauchst du eine Internetverbindung. Du kannst trotzdem offline weiterarbeiten.</div>${msg}`);
+    return box(`<div class="cl-title">☁️ Konto</div><div class="cl-sub">Für die Anmeldung brauchst du eine Internetverbindung. Bitte verbinde dich und lade die Seite neu.</div>${msg}<button type="button" class="ob-btn" style="margin-top:8px" onclick="location.reload()">Neu laden</button>`);
   }
   if (cl.recovery) {
     return box(`<div class="cl-title">🔑 Neues Passwort</div>
@@ -4052,7 +4078,7 @@ function cloudSectionHtml() {
         <button type="button" class="ob-btn secondary" onclick="cloudResolve(false)">Diese Geräte-Daten behalten</button></div>${msg}`);
     }
     return box(`<div class="cl-title">☁️ Angemeldet</div>
-      <div class="cl-sub"><b>${escapeHtml(cl.session.user.email || '')}</b><br>Synchronisiert wird das Profil „${escapeHtml(prof ? prof.name : 'Hauptprofil')}“${t}${cl.err ? ' · noch nicht gesichert' : l.dirty ? ' · Änderungen werden gesendet …' : ' ✓'}</div>
+      <div class="cl-sub"><b>${escapeHtml(cl.session.user.email || '')}</b><br>Deine Daten liegen sicher in deinem Konto${t}${cl.err ? ' · noch nicht gesichert' : l.dirty ? ' · Änderungen werden gesendet …' : ' ✓'}</div>
       <div class="cl-actions"><button type="button" class="ob-btn secondary" ${cl.busy ? 'disabled' : ''} onclick="cloudSyncNow()">Jetzt synchronisieren</button>
       <button type="button" class="ob-btn secondary" onclick="cloudSignOut()">Abmelden</button></div>${msg}`);
   }
@@ -4066,23 +4092,92 @@ function cloudSectionHtml() {
     <button type="button" class="cl-link" onclick="cloudAuth('reset')">Passwort vergessen?</button>`);
 }
 
+function waitForSupabase(ms) {
+  return new Promise(res => {
+    const t0 = Date.now();
+    (function tick() { if (window.supabase || Date.now() - t0 > ms) res(!!window.supabase); else setTimeout(tick, 100); })();
+  });
+}
+
 async function initCloud() {
-  if (!window.supabase) { if (typeof window.addEventListener === 'function') window.addEventListener('load', () => { if (window.supabase) initCloud(); }, { once: true }); return; }
-  const sb = getCloud();
-  if (!sb) return;
-  try {
-    const { data: d } = await sb.auth.getSession();
-    cl.session = d && d.session ? d.session : null;
-    if (cl.session) { await cloudReconcile(); if (pf) renderProfiles(); }
-  } catch (e) { /* offline: einfach lokal weiterarbeiten */ }
+  await waitForSupabase(8000);
+  const sb = cloudCfg() ? getCloud() : null;
+  if (sb) {
+    try {
+      const { data: d } = await sb.auth.getSession();
+      cl.session = d && d.session ? d.session : null;
+      if (cl.session) { await cloudReconcile(); if (!cl.conflict) { await startApp(); return; } }
+    } catch (e) { cl.err = 'Keine Verbindung zum Server. Bitte Internetverbindung prüfen.'; }
+  }
+  cl.loading = false;
+  cloudRerender();
+}
+
+// ---------- Anmelde-Sperre: ohne Konto kein Zugriff, nichts liegt lokal ----------
+let gateOn = true;
+function getGateRoot() {
+  let r = document.getElementById('auth-gate');
+  if (!r) { r = document.createElement('div'); r.id = 'auth-gate'; document.body.appendChild(r); }
+  return r;
+}
+function cloudRerender() {
+  if (gateOn) renderGate();
+  else if (pf) renderProfiles();
+}
+function authFormHtml() {
+  const signup = cl.mode === 'signup';
+  const submit = signup ? "cloudAuth('signup')" : "cloudAuth('login')";
+  const eye = cl.showPw
+    ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    : '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const msg = (cl.msg ? `<div class="cl-msg">${escapeHtml(cl.msg)}</div>` : '') + (cl.err ? `<div class="ob-error">${escapeHtml(cl.err)}</div>` : '');
+  return `
+    <h2 class="auth-h">${signup ? 'Konto erstellen' : 'Willkommen zurück'}</h2>
+    <p class="auth-p">${signup ? 'Lege dein Konto an – du bekommst eine Bestätigungs-Mail.' : 'Melde dich an um loszulegen'}</p>
+    <label class="auth-l">E-Mail
+      <input class="auth-in" type="email" autocomplete="email" value="${escapeHtml(cl.email)}" oninput="cl.email=this.value" onkeydown="if(event.key==='Enter')${submit}"></label>
+    <label class="auth-l">Passwort
+      <span class="auth-pw"><input class="auth-in" type="${cl.showPw ? 'text' : 'password'}" autocomplete="${signup ? 'new-password' : 'current-password'}" value="${escapeHtml(cl.pw)}" oninput="cl.pw=this.value" onkeydown="if(event.key==='Enter')${submit}">
+      <button type="button" class="auth-eye" onclick="cl.showPw=!cl.showPw;cloudRerender()" aria-label="Passwort anzeigen">${eye}</button></span></label>
+    ${signup ? '' : `<label class="auth-chk"><input type="checkbox" ${cl.remember ? 'checked' : ''} onchange="cl.remember=this.checked"><span>E-Mail merken</span></label>`}
+    ${msg}
+    <button type="button" class="auth-btn" ${cl.busy ? 'disabled' : ''} onclick="${submit}">${signup ? 'Registrieren' : 'Anmelden'} <span aria-hidden="true">→</span></button>
+    ${signup ? '' : '<button type="button" class="auth-link" onclick="cloudAuth(\'reset\')">Passwort vergessen?</button>'}
+    <div class="auth-switch">${signup ? 'Schon ein Konto?' : 'Noch kein Konto?'} <button type="button" class="auth-link inline" onclick="cl.mode='${signup ? 'login' : 'signup'}';cl.err='';cl.msg='';cloudRerender()">${signup ? 'Anmelden' : 'Registrieren'}</button></div>`;
+}
+function renderGate() {
+  const simple = cl.session || cl.recovery || !cloudCfg() || !cloudAvailable();
+  getGateRoot().innerHTML = `<div class="auth-page">
+    <div class="auth-top">
+      <div class="auth-brand"><div class="brand-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" fill="#fff"/><rect x="14" y="3" width="7" height="7" rx="2" fill="#fff"/><rect x="3" y="14" width="7" height="7" rx="2" fill="#fff"/><rect x="14" y="14" width="7" height="7" rx="2" fill="#fff"/></svg></div>
+        <div><div class="auth-name">Start (to) count</div><div class="auth-tag">Energie Direktvertrieb</div></div></div>
+      <button type="button" class="auth-theme" onclick="toggleTheme()" title="Hell/Dunkel">🌙</button>
+    </div>
+    <div class="auth-card2">
+      ${cl.loading ? '<div class="cl-sub" style="text-align:center;margin:0">Lade …</div>' : simple ? cloudSectionHtml() : authFormHtml()}
+    </div></div>`;
+}
+function showGate() {
+  gateOn = true;
+  const w = document.getElementById('wrap'); if (w) w.style.display = 'none';
+  renderGate();
+}
+async function startApp() {
+  gateOn = false;
+  cl.loading = false;
+  getGateRoot().innerHTML = '';
+  const w = document.getElementById('wrap'); if (w) w.style.display = '';
+  await loadData();
+  render();
+  updateHeaderGreeting();
+  if (!settings.onboarded) openOnboarding('first');
 }
 
 (async function init() {
   setupManifest();
   await loadTheme();
-  await loadData();
-  render();
-  if (!settings.onboarded) openOnboarding('first');
+  profiles.active = 'main'; STORAGE_KEY = storageKeyFor('main');
+  showGate();
   initCloud();
 })();
 </script>
