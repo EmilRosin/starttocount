@@ -4052,7 +4052,7 @@ function cloudSectionHtml() {
         <button type="button" class="ob-btn secondary" onclick="cloudResolve(false)">Diese Geräte-Daten behalten</button></div>${msg}`);
     }
     return box(`<div class="cl-title">☁️ Angemeldet</div>
-      <div class="cl-sub"><b>${escapeHtml(cl.session.user.email || '')}</b><br>Synchronisiert wird das Profil „${escapeHtml(prof ? prof.name : 'Hauptprofil')}“${t}${l.dirty ? ' · Änderungen werden gesendet …' : ' ✓'}</div>
+      <div class="cl-sub"><b>${escapeHtml(cl.session.user.email || '')}</b><br>Synchronisiert wird das Profil „${escapeHtml(prof ? prof.name : 'Hauptprofil')}“${t}${cl.err ? ' · noch nicht gesichert' : l.dirty ? ' · Änderungen werden gesendet …' : ' ✓'}</div>
       <div class="cl-actions"><button type="button" class="ob-btn secondary" ${cl.busy ? 'disabled' : ''} onclick="cloudSyncNow()">Jetzt synchronisieren</button>
       <button type="button" class="ob-btn secondary" onclick="cloudSignOut()">Abmelden</button></div>${msg}`);
   }
