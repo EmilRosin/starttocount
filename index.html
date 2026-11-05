@@ -4444,7 +4444,7 @@ function renderTeamContent() {
     html += card(`<h2 class="tm-h">Team beitreten</h2><p class="tm-sub">Du hast einen Einladungslink oder -code bekommen? Hier einfügen.</p>
       <div class="tm-row"><input class="tm-in" placeholder="Link oder Code" value="${escapeHtml(team.joinCode)}" oninput="team.joinCode=this.value">
       <button class="tm-btn" ${team.busy ? 'disabled' : ''} onclick="teamJoin()">Beitreten</button></div>${team.pendingCode ? '' : err}`);
-    html += card(`<h2 class="tm-h">Team gründen</h2><p class="tm-sub">Du bist Teamleiter? Gründe ein Team, lade deine Leute per Link ein und sieh ihre Performance.</p>
+    if (isTeamleiter()) html += card(`<h2 class="tm-h">Team gründen</h2><p class="tm-sub">Du bist Teamleiter? Gründe ein Team, lade deine Leute per Link ein und sieh ihre Performance.</p>
       <div class="tm-row"><input class="tm-in" placeholder="Teamname" value="${escapeHtml(team.createName)}" oninput="team.createName=this.value">
       <button class="tm-btn" ${team.busy ? 'disabled' : ''} onclick="teamCreate()">Gründen</button></div>`);
     return wrap(html);
