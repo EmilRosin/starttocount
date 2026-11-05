@@ -4067,7 +4067,7 @@ function cloudSectionHtml() {
 }
 
 async function initCloud() {
-  if (!window.supabase) { window.addEventListener('load', () => { if (window.supabase) initCloud(); }, { once: true }); return; }
+  if (!window.supabase) { if (typeof window.addEventListener === 'function') window.addEventListener('load', () => { if (window.supabase) initCloud(); }, { once: true }); return; }
   const sb = getCloud();
   if (!sb) return;
   try {
