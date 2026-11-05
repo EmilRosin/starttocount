@@ -788,6 +788,13 @@
   .goal-row:not(.ob) input { width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background: var(--toggle-bg); color: var(--text); font: inherit; font-weight:600; box-sizing:border-box; }
   .goal-row.ob .ob-field, .goal-row.ob span { font-size:12.5px; font-weight:600; }
   .ob-hint { display:block; font-size:11.5px; color: var(--text-dim); margin: -4px 0 6px; }
+  .ob-settings { max-width:520px; }
+  .ob-set-sec { padding:16px 0; border-top:1px solid var(--border); text-align:left; }
+  .ob-set-sec:first-of-type { border-top:none; }
+  .ob-set-title { font-weight:700; font-size:16px; margin-bottom:10px; }
+  .ob-settings .ob-set-sec .ob-title { font-size:14px; text-align:left; margin:0 0 4px; font-weight:600; color: var(--text-dim); }
+  .ob-settings .ob-set-sec .ob-sub { text-align:left; margin-bottom:12px; }
+  .ob-settings-actions { position: sticky; bottom: 0; background: var(--card, var(--bg)); padding: 12px 0 4px; margin-top:8px; }
   .ob-mine { margin-bottom:6px; }
   .ob-round { margin-left:8px; padding:3px 10px; border-radius:999px; border:1px solid var(--border); background: var(--toggle-bg); color: var(--text); font: inherit; font-size:11.5px; font-weight:700; cursor:pointer; }
   .ob-round.active { background: var(--blue); border-color: var(--blue); color:#fff; }
@@ -924,7 +931,7 @@
     </div>
     <div class="header-actions">
       <button class="theme-toggle settings-btn" id="profileBtn" onclick="openProfiles()" title="Profil wechseln">👤</button>
-      <button class="theme-toggle settings-btn" id="settingsBtn" onclick="openOnboarding('edit')" title="Einstellungen">⚙️</button>
+      <button class="theme-toggle settings-btn" id="settingsBtn" onclick="openSettings()" title="Einstellungen">⚙️</button>
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Darstellung wechseln">🌙</button>
     </div>
   </header>
@@ -1325,10 +1332,9 @@ function goalCardHtml() {
       <input type="date" value="${customStart}" onchange="setGoal('goalStart', this.value)">
     </div>` : ''}
     <div class="goal-box">
-    <div class="goal-question">🎯 Worauf sparst du? Wie viel soll dafür ${period === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[period]} zusätzlich bei dir bleiben?</div>
     <div class="goal-row">
-      <label class="goal-name">Wofür? Name des Ziels (optional)<input type="text" maxlength="40" placeholder="z. B. Urlaub, Rücklage, Auto" value="${escapeHtml(settings.goalName || '')}" onchange="setGoal('goalName', this.value)"></label>
-      <label class="goal-amt">👉 Betrag in €<input type="number" inputmode="decimal" min="0" step="any" value="${amount || ''}" placeholder="z. B. 2000" oninput="setGoalLive('goalAmount', this.value)" onchange="setGoal('goalAmount', this.value)" onkeydown="if(event.key==='Enter')this.blur()"></label>
+      <label class="goal-name">Wofür ist das Ziel?<input type="text" maxlength="40" placeholder="z. B. Auto Anzahlung" value="${escapeHtml(settings.goalName || '')}" onchange="setGoal('goalName', this.value)"></label>
+      <label class="goal-amt">Ziel in €<input type="number" inputmode="decimal" min="0" step="any" value="${amount || ''}" placeholder="z. B. 2000" oninput="setGoalLive('goalAmount', this.value)" onchange="setGoal('goalAmount', this.value)" onkeydown="if(event.key==='Enter')this.blur()"></label>
     </div>
     </div>
     ${amount > 0 && period !== 'monat' ? `<div class="dash-fix-sub" style="margin:0 0 10px;">Zum Rechnen wird das auf den Monat umgerechnet: ${goalMonthlyHint(amount, period)} = <b>${fmtEuro(goalMonthly(amount, period))} pro Monat</b>.${period === 'custom' ? ` Zeitraum bis ${fmtDateShort(customEnd)}.` : ''}</div>` : ''}`;
@@ -2759,7 +2765,6 @@ function renderDashboardContent(b, animate) {
               <div class="dash-kv-row"><span>Ausgezahlt (Brutto, gesamt)</span><b>${fmtEuro(settlePaidTotal)}</b></div>
               <div class="dash-kv-row"><span>Differenz</span><b style="color:${settleDiff < 0 ? 'var(--danger)' : 'var(--green)'};">${settleDiff >= 0 ? '+' : ''}${fmtEuro(settleDiff)}</b></div>
               ${STEUER_PROZENT > 0 ? `<div class="dash-kv-row"><span>Ausgezahlt netto (−${STEUER_PROZENT}% Steuer)</span><b>${fmtEuro(nettoOf(settlePaidTotal))}</b></div>` : ''}
-              <div class="dash-kv-row"><span>Bestätigungsquote</span><b>${trackedCountAll > 0 ? settleQuote + '%' : '–'}</b></div>
             </div>
             <div class="dash-settle-upload">
               <input type="file" id="settlementPdfInput" accept="application/pdf" multiple style="display:none;" onchange="handlePdfUpload(event)">
@@ -3019,7 +3024,7 @@ function obSteps() {
     : ['welcome', 'prinzip', 'rolle', 'provision', 'weiteres', 'fertig'];
 }
 // Im Bearbeiten-Modus (⚙️) startet der Dialog direkt bei der Rolle
-function obFirstStep() { return ob && ob.mode === 'edit' ? 2 : 0; }
+function obFirstStep() { return ob && ob.mode !== 'first' ? 2 : 0; }
 
 function getObRoot() {
   let root = document.getElementById('onboarding-root');
@@ -3032,12 +3037,12 @@ function getObRoot() {
 }
 
 function openOnboarding(mode) {
-  const edit = mode === 'edit';
+  const edit = mode === 'edit' || mode === 'settings';
   // Wer die App schon mit Daten nutzt, bekommt seine bisherigen Werte vorausgefüllt
   const hasData = Object.keys(data).length > 0 || settlements.length > 0 || settings.fixkosten > 0;
   const prefill = edit || hasData;
   ob = {
-    mode: edit ? 'edit' : 'first',
+    mode: mode === 'settings' ? 'settings' : edit ? 'edit' : 'first',
     step: edit ? 2 : 0,
     name: settings.name || '',
     role: settings.role === 'teamleiter' ? 'teamleiter' : 'vertreter',
@@ -3090,8 +3095,9 @@ function obSetRole(role) {
   renderOnboarding();
 }
 
-function obValidateStep() {
-  const step = obSteps()[ob.step];
+function obValidateStep() { return obValidate(obSteps()[ob.step]); }
+
+function obValidate(step) {
   if (step === 'provision') {
     const n = parseNum(ob.preisNeu), b = parseNum(ob.preisBestand);
     if (!(n >= 0) || !(b >= 0)) return 'Bitte gib beide Beträge in € ein (z. B. 110 und 15).';
@@ -3159,6 +3165,50 @@ async function obFinish() {
   checkFireworksTrigger();
 }
 
+// ---------- Einstellungen: alles auf einer Seite bearbeiten ----------
+function openSettings() { openOnboarding('settings'); }
+
+function obSaveSettings() {
+  if (!ob) return;
+  const toCheck = ['provision'].concat(ob.role === 'teamleiter' ? ['overhead'] : []).concat(['weiteres']);
+  for (const st of toCheck) {
+    const err = obValidate(st);
+    if (err) { ob.error = err; renderSettingsPage(); return; }
+  }
+  obFinish();
+}
+
+function renderSettingsPage() {
+  if (!ob) return;
+  const root = getObRoot();
+  const prev = root.querySelector('.ob-overlay');
+  const scroll = prev ? prev.scrollTop : 0;
+  const tl = ob.role === 'teamleiter';
+  const sec = (title, step) => `<section class="ob-set-sec"><div class="ob-set-title">${title}</div>${obStepContent(step).body}</section>`;
+  root.innerHTML = `
+    <div class="ob-overlay">
+      <div class="card ob-card ob-settings">
+        <h2 class="ob-title" style="font-size:22px;text-align:center;">⚙️ Einstellungen</h2>
+        <p class="ob-sub">Hier kannst du alles ändern – Name, Rolle, Provisionen, Fixkosten und Ziele. Änderungen an den Provisionen gelten rückwirkend für alle bisherigen Einträge.</p>
+        <section class="ob-set-sec"><div class="ob-set-title">👤 Name</div>
+          <label class="ob-field"><span>Wie heißt du? (optional)</span>
+            <input class="ob-input" type="text" id="ob-name" value="${escapeHtml(ob.name)}" placeholder="Vorname" maxlength="40" oninput="obSet('name', this.value)"></label>
+        </section>
+        ${sec('🧑‍💼 Rolle', 'rolle')}
+        ${sec('💶 Provision', 'provision')}
+        ${tl ? sec('👥 Team-Overhead', 'overhead') : ''}
+        ${sec('🎯 Ziele & Kosten', 'weiteres')}
+        <div class="ob-error">${ob.error ? escapeHtml(ob.error) : ''}</div>
+        <div class="ob-actions ob-settings-actions">
+          <button type="button" class="ob-btn secondary" onclick="closeOnboarding()">Abbrechen</button>
+          <button type="button" class="ob-btn" onclick="obSaveSettings()">Speichern</button>
+        </div>
+      </div>
+    </div>`;
+  const ov = root.querySelector('.ob-overlay');
+  if (ov) ov.scrollTop = scroll;
+}
+
 // "Später einrichten": Standardwerte behalten, Dialog nicht mehr automatisch zeigen
 async function obSkip() {
   settings.onboarded = true;
@@ -3185,12 +3235,8 @@ function obInput(field, label, opts) {
     </label>${chips}`;
 }
 
-function renderOnboarding() {
-  if (!ob) return;
-  const steps = obSteps();
-  const step = steps[ob.step];
-  const edit = ob.mode === 'edit';
-  const dots = steps.map((s, i) => `<div class="ob-dot ${i <= ob.step ? 'done' : ''}"></div>`).join('');
+function obStepContent(step) {
+  const edit = ob.mode !== 'first';
   let body = '';
   let primaryLabel = 'Weiter';
   let primaryAction = 'obNext()';
@@ -3247,7 +3293,7 @@ function renderOnboarding() {
       </div>
       <div class="ob-goal">
         <div class="ob-section-title">🎯 Dein Sparziel <em>(optional)</em></div>
-        <p class="ob-section-sub">Das ist dein eigentliches Ziel: Wie viel Geld soll am Ende bei dir bleiben? Die App rechnet Fixkosten, Steuern und Storno-Puffer obendrauf und sagt dir, wie viel Brutto du dafür brauchst.</p>
+        <p class="ob-section-sub">Schreib dein Ziel auf und wofür es ist. Die App rechnet Fixkosten, Steuern und Storno-Puffer obendrauf und sagt dir, wie viel Brutto du dafür brauchst.</p>
         <div class="ob-field"><span>Für welchen Zeitraum gilt dein Ziel?</span></div>
         <div class="ob-chips" style="margin-top:-2px">${Object.keys(GOAL_PERIODS).map(k => `<button type="button" class="ob-chip ${ob.goalPeriod === k ? 'active' : ''}" onclick="obSetChip('goalPeriod','${k}')">${goalChipLabel(k)}</button>`).join('')}</div>
         ${ob.goalPeriod === 'custom' ? `<div class="goal-custom">
@@ -3257,11 +3303,10 @@ function renderOnboarding() {
           <span>ab heute</span>
         </div>` : ''}
         <div class="goal-box">
-        <div class="goal-question">🎯 Worauf sparst du? Wie viel soll dafür ${ob.goalPeriod === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)]} zusätzlich bei dir bleiben?</div>
         <div class="goal-row ob">
-          <label class="goal-name"><span>Wofür? (optional)</span>
-            <input class="ob-input" type="text" id="ob-goalName" maxlength="40" value="${escapeHtml(ob.goalName)}" placeholder="z. B. Urlaub, Auto" oninput="obSet('goalName', this.value)"></label>
-          <label class="goal-amt"><span>👉 Betrag in €</span>
+          <label class="goal-name"><span>Wofür ist das Ziel?</span>
+            <input class="ob-input" type="text" id="ob-goalName" maxlength="40" value="${escapeHtml(ob.goalName)}" placeholder="z. B. Auto Anzahlung" oninput="obSet('goalName', this.value)"></label>
+          <label class="goal-amt"><span>Ziel in €</span>
             <div class="ob-input-wrap"><input class="ob-input" type="text" inputmode="decimal" id="ob-goalAmount" value="${escapeHtml(ob.goalAmount)}" placeholder="2000" oninput="obSet('goalAmount', this.value)"><span class="ob-unit">€</span></div></label>
         </div>
         </div>
@@ -3311,6 +3356,17 @@ function renderOnboarding() {
       <p class="ob-sub">${edit ? 'Prüfe deine Angaben und speichere sie.' : 'Das hast du eingestellt – du kannst es jederzeit über das ⚙️ oben rechts ändern.'}</p>
       <div class="ob-summary">${rows.map(r => `<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}</div>`;
   }
+  return { body, primaryLabel, primaryAction };
+}
+
+function renderOnboarding() {
+  if (!ob) return;
+  if (ob.mode === 'settings') { renderSettingsPage(); return; }
+  const steps = obSteps();
+  const step = steps[ob.step];
+  const edit = ob.mode !== 'first';
+  const dots = steps.map((s, i) => `<div class="ob-dot ${i <= ob.step ? 'done' : ''}"></div>`).join('');
+  const { body, primaryLabel, primaryAction } = obStepContent(step);
 
   const showBack = ob.step > obFirstStep();
   const root = getObRoot();
