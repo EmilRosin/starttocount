@@ -159,6 +159,8 @@
   .abr-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
   .abr-actions { display:flex; gap:8px; flex-wrap:wrap; }
   .abr-chart { margin-bottom:16px; }
+  .abr-loose > div { text-align:left; flex:1; min-width:0; }
+  .abr-assign { display:block; margin-top:6px; width:100%; max-width:260px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg-soft, var(--card)); color:var(--text); font:inherit; font-size:12px; }
   .abr-chart-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
   .abr-chart-head > div:first-child, .abr-head > div:first-child { text-align:left; }
   .abr-year-nav { display:flex; align-items:center; gap:8px; }
@@ -2849,6 +2851,30 @@ function abrYearData(y) {
   });
 }
 
+// Auswahl aller Abrechnungen (1. und 2. pro Monat) für die Zuordnung, neueste zuerst
+function abrWindowOptions() {
+  const now = new Date();
+  const out = [];
+  for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
+    const lastM = y === now.getFullYear() ? now.getMonth() : 11;
+    for (let m = lastM; m >= 0; m--) {
+      const mk = `${y}-${String(m + 1).padStart(2, '0')}`;
+      const last = new Date(y, m + 1, 0).getDate();
+      out.push(`<option value="${mk}-B">${ABR_MONTHS_LONG[m]} ${y} · Abrechnung 2 (16.–${last}.)</option>`);
+      out.push(`<option value="${mk}-A">${ABR_MONTHS_LONG[m]} ${y} · Abrechnung 1 (1.–15.)</option>`);
+    }
+  }
+  return out.join('');
+}
+
+function assignSettlementWindow(id, windowId) {
+  const x = settlements.find(z => String(z.id) === String(id));
+  if (!x || !windowId) return;
+  x.windowId = windowId;
+  saveData();
+  render();
+}
+
 function abrNiceMax(v) {
   if (v <= 0) return 1000;
   const p = Math.pow(10, Math.floor(Math.log10(v)));
@@ -2934,7 +2960,7 @@ function renderAbrechnungenContent() {
       <div class="card dash-card abr-month">
         <div class="dash-card-title">Ohne Zeitraum</div>
         <div class="dash-card-sub">Diese Abrechnungen sind keinem Zeitraum zugeordnet und zählen deshalb in keinem Monat mit.</div>
-        ${loose.map(x => `<div class="abr-row"><div>${escapeHtml(x.label || 'Abrechnung')}</div><b>${fmtEuro(x.betrag || 0)}</b></div>`).join('')}
+        ${loose.map(x => `<div class="abr-row abr-loose"><div>${escapeHtml(x.label || 'Abrechnung')}<select class="abr-assign" onchange="assignSettlementWindow('${x.id}', this.value)"><option value="">Monat zuordnen …</option>${abrWindowOptions()}</select></div><b>${fmtEuro(x.betrag || 0)}</b></div>`).join('')}
       </div>` : '';
   return `
     <div class="abr-page">
