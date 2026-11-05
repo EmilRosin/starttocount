@@ -768,6 +768,10 @@
   .pf-badge { font-size:11px; font-weight:700; color: var(--blue); }
   .pf-del { border:none; border-radius:14px; background: var(--toggle-bg); padding:0 12px; font: inherit; cursor:pointer; color: var(--text); }
   .pf-del.confirm { background: var(--danger, #ef4444); color:#fff; font-size:12px; font-weight:700; }
+  .ob-goal { margin-top:20px; padding-top:18px; border-top:1px solid var(--border); }
+  .ob-section-title { font-weight:700; font-size:15px; margin-bottom:4px; }
+  .ob-section-title em { font-style:normal; font-weight:500; font-size:12px; color: var(--text-dim); }
+  .ob-section-sub { font-size:12.5px; color: var(--text-dim); margin:0 0 14px; line-height:1.4; }
   .ob-check { display:flex; gap:10px; align-items:flex-start; margin-top:14px; font-size:13px; font-weight:600; cursor:pointer; line-height:1.35; }
   .ob-check input { margin-top:3px; accent-color: var(--blue); flex:0 0 auto; }
   .ob-check small { display:block; font-weight:400; font-size:11.5px; opacity:.7; margin-top:3px; }
@@ -1237,12 +1241,12 @@ function goalCardHtml() {
   const bruttoNeeded = share > 0 ? missing / share : 0;
   const inputs = `
     <div class="dash-fix-inputs">
-      <label>Name (optional)<input type="text" maxlength="40" placeholder="z. B. Rücklage" value="${escapeHtml(settings.goalName || '')}" onchange="setGoal('goalName', this.value)"></label>
-      <label>Ziel – bleibt bei dir (€)<input type="number" min="0" step="50" value="${amount || ''}" placeholder="z. B. 2000" onchange="setGoal('goalAmount', this.value)"></label>
-      <label>Zeitraum<select onchange="setGoal('goalPeriod', this.value)">
+      <label>Zielbetrag – soll bei dir bleiben (€)<input type="number" min="0" step="50" value="${amount || ''}" placeholder="z. B. 2000" onchange="setGoal('goalAmount', this.value)"></label>
+      <label>Wie oft?<select onchange="setGoal('goalPeriod', this.value)">
         <option value="monat" ${period === 'monat' ? 'selected' : ''}>pro Monat</option>
         <option value="jahr" ${period === 'jahr' ? 'selected' : ''}>pro Jahr</option>
       </select></label>
+      <label>Wofür? (optional, nur ein Name)<input type="text" maxlength="40" placeholder="z. B. Urlaub" value="${escapeHtml(settings.goalName || '')}" onchange="setGoal('goalName', this.value)"></label>
     </div>`;
   return `
           <div class="card dash-card dash-fix-card">
@@ -3011,10 +3015,13 @@ function renderOnboarding() {
         <span>Ø Storno-Quote als Puffer auf das Ziel aufschlagen<small>${(() => { const a = avgStornoQuote(); return a.count > 0 ? `Aktuell ${fmtPct(a.pct)} im Schnitt aus ${a.count} Abrechnung${a.count === 1 ? '' : 'en'} – so planst du schon ein, dass ein Teil der Aufträge noch storniert wird.` : 'Sobald du Abrechnungen eingescannt hast, berechnet die App deine durchschnittliche Storno-Quote und schlägt sie auf.'; })()}</small></span>
       </label>
       <div class="ob-goal">
-        <label class="ob-field"><span>Persönliches Finanzziel (optional)</span>
-          <input class="ob-input" type="text" id="ob-goalName" maxlength="40" value="${escapeHtml(ob.goalName)}" placeholder="Wofür? z. B. Rücklage, Urlaub" oninput="obSet('goalName', this.value)"></label>
-        ${obInput('goalAmount', 'Wie viel soll am Ende bei dir bleiben (netto)?', { placeholder: 'z. B. 2000', hint: 'Die App rechnet Steuern und Storno-Puffer heraus und zeigt dir, wie weit du bist.' })}
-        <div class="ob-chips"><button type="button" class="ob-chip ${ob.goalPeriod === 'monat' ? 'active' : ''}" onclick="obSetChip('goalPeriod','monat')">pro Monat</button><button type="button" class="ob-chip ${ob.goalPeriod === 'jahr' ? 'active' : ''}" onclick="obSetChip('goalPeriod','jahr')">pro Jahr</button></div>
+        <div class="ob-section-title">🎯 Dein persönliches Finanzziel <em>(optional)</em></div>
+        <p class="ob-section-sub">Wie viel Geld soll am Ende bei dir bleiben – nach Steuern und Storno? Die App zeigt dir laufend, wie weit du bist.</p>
+        ${obInput('goalAmount', '1. Zielbetrag', { placeholder: 'z. B. 2000' })}
+        <div class="ob-field"><span>2. Wie oft?</span></div>
+        <div class="ob-chips" style="margin-top:-2px"><button type="button" class="ob-chip ${ob.goalPeriod === 'monat' ? 'active' : ''}" onclick="obSetChip('goalPeriod','monat')">pro Monat</button><button type="button" class="ob-chip ${ob.goalPeriod === 'jahr' ? 'active' : ''}" onclick="obSetChip('goalPeriod','jahr')">pro Jahr</button></div>
+        <label class="ob-field"><span>3. Wofür? (optional, nur ein Name)</span>
+          <input class="ob-input" type="text" id="ob-goalName" maxlength="40" value="${escapeHtml(ob.goalName)}" placeholder="z. B. Urlaub, Rücklage, Auto" oninput="obSet('goalName', this.value)"></label>
       </div>`;
   } else {
     primaryLabel = edit ? 'Speichern' : 'Speichern & starten';
