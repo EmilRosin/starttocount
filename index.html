@@ -4441,6 +4441,7 @@ function renderTeamContent() {
         <div class="tm-row" style="margin-bottom:12px"><input class="tm-in" id="tm-myname" value="${name}" oninput="team.myName=this.value" placeholder="Dein Anzeigename"></div>
         <div class="tm-row"><button class="tm-btn" ${team.busy ? 'disabled' : ''} onclick="teamJoin(team.pendingCode)">Team beitreten</button><button class="tm-btn sec" onclick="teamDeclineInvite()">Nicht jetzt</button></div>${err}`);
     }
+    if (team.pendingCode) return wrap(html);
     html += card(`<h2 class="tm-h">Team beitreten</h2><p class="tm-sub">Du hast einen Einladungslink oder -code bekommen? Hier einfügen.</p>
       <div class="tm-row"><input class="tm-in" placeholder="Link oder Code" value="${escapeHtml(team.joinCode)}" oninput="team.joinCode=this.value">
       <button class="tm-btn" ${team.busy ? 'disabled' : ''} onclick="teamJoin()">Beitreten</button></div>${team.pendingCode ? '' : err}`);
