@@ -755,6 +755,16 @@
   .dash-fix-reserve div { display:flex; justify-content:space-between; gap:10px; }
   .dash-fix-reserve span { color: var(--text-dim); }
   .dash-fix-reserve b { font-variant-numeric: tabular-nums; }
+  .pf-list { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+  .pf-row { display:flex; gap:8px; align-items:stretch; }
+  .pf-main { flex:1; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px; border:2px solid transparent; background: var(--toggle-bg); color: var(--text); font: inherit; text-align:left; cursor:pointer; }
+  .pf-row.active .pf-main { border-color: var(--blue); }
+  .pf-avatar { width:32px; height:32px; border-radius:50%; background: var(--blue); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; flex:0 0 auto; }
+  .pf-name { flex:1; font-weight:600; font-size:14px; display:flex; flex-direction:column; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .pf-name small { font-weight:400; font-size:11px; color: var(--text-dim); }
+  .pf-badge { font-size:11px; font-weight:700; color: var(--blue); }
+  .pf-del { border:none; border-radius:14px; background: var(--toggle-bg); padding:0 12px; font: inherit; cursor:pointer; color: var(--text); }
+  .pf-del.confirm { background: var(--danger, #ef4444); color:#fff; font-size:12px; font-weight:700; }
   .ob-check { display:flex; gap:10px; align-items:flex-start; margin-top:14px; font-size:13px; font-weight:600; cursor:pointer; line-height:1.35; }
   .ob-check input { margin-top:3px; accent-color: var(--blue); flex:0 0 auto; }
   .ob-check small { display:block; font-weight:400; font-size:11.5px; opacity:.7; margin-top:3px; }
@@ -883,6 +893,7 @@
       </div>
     </div>
     <div class="header-actions">
+      <button class="theme-toggle settings-btn" id="profileBtn" onclick="openProfiles()" title="Profil wechseln">👤</button>
       <button class="theme-toggle settings-btn" id="settingsBtn" onclick="openOnboarding('edit')" title="Einstellungen">⚙️</button>
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Darstellung wechseln">🌙</button>
     </div>
@@ -925,7 +936,29 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'tagesumsatz-v3';
+const BASE_STORAGE_KEY = 'tagesumsatz-v3';
+const PROFILES_KEY = 'tagesumsatz-profiles';
+// Profile: nur ein Name, alles bleibt lokal auf diesem Gerät. Das Hauptprofil nutzt den bisherigen Speicherschlüssel,
+// damit vorhandene Daten unverändert weiterlaufen.
+let profiles = { active: 'main', list: [{ id: 'main', name: 'Mein Profil' }] };
+function loadProfiles() {
+  try {
+    const raw = localStorage.getItem(PROFILES_KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p && Array.isArray(p.list) && p.list.length && p.list.some(x => x.id === 'main')) {
+        profiles = { active: p.list.some(x => x.id === p.active) ? p.active : 'main', list: p.list.filter(x => x && x.id && x.name) };
+      }
+    }
+  } catch (e) { /* Standard: nur Hauptprofil */ }
+}
+function saveProfiles() {
+  try { localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)); } catch (e) { /* ignorieren */ }
+}
+function activeProfile() { return profiles.list.find(x => x.id === profiles.active) || profiles.list[0]; }
+function storageKeyFor(id) { return id === 'main' ? BASE_STORAGE_KEY : BASE_STORAGE_KEY + '-p-' + id; }
+loadProfiles();
+let STORAGE_KEY = storageKeyFor(profiles.active);
 const LEGACY_KEY = 'tagesumsatz-eintraege-v2';
 const THEME_KEY = 'tagesumsatz-theme';
 // Provisionen/Steuersatz sind jetzt pro Person einstellbar (Onboarding / Zahnrad im Header).
@@ -1055,7 +1088,8 @@ async function loadData() {
   events = [];
   settlements = [];
   settings = defaultSettings();
-  try {
+  if (profiles.active !== 'main') settings.name = activeProfile().name;
+  else try {
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (legacy) data = JSON.parse(legacy) || {};
   } catch (e) { /* keine alten Daten vorhanden */ }
@@ -2798,6 +2832,10 @@ function obBack() {
 async function obFinish() {
   if (!ob) return;
   settings.name = String(ob.name || '').trim().slice(0, 40);
+  if (settings.name) {
+    const ap = activeProfile();
+    if (ap && !profiles.list.some(p => p !== ap && p.name.toLowerCase() === settings.name.toLowerCase())) { ap.name = settings.name; saveProfiles(); }
+  }
   settings.role = ob.role === 'teamleiter' ? 'teamleiter' : 'vertreter';
   settings.preisNeu = parseNum(ob.preisNeu) >= 0 ? parseNum(ob.preisNeu) : settings.preisNeu;
   settings.preisBestand = parseNum(ob.preisBestand) >= 0 ? parseNum(ob.preisBestand) : settings.preisBestand;
@@ -2943,6 +2981,100 @@ function updateHeaderGreeting() {
   if (!el) return;
   const role = isTeamleiter() ? 'Teamleiter' : 'Vertreter';
   el.textContent = settings.name ? `Hi ${settings.name} · ${role}` : 'Energie Direktvertrieb';
+  const pb = document.getElementById('profileBtn');
+  if (pb) pb.title = 'Profil: ' + activeProfile().name;
+}
+
+// ---------- Profile (mehrere Konten auf einem Gerät, nur mit Namen) ----------
+let pf = null; // { newName, error, confirmDelete }
+
+function getPfRoot() {
+  let root = document.getElementById('profile-root');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'profile-root';
+    document.body.appendChild(root);
+  }
+  return root;
+}
+
+function openProfiles() { loadProfiles(); pf = { newName: '', error: '', confirmDelete: null }; renderProfiles(); }
+function closeProfiles() { pf = null; getPfRoot().innerHTML = ''; }
+
+function renderProfiles() {
+  if (!pf) return;
+  const rows = profiles.list.map(p => {
+    const active = p.id === profiles.active;
+    const confirming = pf.confirmDelete === p.id;
+    return `<div class="pf-row ${active ? 'active' : ''}">
+      <button type="button" class="pf-main" onclick="switchProfile('${p.id}')">
+        <span class="pf-avatar">${escapeHtml((p.name[0] || '?').toUpperCase())}</span>
+        <span class="pf-name">${escapeHtml(p.name)}${p.id === 'main' ? '<small>Hauptprofil</small>' : ''}</span>
+        ${active ? '<span class="pf-badge">aktiv</span>' : ''}
+      </button>
+      ${p.id === 'main' ? '' : (confirming
+        ? `<button type="button" class="pf-del confirm" onclick="deleteProfile('${p.id}')">Wirklich löschen?</button>`
+        : `<button type="button" class="pf-del" onclick="pfAskDelete('${p.id}')" title="Profil löschen">🗑️</button>`)}
+    </div>`;
+  }).join('');
+  getPfRoot().innerHTML = `
+    <div class="ob-overlay" onclick="if(event.target===this)closeProfiles()">
+      <div class="ob-card card">
+        <h2 class="ob-title">Profile</h2>
+        <p class="ob-sub">Jedes Profil hat seine eigenen Zahlen und Einstellungen – ideal zum Ausprobieren wie ein neuer Nutzer. Alles bleibt auf diesem Gerät.</p>
+        <div class="pf-list">${rows}</div>
+        <label class="ob-field"><span>Neues Profil anlegen</span>
+          <input class="ob-input" type="text" id="pf-new" maxlength="40" placeholder="Name" value="${escapeHtml(pf.newName)}"
+            oninput="pf.newName=this.value;pf.error=''" onkeydown="if(event.key==='Enter')createProfile()"></label>
+        ${pf.error ? `<div class="ob-error">${escapeHtml(pf.error)}</div>` : ''}
+        <div class="ob-actions">
+          <button type="button" class="ob-btn secondary" onclick="closeProfiles()">Schließen</button>
+          <button type="button" class="ob-btn" onclick="createProfile()">Anlegen & starten</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function pfAskDelete(id) { pf.confirmDelete = id; renderProfiles(); }
+
+function activateProfile(id) {
+  profiles.active = id;
+  saveProfiles();
+  STORAGE_KEY = storageKeyFor(id);
+  selectedDate = todayKey();
+  monatOffset = 0; zeitraumOffset = 0; jahrOffset = 0;
+  statsPeriod = 'woche'; dashboardView = 'brutto'; settlementsOpen = false;
+  currentPage = 'dashboard';
+  closeProfiles();
+  loadData();
+  render();
+  updateHeaderGreeting();
+  if (!settings.onboarded) openOnboarding('first');
+}
+
+function switchProfile(id) {
+  if (id === profiles.active) { closeProfiles(); return; }
+  activateProfile(id);
+}
+
+function createProfile() {
+  const name = String((pf && pf.newName) || '').trim().slice(0, 40);
+  if (!name) { pf.error = 'Bitte gib einen Namen ein.'; renderProfiles(); return; }
+  if (profiles.list.some(p => p.name.toLowerCase() === name.toLowerCase())) { pf.error = 'Dieser Name ist schon vergeben.'; renderProfiles(); return; }
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  profiles.list.push({ id, name });
+  activateProfile(id);
+}
+
+function deleteProfile(id) {
+  if (id === 'main') return;
+  try { localStorage.removeItem(storageKeyFor(id)); } catch (e) { /* ignorieren */ }
+  profiles.list = profiles.list.filter(p => p.id !== id);
+  const wasActive = profiles.active === id;
+  saveProfiles();
+  if (wasActive) { activateProfile('main'); return; }
+  pf.confirmDelete = null;
+  renderProfiles();
 }
 
 (async function init() {
