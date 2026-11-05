@@ -746,6 +746,15 @@
   .dash-fix-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
   .dash-fix-check { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--text-dim); margin: 0 0 12px; line-height: 1.4; cursor: pointer; }
   .dash-fix-check input { margin-top: 2px; accent-color: var(--blue); flex: 0 0 auto; }
+  .ob-pillars { display:flex; flex-direction:column; gap:10px; margin-bottom:4px; }
+  .ob-pillars > div { background: var(--toggle-bg); border-radius: 14px; padding: 12px 14px; display:grid; grid-template-columns: 30px 1fr; column-gap:10px; align-items:start; text-align:left; }
+  .ob-pillars span { grid-row: 1 / span 2; font-size: 22px; line-height: 1.2; }
+  .ob-pillars b { font-size: 14px; }
+  .ob-pillars small { font-size: 12px; color: var(--text-dim); line-height: 1.4; margin-top: 2px; }
+  .dash-fix-reserve { display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border, rgba(128,128,128,.2)); font-size:12.5px; }
+  .dash-fix-reserve div { display:flex; justify-content:space-between; gap:10px; }
+  .dash-fix-reserve span { color: var(--text-dim); }
+  .dash-fix-reserve b { font-variant-numeric: tabular-nums; }
   .ob-check { display:flex; gap:10px; align-items:flex-start; margin-top:14px; font-size:13px; font-weight:600; cursor:pointer; line-height:1.35; }
   .ob-check input { margin-top:3px; accent-color: var(--blue); flex:0 0 auto; }
   .ob-check small { display:block; font-weight:400; font-size:11.5px; opacity:.7; margin-top:3px; }
@@ -2403,6 +2412,12 @@ function renderDashboardContent(b, animate) {
             <div class="dash-fix-track"><div class="dash-fix-fill ${fixReached ? 'reached' : ''}" style="width:${fixPct}%;"></div></div>
             <div class="dash-fix-saldo ${fixReached ? 'pos' : 'neg'}">${fixReached ? '+' : '−'}${fmtEuro(Math.abs(fixSaldo))}</div>
             <div class="dash-fix-sub">Schwelle${(STEUER_PROZENT > 0 || fixStornoPct > 0) ? ' inkl. automatisch' : ''}${STEUER_PROZENT > 0 ? ` +${STEUER_PROZENT}% Steuer` : ''}${fixStornoPct > 0 ? `${STEUER_PROZENT > 0 ? ' und' : ''} +${fmtPct(fixStornoPct)} Ø Storno-Quote` : ''}: ${fmtEuro(fixSchwelle)} · bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
+            ${(STEUER_PROZENT > 0 || fixStornoPct > 0) && fixLiveBrutto > 0 ? `
+            <div class="dash-fix-reserve">
+              ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
+              ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}%)</span><b>${fmtEuro(fixLiveBrutto * (1 - fixStornoPct / 100) * STEUER_PROZENT / 100)}</b></div>` : ''}
+              <div><span>💶 Davon wirklich deins</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>
+            </div>` : ''}
             ` : ''}
           </div>
 
@@ -2682,9 +2697,11 @@ function fmtNumPlain(n) {
 
 function obSteps() {
   return ob && ob.role === 'teamleiter'
-    ? ['welcome', 'rolle', 'provision', 'overhead', 'weiteres', 'fertig']
-    : ['welcome', 'rolle', 'provision', 'weiteres', 'fertig'];
+    ? ['welcome', 'prinzip', 'rolle', 'provision', 'overhead', 'weiteres', 'fertig']
+    : ['welcome', 'prinzip', 'rolle', 'provision', 'weiteres', 'fertig'];
 }
+// Im Bearbeiten-Modus (⚙️) startet der Dialog direkt bei der Rolle
+function obFirstStep() { return ob && ob.mode === 'edit' ? 2 : 0; }
 
 function getObRoot() {
   let root = document.getElementById('onboarding-root');
@@ -2703,7 +2720,7 @@ function openOnboarding(mode) {
   const prefill = edit || hasData;
   ob = {
     mode: edit ? 'edit' : 'first',
-    step: edit ? 1 : 0,
+    step: edit ? 2 : 0,
     name: settings.name || '',
     role: settings.role === 'teamleiter' ? 'teamleiter' : 'vertreter',
     // Beim ersten Mal bewusst leer, damit jeder SEINE Provision eintippt (statt Standardwerte zu übernehmen)
@@ -2772,7 +2789,7 @@ function obNext() {
 
 function obBack() {
   if (!ob) return;
-  const min = ob.mode === 'edit' ? 1 : 0;
+  const min = obFirstStep();
   if (ob.step > min) ob.step--;
   ob.error = '';
   renderOnboarding();
@@ -2839,10 +2856,19 @@ function renderOnboarding() {
         <rect x="3" y="3" width="7" height="7" rx="2" fill="#fff"/><rect x="14" y="3" width="7" height="7" rx="2" fill="#fff"/>
         <rect x="3" y="14" width="7" height="7" rx="2" fill="#fff"/><rect x="14" y="14" width="7" height="7" rx="2" fill="#fff"/></svg></div>
       <h2 class="ob-title">Willkommen bei Start (to) count</h2>
-      <p class="ob-sub">Dein persönlicher Umsatz-Tracker für den Direktvertrieb. Ein paar kurze Fragen, dann kann’s losgehen – dauert nur eine Minute. Deine Zahlen bleiben ausschließlich auf diesem Gerät.</p>
+      <p class="ob-sub">Dein Tracker für den Direktvertrieb – gebaut, damit du <b>finanziell die Kontrolle behältst</b>: Ziele vor Augen, Steuern sauber zurückgelegt, Puffer für Stornos. Ein paar kurze Fragen, dann geht’s los – dauert nur eine Minute. Deine Zahlen bleiben ausschließlich auf diesem Gerät.</p>
       <label class="ob-field"><span>Wie heißt du? (optional)</span>
         <input class="ob-input" type="text" id="ob-name" value="${escapeHtml(ob.name)}" placeholder="Vorname" maxlength="40"
           autocomplete="given-name" oninput="obSet('name', this.value)"></label>`;
+  } else if (step === 'prinzip') {
+    body = `
+      <h2 class="ob-title">Worum es hier geht</h2>
+      <p class="ob-sub">Nicht nur zählen, sondern dein Geld im Griff haben. Start (to) count hilft dir bei drei Dingen:</p>
+      <div class="ob-pillars">
+        <div><span>🎯</span><b>Ziele vor Augen</b><small>Leg deine Fixkosten pro Auszahlung fest. Der Balken zeigt dir live, wie weit du bist – und was noch fehlt.</small></div>
+        <div><span>🧾</span><b>Steuern richtig zurücklegen</b><small>Die App rechnet den Steuersatz direkt auf dein Ziel und zeigt dir, wie viel von jedem Umsatz nicht dir gehört.</small></div>
+        <div><span>🛡️</span><b>Puffer aufbauen</b><small>Stornos kommen später. Mit deiner Ø Storno-Quote plant die App sie von Anfang an ein – so bleibt am Ende mehr übrig als erwartet.</small></div>
+      </div>`;
   } else if (step === 'rolle') {
     body = `
       <h2 class="ob-title">Welche Rolle hast du?</h2>
@@ -2866,8 +2892,8 @@ function renderOnboarding() {
       ${obInput('overheadNeu', 'Overhead pro Neukunden-Auftrag', { placeholder: 'z. B. 15', chips: [5, 15] })}`;
   } else if (step === 'weiteres') {
     body = `
-      <h2 class="ob-title">Noch ein paar Details</h2>
-      <p class="ob-sub">Damit dir die App auch Netto-Zahlen und dein Ziel anzeigen kann.</p>
+      <h2 class="ob-title">Dein Finanzziel</h2>
+      <p class="ob-sub">Hiermit rechnet die App dein Ziel aus: Fixkosten plus Steuern plus (optional) Storno-Puffer. Alles ist freiwillig, du kannst es jederzeit im ⚙️ ändern.</p>
       ${obInput('steuer', 'Steuersatz (optional)', { unit: '%', placeholder: 'z. B. 30', hint: 'Wird für die Netto-Anzeige abgezogen. Leer lassen = es werden keine Steuern angezeigt.' })}
       ${obInput('fixkosten', 'Fixkosten pro Abrechnungszeitraum (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Zeitraum (1.–15. bzw. 16.–Monatsende). Steuern schlägt die App automatisch drauf – bei Erreichen gibt’s ein Feuerwerk 🎆' })}
       <label class="ob-check">
@@ -2894,7 +2920,7 @@ function renderOnboarding() {
       <div class="ob-summary">${rows.map(r => `<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}</div>`;
   }
 
-  const showBack = ob.step > (edit ? 1 : 0);
+  const showBack = ob.step > obFirstStep();
   const root = getObRoot();
   root.innerHTML = `
     <div class="ob-overlay">
