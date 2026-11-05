@@ -778,6 +778,8 @@
   .goal-custom { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px; font-size:13px; font-weight:600; color: var(--text-dim); }
   .goal-custom input, .goal-custom select { padding:8px 10px; border-radius:12px; border:1px solid var(--border); background: var(--toggle-bg); color: var(--text); font: inherit; font-weight:600; }
   .goal-custom input[type=number] { width:64px; }
+  .goal-box { border:2px solid var(--blue); border-radius:16px; padding:12px 12px 2px; margin:4px 0 14px; background: color-mix(in srgb, var(--blue) 6%, transparent); }
+  .goal-box .goal-row { margin-bottom:10px; }
   .goal-question { font-size:13px; font-weight:700; margin:4px 0 10px; line-height:1.35; text-align:left; }
   .goal-row { display:flex; gap:10px; align-items:flex-end; margin: 0 0 12px; }
   .goal-row label { display:flex; flex-direction:column; gap:6px; font-size:12px; font-weight:600; color: var(--text-dim); text-align:left; }
@@ -1317,10 +1319,12 @@ function goalCardHtml() {
       <span>ab</span>
       <input type="date" value="${customStart}" onchange="setGoal('goalStart', this.value)">
     </div>` : ''}
+    <div class="goal-box">
     <div class="goal-question">💶 Wie viel soll ${period === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[period]} nach allen Kosten bei dir bleiben?</div>
     <div class="goal-row">
       <label class="goal-name">Wofür? Name des Ziels (optional)<input type="text" maxlength="40" placeholder="z. B. Urlaub, Rücklage, Auto" value="${escapeHtml(settings.goalName || '')}" onchange="setGoal('goalName', this.value)"></label>
-      <label class="goal-amt">Betrag (€)<input type="number" min="0" step="50" value="${amount || ''}" placeholder="2000" onchange="setGoal('goalAmount', this.value)"></label>
+      <label class="goal-amt">👉 Betrag in €<input type="number" inputmode="decimal" min="0" step="any" value="${amount || ''}" placeholder="z. B. 2000" oninput="setGoalLive('goalAmount', this.value)" onchange="setGoal('goalAmount', this.value)" onkeydown="if(event.key==='Enter')this.blur()"></label>
+    </div>
     </div>
     ${amount > 0 && period !== 'monat' ? `<div class="dash-fix-sub" style="margin:0 0 10px;">Zum Rechnen wird das auf den Monat umgerechnet: ${goalMonthlyHint(amount, period)} = <b>${fmtEuro(goalMonthly(amount, period))} pro Monat</b>.${period === 'custom' ? ` Zeitraum bis ${fmtDateShort(customEnd)}.` : ''}</div>` : ''}`;
 
@@ -1469,6 +1473,12 @@ function goalBruttoFor(period) {
 // Wie viel von 1 € Brutto am Ende wirklich bei dir bleibt (nach Storno-Puffer und Steuer)
 function netShare() {
   return (1 - stornoAufschlagPct() / 100) * (1 - STEUER_PROZENT / 100);
+}
+
+// Speichert Eingaben schon beim Tippen (ohne Neuaufbau der Seite), damit nichts verloren geht
+function setGoalLive(field, value) {
+  if (field === 'goalAmount') settings.goalAmount = Math.max(0, parseFloat(String(value).replace(',', '.')) || 0);
+  saveData();
 }
 
 function setGoal(field, value) {
@@ -3149,12 +3159,14 @@ function renderOnboarding() {
           <select onchange="obSet('goalUnit', this.value)">${Object.keys(GOAL_UNITS).map(u => `<option value="${u}" ${ob.goalUnit === u ? 'selected' : ''}>${GOAL_UNITS[u]}</option>`).join('')}</select>
           <span>ab heute</span>
         </div>` : ''}
+        <div class="goal-box">
         <div class="goal-question">💶 Wie viel soll ${ob.goalPeriod === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)]} nach allen Kosten bei dir bleiben?</div>
         <div class="goal-row ob">
           <label class="goal-name"><span>Wofür? (optional)</span>
             <input class="ob-input" type="text" id="ob-goalName" maxlength="40" value="${escapeHtml(ob.goalName)}" placeholder="z. B. Urlaub, Auto" oninput="obSet('goalName', this.value)"></label>
-          <label class="goal-amt"><span>Betrag</span>
+          <label class="goal-amt"><span>👉 Betrag in €</span>
             <div class="ob-input-wrap"><input class="ob-input" type="text" inputmode="decimal" id="ob-goalAmount" value="${escapeHtml(ob.goalAmount)}" placeholder="2000" oninput="obSet('goalAmount', this.value)"><span class="ob-unit">€</span></div></label>
+        </div>
         </div>
         <small class="ob-hint">${ob.goalPeriod === 'jahr' ? 'Pro Jahr wird automatisch auf den Monat heruntergerechnet (÷ 12).' : ob.goalPeriod === 'woche' ? 'Pro Woche wird automatisch auf den Monat hochgerechnet (× 52 ÷ 12).' : ob.goalPeriod === 'custom' ? 'Gesamtbetrag über den ganzen Zeitraum – die App rechnet ihn auf den Monat herunter.' : 'Die App teilt den Monatsbetrag auf die zwei Abrechnungszeiträume pro Monat auf.'}</small>
       </div>
