@@ -218,6 +218,42 @@
   .abr-assign { display:block; margin-top:6px; width:100%; max-width:260px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--bg-soft, var(--card)); color:var(--text); font:inherit; font-size:12px; }
   .abr-chart-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
   .abr-chart-head > div:first-child, .abr-head > div:first-child { text-align:left; }
+  .ag-sec { margin: 4px 0 18px; }
+  .ag-chips { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; }
+  .ag-chip { border:1.5px solid var(--border); background:var(--card); color:var(--text); border-radius:999px; padding:8px 14px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+  .ag-chip.on { border-color:var(--blue); background:var(--blue-soft); color:var(--blue); }
+  .ag-chip b { margin-left:6px; cursor:pointer; opacity:.7; }
+  .ag-row { display:flex; gap:8px; align-items:center; }
+  .ag-row .ob-input { flex:1; }
+  .ag-row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .inv-page .abr-hero-value { font-size:48px; }
+  .inv-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px; }
+  .inv-kpi { background:var(--toggle-bg); border-radius:12px; padding:12px; text-align:center; }
+  .inv-kpi b { display:block; font-family:'Space Grotesk',sans-serif; font-size:18px; }
+  .inv-kpi span { font-size:11px; color:var(--text-dim); }
+  .inv-kpi.bad b { color:var(--danger); }
+  .inv-grid { display:grid; grid-template-columns:1fr; gap:4px 14px; margin-top:12px; text-align:left; }
+  @media (min-width:700px) { .inv-grid { grid-template-columns:1fr 1fr; } }
+  .inv-actions { display:flex; gap:10px; justify-content:center; margin-top:12px; flex-wrap:wrap; }
+  .inv-pdf { text-align:center; margin-top:12px; }
+  .inv-status { text-align:center; font-size:13px; color:var(--text-dim); margin-top:10px; }
+  .inv-page > .card { margin-bottom:16px; }
+  .inv-list { margin-top:8px; text-align:left; }
+  .inv-item { padding:14px 0; border-top:1px solid var(--border); }
+  .inv-item:first-child { border-top:none; }
+  .inv-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+  .inv-top small { display:block; color:var(--text-dim); font-size:12px; margin-top:2px; }
+  .inv-nr { color:var(--text-dim); font-size:12px; margin-left:6px; }
+  .inv-amt { font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:18px; white-space:nowrap; color:var(--text); }
+  .inv-mid { margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .inv-badge { font-size:12px; font-weight:700; border-radius:999px; padding:3px 10px; }
+  .inv-badge.ok { background:var(--green-soft); color:var(--green); }
+  .inv-badge.wait { background:var(--blue-soft); color:var(--blue); }
+  .inv-badge.bad { background:var(--danger-soft); color:var(--danger); }
+  .inv-cut { font-size:12px; color:var(--danger); font-weight:600; }
+  .inv-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .today-btn.danger { color:var(--danger); background:var(--danger-soft); }
+  .inv-pay { background:var(--toggle-bg); border-radius:12px; padding:12px; margin-top:10px; }
   .abr-year-nav { display:flex; align-items:center; justify-content:center; gap:10px; }
   .abr-hero { text-align:center; margin-bottom:6px; }
   .abr-hero .dash-card-title { margin-top:8px; }
@@ -1134,6 +1170,7 @@
     <button class="nav-tab" id="tab-dashboard" onclick="switchPage('dashboard')">Dashboard</button>
     <button class="nav-tab" id="tab-tracker" onclick="switchPage('tracker')">Tracker</button>
     <button class="nav-tab" id="tab-abrechnungen" onclick="switchPage('abrechnungen')"><span class="nav-long">Meine </span>Abrechnungen</button>
+    <button class="nav-tab" id="tab-rechnungen" onclick="switchPage('rechnungen')" style="display:none;">Rechnungen</button>
     <button class="nav-tab" id="tab-team" onclick="switchPage('team')">Team</button>
   </div>
 
@@ -1214,6 +1251,7 @@ let jahrOffset = 0;          // Jahre zurück ab aktuellem Jahr, nur für Dashbo
 let dashboardView = 'brutto'; // 'brutto' (getrackte Schätzung) | 'ausgezahlt' (bestätigt aus Abrechnungen)
 let settlementsOpen = false; // Abrechnungen-Karte im Dashboard: eingeklappt (Dropdown) oder ausgeklappt
 let settlements = [];        // [{id, label, betrag, auftraege}] - echte Abrechnungen/Auszahlungen
+let invoices = [];           // Agenturinhaber: Rechnungen an Anbieter [{id, partner, nr, windowId, label, betrag, datum, faellig, status, eingang, eingangDatum}]
 let STEUER_PROZENT = 30;     // % Steuern, die immer automatisch abgezogen (Netto) bzw. auf Fixkosten aufgeschlagen werden
 let settings = defaultSettings();
 
@@ -1264,6 +1302,11 @@ function isEntryEmpty(entry) {
 function isTeamleiter() {
   return settings.role === 'teamleiter';
 }
+function isAgentur() {
+  return settings.role === 'agentur';
+}
+function roleOf(v) { return v === 'teamleiter' || v === 'agentur' ? v : 'vertreter'; }
+function roleLabel() { return isAgentur() ? 'Agenturinhaber' : isTeamleiter() ? 'Teamleiter' : 'Vertreter'; }
 
 // Overhead (nur Teamleiter): Neukunden-Aufträge des Teams × Overhead-Satz.
 // Für Bestandskunden gibt es keinen Overhead.
@@ -1287,7 +1330,9 @@ function defaultSettings() {
     fireworksWindow: null,
     onboarded: false,     // wurde der Willkommens-Dialog schon durchlaufen?
     name: '',
-    role: 'vertreter',    // 'vertreter' | 'teamleiter'
+    role: 'vertreter',    // 'vertreter' | 'teamleiter' | 'agentur'
+    agency: null,         // nur Agenturinhaber: Regeln der Agentur (siehe defaultAgency)
+    followAgency: true,   // Mitarbeiter: Regeln der Agentur automatisch übernehmen?
     preisNeu: 110,        // € Provision pro Neukunde
     preisBestand: 15,     // € Provision pro Bestandskunde
     steuer: 30,           // % Steuern
@@ -1306,6 +1351,29 @@ function defaultSettings() {
   };
 }
 
+// ---- Agenturinhaber: Auswahlmöglichkeiten ----
+const AG_VERTRIEB = [['d2d', 'Haustür (D2D)'], ['b2b', 'B2B / Gewerbe'], ['cold', 'Cold Calls / Telefon'], ['stand', 'Stand / Messe / Promotion'], ['online', 'Online / Leads'], ['laden', 'Ladengeschäft / Retail'], ['empf', 'Empfehlung / Netzwerk'], ['sonst', 'Sonstiges']];
+const AG_PRODUKT = [['energie', 'Strom & Gas'], ['telko', 'Telekom / DSL / Mobilfunk'], ['vers', 'Versicherung'], ['solar', 'Solar / Wärmepumpe'], ['fin', 'Finanzen / Kredit'], ['spende', 'Spenden / NGO'], ['sonst', 'Sonstiges']];
+const AG_RHYTHM = [['woechentlich', 'Wöchentlich'], ['zweiwoechentlich', 'Alle 2 Wochen'], ['halbmonatlich', 'Halbmonatlich (1.–15. / 16.–Ende)'], ['monatlich', 'Monatlich']];
+const AG_STORNO = [['rueckbuchung', 'Rückbuchung vom Mitarbeiter'], ['verrechnung', 'Mit nächster Auszahlung verrechnen'], ['agentur', 'Agentur trägt das Storno']];
+const AG_KPI = [['kontakte', 'Türen / Kontakte'], ['anrufe', 'Anrufe'], ['erreicht', 'Erreichte Kontakte'], ['termine', 'Termine'], ['angebote', 'Angebote'], ['abschluesse', 'Abschlüsse'], ['leads', 'Leads']];
+const AG_DAYS = [['mo', 'Mo'], ['di', 'Di'], ['mi', 'Mi'], ['do', 'Do'], ['fr', 'Fr'], ['sa', 'Sa'], ['so', 'So']];
+function agLabel(list, key) { const f = list.find(x => x[0] === key); return f ? f[1] : key; }
+function defaultAgency() {
+  return {
+    vertrieb: [], produkt: [], partners: [],
+    rechnungRhythm: 'halbmonatlich', rechnungFrist: '3', zahlungsziel: '14', haftungMonate: '12', einbehaltPct: '',
+    maRhythm: 'halbmonatlich', maTag: '', maNeu: '', maBestand: '', stornoRegel: 'verrechnung',
+    tage: ['mo', 'di', 'mi', 'do', 'fr'], schichtVon: '', schichtBis: '', tagesziel: '',
+    kpi: [], notiz: ''
+  };
+}
+function agencyCfg() { return Object.assign(defaultAgency(), (settings && settings.agency) || {}); }
+function agDays(n, key) { // Datum + n Tage (YYYY-MM-DD)
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || ''); if (!m) return '';
+  return todayKey(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + n));
+}
+
 function applySettings() {
   const n = Number(settings.preisNeu), b = Number(settings.preisBestand), s = Number(settings.steuer);
   PREIS_NEUKUNDE = isFinite(n) && n >= 0 ? n : 110;
@@ -1321,6 +1389,7 @@ async function loadData() {
       data = parsed.days || {};
       events = parsed.events || [];
       settlements = parsed.settlements || [];
+      invoices = parsed.invoices || [];
       const storedSettings = parsed.settings || {};
       settings = Object.assign(defaultSettings(), storedSettings);
       // Bestehende Nutzer (haben schon Daten, aber das Onboarding noch nie gesehen) sehen den Dialog
@@ -1332,6 +1401,7 @@ async function loadData() {
   data = {};
   events = [];
   settlements = [];
+  invoices = [];
   settings = defaultSettings();
   if (profiles.active !== 'main') settings.name = activeProfile().name;
   else try {
@@ -1343,7 +1413,7 @@ async function loadData() {
 
 async function saveData() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ days: data, events: events, settlements: settlements, settings: settings }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ days: data, events: events, settlements: settlements, invoices: invoices, settings: settings }));
     storageOk = true;
     if (typeof cloudMarkDirty === 'function') cloudMarkDirty();
     if (typeof teamMarkDirty === 'function') teamMarkDirty();
@@ -3271,6 +3341,195 @@ function renderAbrechnungenContent() {
     </div>`;
 }
 
+// ---------- Reiter "Rechnungen" (Agenturinhaber): Rechnung stellen -> Zahlung abwarten -> Eingang bestätigen ----------
+let inv = null;     // Formular "Rechnung stellen"
+let invPay = null;  // Bestätigung "Zahlung eingegangen"
+let invStatus = '';
+
+function invOverdue() {
+  const t = todayKey();
+  return invoices.filter(i => i.status !== 'bezahlt' && i.faellig && i.faellig < t);
+}
+function invWindows(n) { const out = []; for (let k = 1; k <= n; k++) { const w = windowOffsetBack(k); out.push({ w, id: w.id, label: fmtWindowRange(w.schreibStart, w.schreibEnd) + ' ' + w.schreibStart.getFullYear(), tracked: daysInRange(w.schreibStart, w.schreibEnd).reduce((t, k2) => t + dayTotal(data[k2]), 0) }); } return out; }
+// Zeiträume mit getracktem Umsatz, für die noch keine Rechnung existiert
+function invSuggestions() {
+  return invWindows(8).filter(x => x.tracked > 0 && !invoices.some(i => i.windowId === x.id));
+}
+function invNewNumber() {
+  const y = new Date().getFullYear();
+  const n = invoices.filter(i => String(i.nr || '').includes(String(y))).length + 1;
+  return `RE-${y}-${String(n).padStart(3, '0')}`;
+}
+function invStart(windowId) {
+  const ag = agencyCfg();
+  const win = invWindows(12).find(x => x.id === windowId);
+  const datum = todayKey();
+  inv = { id: null, partner: ag.partners[0] || '', windowId: win ? win.id : '', label: win ? win.label : '', nr: invNewNumber(), datum,
+    betrag: win && win.tracked > 0 ? String(Math.round(win.tracked * 100) / 100).replace('.', ',') : '', faellig: agDays(Math.max(0, parseNum(ag.zahlungsziel) || 14), datum) };
+  invStatus = '';
+  render();
+}
+function invSet(field, v) { if (inv) inv[field] = v; }
+function invSetDatum(v) {
+  if (!inv) return;
+  inv.datum = v;
+  inv.faellig = agDays(Math.max(0, parseNum(agencyCfg().zahlungsziel) || 14), v);
+  const el = document.getElementById('inv-faellig'); if (el) el.value = inv.faellig;
+}
+function invSetWindow(id) {
+  if (!inv) return;
+  const win = invWindows(12).find(x => x.id === id);
+  inv.windowId = id; inv.label = win ? win.label : '';
+  if (win && win.tracked > 0) inv.betrag = String(Math.round(win.tracked * 100) / 100).replace('.', ',');
+  render();
+}
+function invCancel() { inv = null; invStatus = ''; render(); }
+async function invSave() {
+  if (!inv) return;
+  const betrag = parseNum(inv.betrag);
+  if (!(betrag > 0)) { invStatus = 'Bitte gib den Rechnungsbetrag ein.'; render(); return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(inv.datum || '')) { invStatus = 'Bitte gib das Rechnungsdatum ein.'; render(); return; }
+  const faellig = /^\d{4}-\d{2}-\d{2}$/.test(inv.faellig || '') ? inv.faellig : agDays(14, inv.datum);
+  invoices.push({ id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), partner: String(inv.partner || '').trim(), nr: String(inv.nr || '').trim(),
+    windowId: inv.windowId || '', label: inv.label || '', betrag, datum: inv.datum, faellig, status: 'offen' });
+  inv = null; invStatus = '';
+  await saveData(); render();
+}
+async function invDelete(id) {
+  invoices = invoices.filter(i => i.id !== id);
+  if (invPay && invPay.id === id) invPay = null;
+  await saveData(); render();
+}
+function invPayStart(id) {
+  const i = invoices.find(x => x.id === id); if (!i) return;
+  invPay = { id, betrag: String(i.betrag).replace('.', ','), datum: todayKey() };
+  render();
+}
+function invPaySet(f, v) { if (invPay) invPay[f] = v; }
+async function invPaySave() {
+  if (!invPay) return;
+  const i = invoices.find(x => x.id === invPay.id); if (!i) return;
+  const b = parseNum(invPay.betrag);
+  if (!(b >= 0)) return;
+  i.status = 'bezahlt'; i.eingang = b; i.eingangDatum = /^\d{4}-\d{2}-\d{2}$/.test(invPay.datum) ? invPay.datum : todayKey();
+  invPay = null;
+  await saveData(); render();
+}
+async function invReopen(id) {
+  const i = invoices.find(x => x.id === id); if (!i) return;
+  i.status = 'offen'; delete i.eingang; delete i.eingangDatum;
+  await saveData(); render();
+}
+// Rechnung als PDF einlesen: Nummer, Datum, Betrag, Zahlungsziel
+function parseInvoiceText(text) {
+  const t = String(text || '').replace(/[  ]/g, ' ');
+  const out = {};
+  const nr = /Rechnungs?\s*(?:nummer|nr\.?)\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9\-\/\.]{2,})/i.exec(t);
+  if (nr) out.nr = nr[1].replace(/[.,;]$/, '');
+  const dt = /(?:Rechnungsdatum|Datum)\s*[:]?\s*(\d{1,2})\.(\d{1,2})\.(\d{4})/i.exec(t) || /(\d{1,2})\.(\d{1,2})\.(\d{4})/.exec(t);
+  if (dt) out.datum = `${dt[3]}-${String(dt[2]).padStart(2, '0')}-${String(dt[1]).padStart(2, '0')}`;
+  const amounts = [];
+  const re = /(Gesamtbetrag|Rechnungsbetrag|Endbetrag|Bruttobetrag|Brutto|Summe|Gesamt|Zahlbetrag)[^\d\n]{0,40}?(\d{1,3}(?:\.\d{3})*,\d{2})/gi;
+  let m; while ((m = re.exec(t))) amounts.push(parseFloat(m[2].replace(/\./g, '').replace(',', '.')));
+  if (amounts.length) out.betrag = Math.max(...amounts);
+  const zz = /Zahlungsziel[^\d]{0,25}(\d{1,3})\s*Tage/i.exec(t) || /innerhalb von\s*(\d{1,3})\s*Tagen/i.exec(t);
+  if (zz) out.tage = Number(zz[1]);
+  return out;
+}
+async function invPdf(event) {
+  const f = event.target.files && event.target.files[0]; if (!f || !inv) return;
+  invStatus = 'Lese PDF …'; render();
+  try {
+    const text = await extractPdfText(f);
+    const r = parseInvoiceText(text);
+    if (r.nr) inv.nr = r.nr;
+    if (r.datum) inv.datum = r.datum;
+    if (r.betrag) inv.betrag = String(r.betrag).replace('.', ',');
+    inv.faellig = agDays(r.tage != null ? r.tage : (parseNum(agencyCfg().zahlungsziel) || 14), inv.datum);
+    invStatus = (r.nr || r.betrag || r.datum) ? 'PDF eingelesen – bitte kurz prüfen.' : 'Im PDF wurde nichts Passendes gefunden. Bitte trage die Werte selbst ein.';
+  } catch (e) { invStatus = 'Das PDF konnte nicht gelesen werden. Bitte trage die Werte selbst ein.'; }
+  render();
+}
+
+function renderRechnungenContent() {
+  if (!isAgentur()) return `<div class="card dash-card"><div class="dash-card-title">Rechnungen</div><div class="dash-card-sub">Dieser Bereich ist für Agenturinhaber. Stelle deine Rolle in den ⚙️ Einstellungen um.</div></div>`;
+  const ag = agencyCfg(), today = todayKey(), year = String(new Date().getFullYear());
+  const sum = a => a.reduce((t, i) => t + (i.betrag || 0), 0);
+  const list = invoices.slice().sort((a, b) => (b.datum || '').localeCompare(a.datum || '') || String(b.id).localeCompare(String(a.id)));
+  const offen = list.filter(i => i.status !== 'bezahlt');
+  const ueber = offen.filter(i => i.faellig && i.faellig < today);
+  const paid = list.filter(i => i.status === 'bezahlt' && String(i.eingangDatum || i.datum || '').startsWith(year));
+  const eingang = paid.reduce((t, i) => t + (i.eingang || 0), 0);
+  const kuerzung = paid.reduce((t, i) => t + Math.max(0, (i.betrag || 0) - (i.eingang || 0)), 0);
+  const next = offen.filter(i => i.faellig && i.faellig >= today).sort((a, b) => a.faellig.localeCompare(b.faellig))[0];
+  const fd = k => k ? k.split('-').reverse().join('.') : '–';
+  const sugg = invSuggestions();
+  const partnerOptions = ag.partners.map(p => `<option value="${escapeHtml(p)}"></option>`).join('');
+  const winOptions = `<option value="">Sonstiger Zeitraum</option>` + invWindows(12).map(x => `<option value="${x.id}" ${inv && inv.windowId === x.id ? 'selected' : ''}>${x.label}${x.tracked > 0 ? ' · getrackt ' + fmtEuro(x.tracked) : ''}</option>`).join('');
+  const form = inv ? `
+    <div class="card dash-card inv-form">
+      <div class="dash-card-title">Rechnung stellen</div>
+      <div class="dash-card-sub">Die App schlägt Zeitraum und Betrag aus deinem Tracker vor. Du kannst alles ändern oder die fertige Rechnung als PDF einlesen.</div>
+      <div class="inv-pdf"><input type="file" id="invPdfInput" accept="application/pdf" style="display:none" onchange="invPdf(event)"><button type="button" class="today-btn" onclick="document.getElementById('invPdfInput').click()">📄 Rechnung als PDF einlesen</button></div>
+      ${invStatus ? `<div class="inv-status">${escapeHtml(invStatus)}</div>` : ''}
+      <div class="inv-grid">
+        <label class="ob-field"><span>Anbieter</span><input class="ob-input" list="inv-partners" value="${escapeHtml(inv.partner)}" placeholder="Name des Anbieters" oninput="invSet('partner', this.value)"><datalist id="inv-partners">${partnerOptions}</datalist></label>
+        <label class="ob-field"><span>Abrechnungszeitraum</span><select class="ob-input" onchange="invSetWindow(this.value)">${winOptions}</select></label>
+        <label class="ob-field"><span>Rechnungsnummer</span><input class="ob-input" value="${escapeHtml(inv.nr)}" oninput="invSet('nr', this.value)"></label>
+        <label class="ob-field"><span>Rechnungsbetrag (brutto)</span><div class="ob-input-wrap"><input class="ob-input" inputmode="decimal" value="${escapeHtml(inv.betrag)}" placeholder="0,00" oninput="invSet('betrag', this.value)"><span class="ob-unit">€</span></div></label>
+        <label class="ob-field"><span>Rechnungsdatum</span><input class="ob-input" type="date" value="${escapeHtml(inv.datum)}" onchange="invSetDatum(this.value)"></label>
+        <label class="ob-field"><span>Fällig am</span><input class="ob-input" type="date" id="inv-faellig" value="${escapeHtml(inv.faellig)}" onchange="invSet('faellig', this.value)"></label>
+      </div>
+      <div class="inv-actions"><button type="button" class="ob-btn secondary" onclick="invCancel()">Abbrechen</button><button type="button" class="ob-btn" onclick="invSave()">Rechnung speichern</button></div>
+    </div>` : '';
+  const suggHtml = sugg.length ? `
+    <div class="card dash-card">
+      <div class="dash-card-title">Noch nicht abgerechnet</div>
+      <div class="dash-card-sub">Für diese Zeiträume hast du Aufträge getrackt, aber noch keine Rechnung gestellt.</div>
+      ${sugg.map(x => `<div class="abr-row"><div>${x.label}<small>erwartet ${fmtEuro(x.tracked)}</small></div><button class="today-btn" onclick="invStart('${x.id}')">Rechnung stellen</button></div>`).join('')}
+    </div>` : '';
+  const row = i => {
+    const over = i.status !== 'bezahlt' && i.faellig && i.faellig < today;
+    const days = i.faellig ? Math.round((new Date(i.faellig + 'T12:00:00') - new Date(today + 'T12:00:00')) / 86400000) : null;
+    const badge = i.status === 'bezahlt' ? `<span class="inv-badge ok">Bezahlt</span>` : over ? `<span class="inv-badge bad">Überfällig seit ${-days} ${-days === 1 ? 'Tag' : 'Tagen'}</span>` : `<span class="inv-badge wait">Offen · fällig in ${days} ${days === 1 ? 'Tag' : 'Tagen'}</span>`;
+    const cut = i.status === 'bezahlt' && (i.betrag || 0) - (i.eingang || 0) > 0.009 ? `<div class="inv-cut">Gekürzt um ${fmtEuro((i.betrag || 0) - (i.eingang || 0))} (Storno / Abzug)</div>` : '';
+    const payBox = invPay && invPay.id === i.id ? `
+      <div class="inv-pay"><div class="inv-grid">
+        <label class="ob-field"><span>Eingegangener Betrag</span><div class="ob-input-wrap"><input class="ob-input" inputmode="decimal" value="${escapeHtml(invPay.betrag)}" oninput="invPaySet('betrag', this.value)"><span class="ob-unit">€</span></div><small>Weicht er ab, wird der Unterschied als Kürzung gespeichert.</small></label>
+        <label class="ob-field"><span>Eingang am</span><input class="ob-input" type="date" value="${escapeHtml(invPay.datum)}" onchange="invPaySet('datum', this.value)"></label></div>
+        <div class="inv-actions"><button type="button" class="ob-btn secondary" onclick="invPay=null;render()">Abbrechen</button><button type="button" class="ob-btn" onclick="invPaySave()">✓ Zahlung bestätigen</button></div></div>` : '';
+    return `<div class="inv-item ${over ? 'over' : ''}">
+      <div class="inv-top"><div><b>${escapeHtml(i.partner || 'Rechnung')}</b> <span class="inv-nr">${escapeHtml(i.nr || '')}</span><small>${escapeHtml(i.label || 'Eigener Zeitraum')} · gestellt ${fd(i.datum)}${i.status === 'bezahlt' ? ' · Eingang ' + fd(i.eingangDatum) : ' · fällig ' + fd(i.faellig)}</small></div>
+        <div class="inv-amt">${fmtEuro(i.status === 'bezahlt' ? (i.eingang || 0) : (i.betrag || 0))}</div></div>
+      <div class="inv-mid">${badge}${cut}</div>
+      ${payBox}
+      <div class="inv-btns">${i.status !== 'bezahlt' ? `<button class="today-btn" onclick="invPayStart('${i.id}')">✓ Zahlung eingegangen</button>` : `<button class="today-btn" onclick="invReopen('${i.id}')">Wieder auf offen</button>`}<button class="today-btn danger" onclick="if(confirm('Rechnung wirklich löschen?'))invDelete('${i.id}')">Löschen</button></div>
+    </div>`;
+  };
+  return `
+    <div class="abr-page inv-page">
+      <div class="card dash-card abr-chart">
+        <div class="abr-hero">
+          <div class="dash-card-title">Offene Rechnungen</div>
+          <div class="abr-hero-value">${fmtEuro(sum(offen))}</div>
+          <div class="dash-card-sub">${offen.length ? `${offen.length} ${offen.length === 1 ? 'Rechnung wartet' : 'Rechnungen warten'} auf Zahlung${next ? ' · nächste fällig am ' + fd(next.faellig) : ''}` : 'Alles bezahlt – oder noch keine Rechnung gestellt.'}</div>
+        </div>
+        <div class="inv-kpis">
+          <div class="inv-kpi ${ueber.length ? 'bad' : ''}"><b>${fmtEuro(sum(ueber))}</b><span>Überfällig${ueber.length ? ' (' + ueber.length + ')' : ''}</span></div>
+          <div class="inv-kpi"><b>${fmtEuro(eingang)}</b><span>Eingegangen ${year}</span></div>
+          <div class="inv-kpi ${kuerzung > 0 ? 'bad' : ''}"><b>${fmtEuro(kuerzung)}</b><span>Gekürzt ${year}</span></div>
+        </div>
+        <div style="text-align:center;margin-top:14px;"><button class="today-btn" onclick="invStart('')">➕ Rechnung stellen</button></div>
+      </div>
+      ${form}
+      ${suggHtml}
+      <div class="card dash-card">
+        <div class="dash-card-title">Alle Rechnungen</div>
+        <div class="inv-list">${list.length ? list.map(row).join('') : '<div class="dash-card-sub" style="margin-top:10px;">Noch keine Rechnung. Stelle deine erste oben, die App merkt sich dann Fälligkeit und Zahlungseingang.</div>'}</div>
+      </div>
+    </div>`;
+}
+
 // ---------- PDF-Export (ohne Bibliothek, funktioniert offline) ----------
 function pdfEsc(str) {
   let o = '';
@@ -3408,6 +3667,8 @@ function render() {
     html += renderAbrechnungenContent();
   } else if (currentPage === 'team') {
     html += renderTeamContent();
+  } else if (currentPage === 'rechnungen') {
+    html += renderRechnungenContent();
   } else {
     html += renderTrackerContent();
   }
@@ -3416,7 +3677,7 @@ function render() {
   lastRenderedPage = currentPage;
 
   const wrapEl = document.getElementById('wrap');
-  if (wrapEl) wrapEl.classList.toggle('wrap-wide', currentPage === 'dashboard' || currentPage === 'abrechnungen' || currentPage === 'team');
+  if (wrapEl) wrapEl.classList.toggle('wrap-wide', currentPage === 'dashboard' || currentPage === 'abrechnungen' || currentPage === 'team' || currentPage === 'rechnungen');
   if (wrapEl) wrapEl.classList.toggle('wrap-tracker', currentPage === 'tracker');
 
   if (currentPage === 'tracker') {
@@ -3485,7 +3746,14 @@ function updateNavTabs() {
     const n = (team && team.unread && currentPage !== 'team') ? team.unread : 0;
     tabTeam.innerHTML = 'Team' + (n ? ` <span class="tm-badge">${n > 9 ? '9+' : n}</span>` : '');
   }
-  const map = { tracker: tabTracker, dashboard: tabDashboard, abrechnungen: tabAbr, team: tabTeam };
+  const tabInv = document.getElementById('tab-rechnungen');
+  if (tabInv) {
+    tabInv.style.display = isAgentur() ? '' : 'none';
+    tabInv.classList.toggle('active', currentPage === 'rechnungen');
+    const od = invOverdue().length;
+    tabInv.innerHTML = 'Rechnungen' + (od ? ` <span class="tm-badge">${od > 9 ? '9+' : od}</span>` : '');
+  }
+  const map = { tracker: tabTracker, dashboard: tabDashboard, abrechnungen: tabAbr, team: tabTeam, rechnungen: tabInv };
   positionSlider('nav-slider', map[currentPage]);
 }
 
@@ -3611,6 +3879,7 @@ function fmtNumPlain(n) {
 }
 
 function obSteps() {
+  if (ob && ob.role === 'agentur') return ['welcome', 'prinzip', 'rolle', 'agentur', 'provision', 'weiteres', 'fertig'];
   return ob && ob.role === 'teamleiter'
     ? ['welcome', 'prinzip', 'rolle', 'provision', 'overhead', 'weiteres', 'fertig']
     : ['welcome', 'prinzip', 'rolle', 'provision', 'weiteres', 'fertig'];
@@ -3637,7 +3906,8 @@ function openOnboarding(mode) {
     mode: mode === 'settings' ? 'settings' : edit ? 'edit' : 'first',
     step: edit ? 2 : 0,
     name: settings.name || '',
-    role: settings.role === 'teamleiter' ? 'teamleiter' : 'vertreter',
+    role: roleOf(settings.role),
+    ag: agencyToForm(agencyCfg()),
     // Beim ersten Mal bewusst leer, damit jeder SEINE Provision eintippt (statt Standardwerte zu übernehmen)
     preisNeu: prefill ? fmtNumInput(settings.preisNeu) : '',
     preisBestand: prefill ? fmtNumInput(settings.preisBestand) : '',
@@ -3721,6 +3991,74 @@ function obToggleRunden() {
   renderOnboarding();
 }
 
+// ---- Agentur-Einrichtung ----
+function agencyToForm(a) {
+  return { ...a, vertrieb: [...(a.vertrieb || [])], produkt: [...(a.produkt || [])], partners: [...(a.partners || [])], tage: [...(a.tage || [])], kpi: [...(a.kpi || [])], newPartner: '' };
+}
+function agencyFromForm(f) {
+  const d = defaultAgency(), o = {};
+  Object.keys(d).forEach(k => { o[k] = f[k] !== undefined ? f[k] : d[k]; });
+  ['vertrieb', 'produkt', 'partners', 'tage', 'kpi'].forEach(k => { o[k] = Array.isArray(o[k]) ? o[k].slice() : []; });
+  const np = String(f.newPartner || '').trim();
+  if (np && !o.partners.includes(np)) o.partners.push(np);
+  ['rechnungFrist', 'zahlungsziel', 'haftungMonate', 'einbehaltPct', 'maNeu', 'maBestand', 'tagesziel'].forEach(k => { o[k] = String(o[k] == null ? '' : o[k]).trim(); });
+  o.notiz = String(o.notiz || '').slice(0, 300);
+  return o;
+}
+function agSet(field, value) { if (!ob) return; ob.ag[field] = value; ob.error = ''; }
+function agToggle(field, key) {
+  if (!ob) return;
+  const arr = ob.ag[field], i = arr.indexOf(key);
+  if (i >= 0) arr.splice(i, 1); else arr.push(key);
+  renderOnboarding();
+}
+function agPick(field, key) { if (!ob) return; ob.ag[field] = key; renderOnboarding(); }
+function agAddPartner() {
+  if (!ob) return;
+  const v = String(ob.ag.newPartner || '').trim();
+  if (v && !ob.ag.partners.includes(v)) ob.ag.partners.push(v);
+  ob.ag.newPartner = '';
+  renderOnboarding();
+}
+function agRemovePartner(i) { if (ob) { ob.ag.partners.splice(i, 1); renderOnboarding(); } }
+function agencyStepHtml() {
+  const a = ob.ag;
+  const multi = (field, list) => `<div class="ag-chips">${list.map(([k, l]) => `<button type="button" class="ag-chip ${a[field].includes(k) ? 'on' : ''}" onclick="agToggle('${field}','${k}')">${l}</button>`).join('')}</div>`;
+  const single = (field, list) => `<div class="ag-chips">${list.map(([k, l]) => `<button type="button" class="ag-chip ${a[field] === k ? 'on' : ''}" onclick="agPick('${field}','${k}')">${l}</button>`).join('')}</div>`;
+  const num = (field, label, unit, ph, hint) => `<label class="ob-field"><span>${label}</span><div class="ob-input-wrap"><input class="ob-input" type="text" inputmode="decimal" value="${escapeHtml(a[field])}" placeholder="${ph || ''}" oninput="agSet('${field}', this.value)"><span class="ob-unit">${unit}</span></div>${hint ? `<small>${hint}</small>` : ''}</label>`;
+  const txt = (field, label, ph, type) => `<label class="ob-field"><span>${label}</span><input class="ob-input" type="${type || 'text'}" value="${escapeHtml(a[field])}" placeholder="${ph || ''}" oninput="agSet('${field}', this.value)"></label>`;
+  return `
+    <h2 class="ob-title">Deine Agentur</h2>
+    <p class="ob-sub">Hier legst du die Regeln deiner Agentur fest. Sie gelten für dein ganzes Team, sobald du eins gegründet hast, und bilden die Basis für Tracker, Rechnungen und Auswertungen.</p>
+    <div class="ag-sec"><div class="ob-section-title">🎯 Vertriebsart <em>(mehrere möglich)</em></div>${multi('vertrieb', AG_VERTRIEB)}</div>
+    <div class="ag-sec"><div class="ob-section-title">📦 Produkt / Branche <em>(mehrere möglich)</em></div>${multi('produkt', AG_PRODUKT)}</div>
+    <div class="ag-sec"><div class="ob-section-title">🏢 Deine Anbieter (Auftraggeber)</div>
+      <div class="ag-chips">${a.partners.map((p, i) => `<span class="ag-chip on">${escapeHtml(p)} <b onclick="agRemovePartner(${i})" title="Entfernen">×</b></span>`).join('')}</div>
+      <div class="ag-row"><input class="ob-input" type="text" value="${escapeHtml(a.newPartner)}" placeholder="Name des Anbieters" oninput="agSet('newPartner', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();agAddPartner();}"><button type="button" class="tm-btn" onclick="agAddPartner()">Hinzufügen</button></div>
+    </div>
+    <div class="ag-sec"><div class="ob-section-title">🧾 Abrechnung mit dem Anbieter</div>
+      <div class="ob-field"><span>Wie oft stellst du Rechnung?</span></div>${single('rechnungRhythm', AG_RHYTHM)}
+      ${num('rechnungFrist', 'Rechnung stellen innerhalb von … Tagen nach Zeitraum-Ende', 'Tage', '3')}
+      ${num('zahlungsziel', 'Zahlungsziel des Anbieters', 'Tage', '14', 'Daraus berechnet die App, wann das Geld spätestens da sein muss.')}
+      ${num('haftungMonate', 'Storno-Haftungszeit', 'Monate', '12', 'So lange kann der Anbieter Provision zurückfordern.')}
+      ${num('einbehaltPct', 'Einbehalt / Stornoreserve (optional)', '%', 'z. B. 10')}
+    </div>
+    <div class="ag-sec"><div class="ob-section-title">💶 Auszahlung an deine Mitarbeiter</div>
+      <div class="ob-field"><span>Wie oft zahlst du aus?</span></div>${single('maRhythm', AG_RHYTHM)}
+      ${txt('maTag', 'Auszahlungstag(e)', 'z. B. 25. des Monats oder freitags')}
+      ${num('maNeu', 'Provision pro Neukunde für Mitarbeiter', '€', 'z. B. 80', 'Wird im Team als Vorgabe verteilt.')}
+      ${num('maBestand', 'Provision pro Bestandskunde für Mitarbeiter', '€', 'z. B. 10')}
+      <div class="ob-field"><span>Was passiert bei einem Storno?</span></div>${single('stornoRegel', AG_STORNO)}
+    </div>
+    <div class="ag-sec"><div class="ob-section-title">🕒 Arbeitsweise</div>
+      <div class="ob-field"><span>Arbeitstage</span></div>${multi('tage', AG_DAYS)}
+      <div class="ag-row2">${txt('schichtVon', 'Beginn', '', 'time')}${txt('schichtBis', 'Ende', '', 'time')}</div>
+      ${num('tagesziel', 'Tagesziel pro Mitarbeiter (optional)', 'Aufträge', 'z. B. 3')}
+    </div>
+    <div class="ag-sec"><div class="ob-section-title">📊 Was soll erfasst werden? <em>(wird später im Tracker ergänzt)</em></div>${multi('kpi', AG_KPI)}</div>
+    <div class="ag-sec"><label class="ob-field"><span>Notizen zur Agentur (optional)</span><textarea class="ob-input" rows="2" maxlength="300" oninput="agSet('notiz', this.value)" placeholder="z. B. Gebiet, Besonderheiten im Vertrag">${escapeHtml(a.notiz)}</textarea></label></div>`;
+}
+
 function obSetRole(role) {
   obSet('role', role);
   renderOnboarding();
@@ -3773,7 +4111,8 @@ async function obFinish() {
     const ap = activeProfile();
     if (ap && !profiles.list.some(p => p !== ap && p.name.toLowerCase() === settings.name.toLowerCase())) { ap.name = settings.name; saveProfiles(); }
   }
-  settings.role = ob.role === 'teamleiter' ? 'teamleiter' : 'vertreter';
+  settings.role = roleOf(ob.role);
+  if (settings.role === 'agentur') settings.agency = agencyFromForm(ob.ag);
   settings.preisNeu = parseNum(ob.preisNeu) >= 0 ? parseNum(ob.preisNeu) : settings.preisNeu;
   settings.preisBestand = parseNum(ob.preisBestand) >= 0 ? parseNum(ob.preisBestand) : settings.preisBestand;
   settings.steuer = parseNum(ob.steuer) >= 0 && parseNum(ob.steuer) < 100 ? parseNum(ob.steuer) : 0; // leer = keine Steuer
@@ -3795,6 +4134,7 @@ async function obFinish() {
   closeOnboarding();
   render();
   checkFireworksTrigger();
+  if (typeof teamPushRules === 'function') teamPushRules();
 }
 
 // ---------- Einstellungen: alles auf einer Seite bearbeiten ----------
@@ -3829,6 +4169,7 @@ function renderSettingsPage() {
         </section>
         ${sec('🧑‍💼 Rolle', 'rolle')}
         ${sec('💶 Provision', 'provision')}
+        ${ob.role === 'agentur' ? sec('🏢 Agentur', 'agentur') : ''}
         ${tl ? sec('👥 Team-Overhead', 'overhead') : ''}
         ${sec('🎯 Ziele & Kosten', 'weiteres')}
         <section class="ob-set-sec"><div class="ob-set-title">🧮 So setzt sich dein Ziel zusammen</div>
@@ -3908,11 +4249,15 @@ function obStepContent(step) {
           <b>Vertreter</b><span>Ich schreibe Neu- und Bestandskunden selbst.</span></button>
         <button type="button" class="ob-choice ${ob.role === 'teamleiter' ? 'active' : ''}" onclick="obSetRole('teamleiter')">
           <b>Teamleiter</b><span>Ich habe ein Team und bekomme zusätzlich Overhead auf dessen Aufträge.</span></button>
+        <button type="button" class="ob-choice ${ob.role === 'agentur' ? 'active' : ''}" onclick="obSetRole('agentur')">
+          <b>Agenturinhaber</b><span>Ich leite eine Agentur, stelle den Anbietern Rechnungen und lege die Regeln für mein Team fest.</span></button>
       </div>`;
+  } else if (step === 'agentur') {
+    body = agencyStepHtml();
   } else if (step === 'provision') {
     body = `
-      <h2 class="ob-title">Welche Provision bekommst du?</h2>
-      <p class="ob-sub">${ob.role === 'teamleiter' ? 'Das ist deine Provision für Aufträge, die du selbst schreibst. ' : ''}Tippe ein, wie viel du in € pro Auftrag bekommst.${edit ? ' Änderungen gelten rückwirkend für alle bisherigen Einträge.' : ''}</p>
+      <h2 class="ob-title">${ob.role === 'agentur' ? 'Was zahlt dir der Anbieter?' : 'Welche Provision bekommst du?'}</h2>
+      <p class="ob-sub">${ob.role === 'teamleiter' ? 'Das ist deine Provision für Aufträge, die du selbst schreibst. ' : ''}${ob.role === 'agentur' ? 'Die Provision, die der Anbieter deiner Agentur pro Auftrag überweist. Damit rechnet der Tracker deinen Umsatz und die Rechnungen. ' : ''}Tippe ein, wie viel du in € pro Auftrag bekommst.${edit ? ' Änderungen gelten rückwirkend für alle bisherigen Einträge.' : ''}</p>
       ${obInput('preisNeu', 'Pro Neukunde', { placeholder: 'z. B. 110' })}
       ${obInput('preisBestand', 'Pro Bestandskunde', { placeholder: 'z. B. 15' })}`;
   } else if (step === 'overhead') {
@@ -3966,7 +4311,8 @@ function obStepContent(step) {
     primaryAction = 'obFinish()';
     const rows = [];
     if (ob.name.trim()) rows.push(['Name', escapeHtml(ob.name.trim())]);
-    rows.push(['Rolle', ob.role === 'teamleiter' ? 'Teamleiter' : 'Vertreter']);
+    rows.push(['Rolle', ob.role === 'agentur' ? 'Agenturinhaber' : ob.role === 'teamleiter' ? 'Teamleiter' : 'Vertreter']);
+    if (ob.role === 'agentur') rows.push(['Vertriebsart', (ob.ag.vertrieb || []).map(k => agLabel(AG_VERTRIEB, k)).join(', ') || '–'], ['Anbieter', (ob.ag.partners || []).join(', ') || '–']);
     rows.push(['Neukunde', fmtNumPlain(parseNum(ob.preisNeu) || 0)]);
     rows.push(['Bestandskunde', fmtNumPlain(parseNum(ob.preisBestand) || 0)]);
     if (ob.role === 'teamleiter') {
@@ -4032,7 +4378,7 @@ function renderOnboarding() {
 function updateHeaderGreeting() {
   const el = document.getElementById('header-eyebrow');
   if (!el) return;
-  const role = isTeamleiter() ? 'Teamleiter' : 'Vertreter';
+  const role = roleLabel();
   el.textContent = settings.name ? `Hi ${settings.name} · ${role}` : 'Energie Direktvertrieb';
   const pb = document.getElementById('profileBtn');
   if (pb) pb.title = 'Profil: ' + activeProfile().name;
@@ -4155,7 +4501,7 @@ function cloudErrText(e) {
   return m || 'Etwas ist schiefgelaufen.';
 }
 
-function cloudPayload() { return { days: data, events: events, settlements: settlements, settings: settings }; }
+function cloudPayload() { return { days: data, events: events, settlements: settlements, invoices: invoices, settings: settings }; }
 function cloudHasLocalData() { return Object.keys(data).length > 0 || events.length > 0 || settlements.length > 0; }
 
 function cloudMarkDirty() {
@@ -4497,6 +4843,37 @@ function teamDayCmp(stats) {
   if (t.day === todayKey(yd)) return { cur: 0, prev: t.umsatz || 0 };
   return { cur: 0, prev: 0 };
 }
+// Regeln der Agentur: Agenturinhaber (Teamleiter des Teams) legt fest, alle im Team übernehmen sie
+function agencyRulesPayload() {
+  const a = agencyCfg();
+  return { vertrieb: a.vertrieb, produkt: a.produkt, maRhythm: a.maRhythm, maTag: a.maTag, maNeu: parseNum(a.maNeu) || 0, maBestand: parseNum(a.maBestand) || 0,
+    stornoRegel: a.stornoRegel, haftungMonate: parseNum(a.haftungMonate) || 0, tage: a.tage, schichtVon: a.schichtVon, schichtBis: a.schichtBis, tagesziel: parseNum(a.tagesziel) || 0, kpi: a.kpi, agentur: settings.name || '' };
+}
+async function teamPushRules() {
+  const sb = teamSb(); if (!sb || !team.me || !teamIsLeader() || !isAgentur()) return;
+  try { const r = await sb.rpc('set_team_rules', { p_rules: agencyRulesPayload() }); if (r && r.error) team.rulesErr = cloudErrText(r.error); else { team.rulesErr = ''; if (team.info) team.info.rules = agencyRulesPayload(); } } catch (e) { /* optional */ }
+}
+function teamApplyRules() {
+  const r = team.info && team.info.rules;
+  if (!r || !r.maNeu && !r.maBestand || teamIsLeader() || settings.followAgency === false) return;
+  let changed = false;
+  if (r.maNeu > 0 && settings.preisNeu !== r.maNeu) { settings.preisNeu = r.maNeu; changed = true; }
+  if (r.maBestand > 0 && settings.preisBestand !== r.maBestand) { settings.preisBestand = r.maBestand; changed = true; }
+  if (changed) { applySettings(); saveData(); teamToast('Provision von deiner Agentur übernommen'); }
+}
+function teamRulesCard() {
+  const r = team.info && team.info.rules; if (!r || (!r.vertrieb && !r.maNeu)) return '';
+  const row = (l, v) => v ? `<div class="dash-kv-row"><span>${l}</span><b>${escapeHtml(String(v))}</b></div>` : '';
+  const days = (r.tage || []).map(k => agLabel(AG_DAYS, k)).join(', ');
+  return `<div class="card tm-card"><h2 class="tm-h">Regeln der Agentur</h2><p class="tm-sub">${teamIsLeader() ? 'Diese Regeln sehen alle in deinem Team.' : (settings.followAgency === false ? 'Du übernimmst die Provision nicht automatisch.' : 'Die Provision wird automatisch übernommen.')}</p>
+    ${row('Vertriebsart', (r.vertrieb || []).map(k => agLabel(AG_VERTRIEB, k)).join(', '))}
+    ${row('Produkt', (r.produkt || []).map(k => agLabel(AG_PRODUKT, k)).join(', '))}
+    ${row('Provision Neukunde', r.maNeu ? fmtEuro(r.maNeu) : '')}${row('Provision Bestandskunde', r.maBestand ? fmtEuro(r.maBestand) : '')}
+    ${row('Auszahlung', agLabel(AG_RHYTHM, r.maRhythm) + (r.maTag ? ' · ' + r.maTag : ''))}
+    ${row('Bei Storno', agLabel(AG_STORNO, r.stornoRegel))}${row('Storno-Haftungszeit', r.haftungMonate ? r.haftungMonate + ' Monate' : '')}
+    ${row('Arbeitstage', days)}${row('Arbeitszeit', r.schichtVon && r.schichtBis ? r.schichtVon + ' – ' + r.schichtBis + ' Uhr' : '')}${row('Tagesziel', r.tagesziel ? r.tagesziel + ' Aufträge' : '')}
+    ${teamIsLeader() ? '' : `<label class="ob-check" style="margin-top:10px;"><input type="checkbox" ${settings.followAgency !== false ? 'checked' : ''} onchange="settings.followAgency=this.checked;saveData();teamApplyRules();render()"><span>Provision der Agentur automatisch übernehmen</span></label>`}</div>`;
+}
 function teamByUser(rows) { const o = {}; (rows || []).forEach(r => { o[r.user_id] = r; }); return o; }
 
 async function teamLoad() {
@@ -4513,6 +4890,7 @@ async function teamLoad() {
       const [t, st, de] = await Promise.all([sb.from('teams').select('*').eq('id', team.me.team_id).maybeSingle(), sb.from('team_stats').select('*'), sb.from('team_stats_detail').select('*')]);
       for (const r of [t, st, de]) if (r.error) throw r.error;
       team.info = t.data; team.stats = teamByUser(st.data); team.detail = teamByUser(de.data);
+      teamApplyRules();
     }
     team.sqlMissing = false; team.err = '';
     const own = team.me && team.stats[uid];
@@ -4776,7 +5154,7 @@ function renderTeamContent() {
     html += card(`<h2 class="tm-h">Team beitreten</h2><p class="tm-sub">Du hast einen Einladungslink oder -code bekommen? Hier einfügen.</p>
       <div class="tm-row"><input class="tm-in" placeholder="Link oder Code" value="${escapeHtml(team.joinCode)}" oninput="team.joinCode=this.value">
       <button class="tm-btn" ${team.busy ? 'disabled' : ''} onclick="teamJoin()">Beitreten</button></div>${team.pendingCode ? '' : err}`);
-    if (isTeamleiter()) html += card(`<h2 class="tm-h">Team gründen</h2><p class="tm-sub">Du bist Teamleiter? Gründe ein Team, lade deine Leute per Link ein und sieh ihre Performance.</p>
+    if (isTeamleiter() || isAgentur()) html += card(`<h2 class="tm-h">Team gründen</h2><p class="tm-sub">Du bist Teamleiter oder Agenturinhaber? Gründe ein Team, lade deine Leute per Link ein und sieh ihre Performance.</p>
       <div class="tm-row"><input class="tm-in" placeholder="Teamname" value="${escapeHtml(team.createName)}" oninput="team.createName=this.value">
       <button class="tm-btn" ${team.busy ? 'disabled' : ''} onclick="teamCreate()">Gründen</button></div>`);
     return wrap(html);
@@ -4827,6 +5205,7 @@ function renderTeamContent() {
     <div class="tm-kpis"><div class="tm-kpi"><b>${fmtEuro(total)}</b>${teamBadge}<span>Team-Umsatz</span></div><div class="tm-kpi"><b>${totalOrders}</b><span>Aufträge</span></div><div class="tm-kpi"><b>${fmtEuro(total / Math.max(1, rows.length))}</b><span>Ø pro Person</span></div></div>
     <div class="tm-note" style="margin-top:8px;text-align:center">Prozent: heute im Vergleich zu gestern (<span style="color:var(--green);font-weight:700">grün = mehr</span>, <span style="color:var(--danger);font-weight:700">rot = weniger</span>).</div>`);
   html += card(`<h2 class="tm-h">Rangliste · ${periodName[P]}</h2><p class="tm-sub">${leader ? 'Tippe auf eine Person, um Details zu sehen.' : 'So steht dein Team gerade da.'}</p>${list}${team.err ? err : ''}`);
+  html += teamRulesCard();
   html += teamEventsCard();
   if (leader && team.info) {
     html += card(`<h2 class="tm-h">Leute einladen</h2><p class="tm-sub">Schick diesen Link an dein Team. Wer ihn öffnet, registriert sich bzw. meldet sich an und kann dann beitreten.</p>
