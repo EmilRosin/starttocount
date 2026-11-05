@@ -4278,9 +4278,14 @@ let team = teamFresh();
 let teamTimer = null;
 function teamFresh() {
   return { loaded: false, loading: false, info: null, me: null, members: [], stats: {}, detail: {}, err: '', msg: '', busy: false,
-    period: 'woche', open: null, sqlMissing: false, events: [], lastId: null, unread: 0, pollTimer: null, eventsOk: true, pendingCode: '', pendingName: '', createName: '', joinCode: '', myName: '', confirm: '' };
+    period: 'woche', open: null, sqlMissing: false, events: [], lastId: null, unread: 0, pollTimer: null, channel: null, eventsOk: true, pendingCode: '', pendingName: '', createName: '', joinCode: '', myName: '', confirm: '' };
 }
-function teamReset() { clearTimeout(teamTimer); if (team && team.pollTimer) clearInterval(team.pollTimer); team = teamFresh(); }
+function teamReset() {
+  clearTimeout(teamTimer);
+  if (team && team.pollTimer) clearInterval(team.pollTimer);
+  try { if (team && team.channel && cl.client && cl.client.removeChannel) cl.client.removeChannel(team.channel); } catch (e) { /* ignorieren */ }
+  team = teamFresh();
+}
 function teamSb() { return cl.session ? getCloud() : null; }
 function teamDefaultName() {
   const n = (settings.name || '').trim();
@@ -4482,9 +4487,22 @@ async function teamLoadEvents(initial) {
   team.events = list;
   if (currentPage === 'team') render(); else updateNavTabs();
 }
+// Echtzeit-Verbindung (sofort, sparsam) + Absicherung: alle 30 s nachfragen, nur wenn die App sichtbar ist
 function teamStartPoll() {
   if (team.pollTimer) clearInterval(team.pollTimer);
-  team.pollTimer = setInterval(() => { if (document.visibilityState === 'visible' || teamNotifyOn()) teamLoadEvents(false); }, 10000);
+  team.pollTimer = setInterval(() => { if (document.visibilityState === 'visible') teamLoadEvents(false); }, 30000);
+  const sb = teamSb();
+  if (sb && team.me && sb.channel && !team.channel) {
+    try {
+      team.channel = sb.channel('team-events-' + team.me.team_id)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'team_events', filter: 'team_id=eq.' + team.me.team_id }, () => teamLoadEvents(false))
+        .subscribe();
+    } catch (e) { team.channel = null; }
+  }
+  if (!teamStartPoll.bound) {
+    teamStartPoll.bound = true;
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && team.me) teamLoadEvents(false); });
+  }
 }
 async function teamSendEvent(kind, delta, dateKey) {
   const sb = teamSb(); if (!sb || !team.me || dateKey !== todayKey()) return;
