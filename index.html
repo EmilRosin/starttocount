@@ -750,6 +750,8 @@
     .dash-grid { align-items: stretch; }
     .dash-wide { grid-column: 1 / -1; }
     .dash-side > .dash-card:last-child { flex: 1; }
+    .dash-main > .dash-card:last-child { flex: 1; display: flex; flex-direction: column; }
+    .dash-main > .dash-card:last-child .dash-donut-area { flex: 1; align-items: center; }
   }
 
   .dash-card { padding: 20px; }
