@@ -610,10 +610,6 @@
     .dash-grid { grid-template-columns: 2.1fr 1fr; align-items: start; }
   }
 
-  .dash-ziel-row { display:grid; grid-template-columns: 1fr; gap:16px; margin-bottom:16px; align-items:start; }
-  @media (min-width: 760px) {
-    .dash-ziel-row { grid-template-columns: 1fr 1fr; }
-  }
   .dash-main, .dash-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
   .dash-card { padding: 20px; }
@@ -2669,7 +2665,48 @@ function renderDashboardContent(b, animate) {
 
   return `
     <div class="dashboard-page ${animate ? 'animate-in' : ''}">
-      <div class="dash-ziel-row">
+      <div class="dash-grid">
+        <div class="dash-main">
+          <div class="card dash-card">
+            <div class="dash-card-head">
+              <div>
+                <div class="dash-card-title">Kundenmix</div>
+                <div class="dash-card-sub">${kundenmixSub}</div>
+              </div>
+            </div>
+            <div class="dash-donut-area">
+              <div class="donut-wrap">
+                ${donutSvg}
+                <div class="donut-center">
+                  <div class="donut-center-pct">${donutCenterPct}</div>
+                  <div class="donut-center-label">${donutCenterLabel}</div>
+                </div>
+              </div>
+              <div class="dash-donut-legend">
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.blue}"></span>Neukunden<b>${viewNeuCount}</b><span class="dash-legend-pct">${neuPct}%</span></div>
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.green}"></span>Bestandskunden<b>${viewBestandCount}</b><span class="dash-legend-pct">${bestandPct}%</span></div>
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.danger}"></span>Stornos<b>${viewStornoCount}</b><span class="dash-legend-pct">${stornoShare}%</span></div>
+              </div>
+            </div>
+            ${kundenmixNoData ? `<div class="dash-card-sub" style="margin-top:8px;">Tipp: beim Hinzufügen einer Abrechnung die Felder "davon Neukunden/Bestand/Storno" ausfüllen, dann ist der Kundenmix auch hier bestätigt.</div>` : ''}
+          </div>
+
+          <div class="dash-lists">
+            <div class="card dash-card">
+              <div class="dash-card-title">Beste Tage</div>
+              <div class="dash-list">${top5Html}</div>
+            </div>
+            <div class="card dash-card">
+              <div class="dash-card-title">Tage mit Stornos</div>
+              <div class="dash-list">${stornoHtml}</div>
+            </div>
+          </div>
+
+          <div class="card dash-card">
+            <div class="dash-card-title">${monthCardTitle}</div>
+            <div class="dash-month-list">${monthHistoryHtml}</div>
+          </div>
+
           ${goalCardHtml()}
 
           <div class="card dash-card dash-fix-card">
@@ -2713,48 +2750,11 @@ function renderDashboardContent(b, animate) {
             </div>` : ''}
             ` : ''}
           </div>
-      </div>
-
-      <div class="dash-grid">
-        <div class="dash-main">
-          <div class="card dash-card">
-            <div class="dash-card-head">
-              <div>
-                <div class="dash-card-title">Kundenmix</div>
-                <div class="dash-card-sub">${kundenmixSub}</div>
-              </div>
-            </div>
-            <div class="dash-donut-area">
-              <div class="donut-wrap">
-                ${donutSvg}
-                <div class="donut-center">
-                  <div class="donut-center-pct">${donutCenterPct}</div>
-                  <div class="donut-center-label">${donutCenterLabel}</div>
-                </div>
-              </div>
-              <div class="dash-donut-legend">
-                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.blue}"></span>Neukunden<b>${viewNeuCount}</b><span class="dash-legend-pct">${neuPct}%</span></div>
-                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.green}"></span>Bestandskunden<b>${viewBestandCount}</b><span class="dash-legend-pct">${bestandPct}%</span></div>
-                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.danger}"></span>Stornos<b>${viewStornoCount}</b><span class="dash-legend-pct">${stornoShare}%</span></div>
-              </div>
-            </div>
-            ${kundenmixNoData ? `<div class="dash-card-sub" style="margin-top:8px;">Tipp: beim Hinzufügen einer Abrechnung die Felder "davon Neukunden/Bestand/Storno" ausfüllen, dann ist der Kundenmix auch hier bestätigt.</div>` : ''}
-          </div>
-
-          <div class="dash-lists">
-            <div class="card dash-card">
-              <div class="dash-card-title">Beste Tage</div>
-              <div class="dash-list">${top5Html}</div>
-            </div>
-            <div class="card dash-card">
-              <div class="dash-card-title">Tage mit Stornos</div>
-              <div class="dash-list">${stornoHtml}</div>
-            </div>
-          </div>
 
           <div class="card dash-card">
-            <div class="dash-card-title">${monthCardTitle}</div>
-            <div class="dash-month-list">${monthHistoryHtml}</div>
+            <div class="dash-card-title">Wann kommt mein Geld?</div>
+            <div class="dash-card-sub">1.–15. → Auszahlung 20.–25. selber Monat · 16.–Monatsende → Auszahlung 7.–12. Folgemonat</div>
+            <div class="dash-payout-list">${payoutWindowsHtml}</div>
           </div>
 
           <div class="card dash-card">
@@ -2816,12 +2816,6 @@ function renderDashboardContent(b, animate) {
           <div class="card dash-card">
             <div class="dash-card-title">Kennzahlen</div>
             ${kennzahlenHtml}
-          </div>
-
-          <div class="card dash-card">
-            <div class="dash-card-title">Wann kommt mein Geld?</div>
-            <div class="dash-card-sub">1.–15. → Auszahlung 20.–25. selber Monat · 16.–Monatsende → Auszahlung 7.–12. Folgemonat</div>
-            <div class="dash-payout-list">${payoutWindowsHtml}</div>
           </div>
         </div>
       </div>
