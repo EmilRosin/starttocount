@@ -154,6 +154,17 @@
     z-index: 1;
   }
   .nav-tab.active { color: #fff; }
+  .nav-tab { padding-left:4px; padding-right:4px; white-space:nowrap; }
+  .abr-month { margin-bottom:16px; }
+  .abr-row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .abr-row small { display:block; color:var(--text-dim); font-size:12px; margin-top:2px; }
+  .abr-row > div { text-align:left; }
+  .abr-row b { color:var(--text); font-variant-numeric:tabular-nums; font-size:16px; white-space:nowrap; }
+  .abr-row.missing b { color:var(--text-dim) !important; font-weight:600; font-size:13px; }
+  .abr-sum { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:12px 0 2px; border-top:1.5px solid var(--text-dim); margin-top:2px; }
+  .abr-sum span { font-weight:800; }
+  .abr-sum b { font-family:'Space Grotesk',sans-serif; font-size:22px; color:var(--green); white-space:nowrap; }
+  .abr-net { color:var(--text-dim); font-size:12.5px; text-align:right; }
 
   /* --- MAIN CARD --- */
   .card {
@@ -601,6 +612,11 @@
     animation: fadeInUp 0.32s ease both;
   }
 
+  .dash-top { display:grid; grid-template-columns:1fr; gap:16px; margin-bottom:16px; }
+  @media (min-width: 880px) { .dash-top { grid-template-columns: 1fr 1fr; align-items:stretch; } }
+  .dash-top > .card { margin:0; border-top:4px solid var(--blue); }
+  .dash-top .dash-card-title { font-size:17px; }
+  .dash-top .dash-fix-saldo { font-size:30px; }
   .dash-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -948,6 +964,7 @@
     <div class="toggle-slider" id="nav-slider"></div>
     <button class="nav-tab" id="tab-dashboard" onclick="switchPage('dashboard')">Dashboard</button>
     <button class="nav-tab" id="tab-tracker" onclick="switchPage('tracker')">Tracker</button>
+    <button class="nav-tab" id="tab-abrechnungen" onclick="switchPage('abrechnungen')">Meine Abrechnungen</button>
   </div>
 
   <div class="card period-toggle-card" id="period-toggle-root" style="display:none;">
@@ -2467,9 +2484,13 @@ function renderDashboardContent(b, animate) {
   const bestandPct = totalCustomers > 0 ? Math.max(0, 100 - neuPct) : 0;
   const stornoShare = grossCustomers > 0 ? Math.round((viewStornoCount / grossCustomers) * 100) : 0;
 
+  // Stornos als roter Abschnitt; in der Ausgezahlt-Ansicht sind sie in Neu/Bestand schon enthalten
+  const donutStorno = Math.min(viewStornoCount, isAusgezahltView ? grossCustomers : Infinity);
+  const donutScale = isAusgezahltView && grossCustomers > 0 ? Math.max(0, grossCustomers - donutStorno) / grossCustomers : 1;
   const donutSvg = buildDonutChartSVG([
-    { label: 'Neukunden', value: viewNeuCount, color: colors.blue },
-    { label: 'Bestandskunden', value: viewBestandCount, color: colors.green }
+    { label: 'Neukunden', value: viewNeuCount * donutScale, color: colors.blue },
+    { label: 'Bestandskunden', value: viewBestandCount * donutScale, color: colors.green },
+    { label: 'Stornos', value: donutStorno, color: colors.danger }
   ], { size: 200, strokeWidth: 24 });
 
   const dominant = viewNeuCount >= viewBestandCount
@@ -2646,8 +2667,45 @@ function renderDashboardContent(b, animate) {
 
   return `
     <div class="dashboard-page ${animate ? 'animate-in' : ''}">
+      <div class="dash-top">
+          <div class="card dash-card dash-fix-card">
+            <div class="dash-card-head">
+              <div>
+                <div class="dash-card-title">Ziel ${fixMonthLabel}</div>
+                <div class="dash-card-sub">${fixSchwelle > 0 ? (fixReached ? 'Ziel erreicht 🎉' : fmtEuro(Math.abs(fixSaldo)) + ' bis zum Ziel') : 'Noch kein Ziel hinterlegt – in den ⚙️ Einstellungen festlegen'}</div>
+              </div>
+            </div>
+            ${fixSchwelle > 0 ? `
+            <div class="dash-fix-track"><div class="dash-fix-fill ${fixReached ? 'reached' : ''}" style="width:${fixPct}%;"></div></div>
+            <div class="dash-fix-saldo ${fixReached ? 'pos' : 'neg'}">${fixReached ? '+' : '−'}${fmtEuro(Math.abs(fixSaldo))}</div>
+            <div class="dash-fix-sub">Bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
+            ${(STEUER_PROZENT > 0 || fixStornoPct > 0 || (settings.fixkosten || 0) > 0 || fixAufbau.goal > 0) && fixLiveBrutto > 0 ? `
+            <div class="dash-fix-reserve">
+              <div class="top"><span>📈 Geschätzter Umsatz (Brutto)</span><b>${fmtEuro(fixLiveBrutto)}</b></div>
+              ${(settings.fixkosten || 0) > 0 ? `<div><span>🏠 Fixkosten abziehen</span><b>${fmtEuro(settings.fixkosten)}</b></div>` : ''}
+              ${fixAufbau.goal > 0 ? `<div><span>🎯 Finanzziel${settings.goalName ? ' (' + escapeHtml(settings.goalName) + ')' : ''} zurücklegen</span><b>${fmtEuro(fixAufbau.goal)}</b></div>` : ''}
+              ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}%)</span><b>${fmtEuro(fixLiveBrutto * (1 - fixStornoPct / 100) * STEUER_PROZENT / 100)}</b></div>` : ''}
+              ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (geschätzt nach den letzten Abrechnungen, ${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
+              <div class="pocket"><span>💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 || fixAufbau.goal > 0 ? ' (nach Abzügen)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0) - fixAufbau.goal)}</b></div>
+            </div>` : ''}
+            ` : ''}
+          </div>
+
+          ${goalCardHtml()}
+      </div>
       <div class="dash-grid">
         <div class="dash-main">
+          <div class="dash-lists">
+            <div class="card dash-card">
+              <div class="dash-card-title">Beste Tage</div>
+              <div class="dash-list">${top5Html}</div>
+            </div>
+            <div class="card dash-card">
+              <div class="dash-card-title">Tage mit Stornos</div>
+              <div class="dash-list">${stornoHtml}</div>
+            </div>
+          </div>
+
           <div class="card dash-card">
             <div class="dash-card-head">
               <div>
@@ -2670,47 +2728,6 @@ function renderDashboardContent(b, animate) {
               </div>
             </div>
             ${kundenmixNoData ? `<div class="dash-card-sub" style="margin-top:8px;">Tipp: beim Hinzufügen einer Abrechnung die Felder "davon Neukunden/Bestand/Storno" ausfüllen, dann ist der Kundenmix auch hier bestätigt.</div>` : ''}
-          </div>
-
-          <div class="dash-lists">
-            <div class="card dash-card">
-              <div class="dash-card-title">Beste Tage</div>
-              <div class="dash-list">${top5Html}</div>
-            </div>
-            <div class="card dash-card">
-              <div class="dash-card-title">Tage mit Stornos</div>
-              <div class="dash-list">${stornoHtml}</div>
-            </div>
-          </div>
-
-          <div class="card dash-card">
-            <div class="dash-card-title">${monthCardTitle}</div>
-            <div class="dash-month-list">${monthHistoryHtml}</div>
-          </div>
-
-          ${goalCardHtml()}
-
-          <div class="card dash-card dash-fix-card">
-            <div class="dash-card-head">
-              <div>
-                <div class="dash-card-title">Ziel ${fixMonthLabel}</div>
-                <div class="dash-card-sub">${fixSchwelle > 0 ? (fixReached ? 'Ziel erreicht 🎉' : fmtEuro(Math.abs(fixSaldo)) + ' bis zum Ziel') : 'Noch kein Ziel hinterlegt – in den ⚙️ Einstellungen festlegen'}</div>
-              </div>
-            </div>
-            ${fixSchwelle > 0 ? `
-            <div class="dash-fix-track"><div class="dash-fix-fill ${fixReached ? 'reached' : ''}" style="width:${fixPct}%;"></div></div>
-            <div class="dash-fix-saldo ${fixReached ? 'pos' : 'neg'}">${fixReached ? '+' : '−'}${fmtEuro(Math.abs(fixSaldo))}</div>
-            <div class="dash-fix-sub">Bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
-            ${(STEUER_PROZENT > 0 || fixStornoPct > 0 || (settings.fixkosten || 0) > 0 || fixAufbau.goal > 0) && fixLiveBrutto > 0 ? `
-            <div class="dash-fix-reserve">
-              <div class="top"><span>📈 Geschätzter Umsatz (Brutto)</span><b>${fmtEuro(fixLiveBrutto)}</b></div>
-              ${(settings.fixkosten || 0) > 0 ? `<div><span>🏠 Fixkosten abziehen</span><b>${fmtEuro(settings.fixkosten)}</b></div>` : ''}
-              ${fixAufbau.goal > 0 ? `<div><span>🎯 Finanzziel${settings.goalName ? ' (' + escapeHtml(settings.goalName) + ')' : ''} zurücklegen</span><b>${fmtEuro(fixAufbau.goal)}</b></div>` : ''}
-              ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}%)</span><b>${fmtEuro(fixLiveBrutto * (1 - fixStornoPct / 100) * STEUER_PROZENT / 100)}</b></div>` : ''}
-              ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (geschätzt nach den letzten Abrechnungen, ${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
-              <div class="pocket"><span>💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 || fixAufbau.goal > 0 ? ' (nach Abzügen)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0) - fixAufbau.goal)}</b></div>
-            </div>` : ''}
-            ` : ''}
           </div>
 
           <div class="card dash-card">
@@ -2779,10 +2796,65 @@ function renderDashboardContent(b, animate) {
             <div class="dash-card-title">Kennzahlen</div>
             ${kennzahlenHtml}
           </div>
+
+          <div class="card dash-card">
+            <div class="dash-card-title">${monthCardTitle}</div>
+            <div class="dash-month-list">${monthHistoryHtml}</div>
+          </div>
+
         </div>
       </div>
     </div>
   `;
+}
+
+// ---------- Reiter "Meine Abrechnungen": pro Monat ein Block ----------
+function renderAbrechnungenContent() {
+  const now = new Date();
+  const curKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const months = new Set([curKey]);
+  settlements.forEach(x => { if (x.windowId && /^\d{4}-\d{2}-[AB]$/.test(x.windowId)) months.add(x.windowId.slice(0, 7)); });
+  const keys = Array.from(months).sort().reverse();
+  const blocks = keys.map(mk => {
+    const [y, m] = mk.split('-').map(Number);
+    const title = new Date(y, m - 1, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    const last = new Date(y, m, 0).getDate();
+    const part = (suffix, nr, range) => {
+      const list = settlements.filter(x => x.windowId === `${mk}-${suffix}`);
+      const sum = list.reduce((a, x) => a + (x.betrag || 0), 0);
+      return { nr, range, has: list.length > 0, sum };
+    };
+    const parts = [part('A', 1, `1.–15.`), part('B', 2, `16.–${last}.`)];
+    const total = parts.reduce((a, p) => a + p.sum, 0);
+    const rows = parts.map(p => `
+      <div class="abr-row ${p.has ? '' : 'missing'}">
+        <div>Abrechnung ${p.nr}<small>geschrieben ${p.range}</small></div>
+        <b>${p.has ? fmtEuro(p.sum) : 'noch nicht abgerechnet'}</b>
+      </div>`).join('');
+    const anyHas = parts.some(p => p.has);
+    return `
+      <div class="card dash-card abr-month">
+        <div class="dash-card-title">${title}</div>
+        ${rows}
+        <div class="abr-sum"><span>Verdient im ${new Date(y, m - 1, 1).toLocaleDateString('de-DE', { month: 'long' })}</span><b>${anyHas ? fmtEuro(total) : '–'}</b></div>
+        ${anyHas && STEUER_PROZENT > 0 ? `<div class="abr-net">≈ ${fmtEuro(nettoOf(total))} netto (−${STEUER_PROZENT}% Steuer)</div>` : ''}
+      </div>`;
+  }).join('');
+  const loose = settlements.filter(x => !x.windowId || !/^\d{4}-\d{2}-[AB]$/.test(x.windowId));
+  const looseHtml = loose.length ? `
+      <div class="card dash-card abr-month">
+        <div class="dash-card-title">Ohne Zeitraum</div>
+        <div class="dash-card-sub">Diese Abrechnungen sind keinem Zeitraum zugeordnet und zählen deshalb in keinem Monat mit.</div>
+        ${loose.map(x => `<div class="abr-row"><div>${escapeHtml(x.label || 'Abrechnung')}</div><b>${fmtEuro(x.betrag || 0)}</b></div>`).join('')}
+      </div>` : '';
+  return `
+    <div class="abr-page">
+      <div class="card dash-card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+        <div><div class="dash-card-title">Meine Abrechnungen</div><div class="dash-card-sub">Pro Monat: was dir für die beiden Abrechnungen ausgezahlt wurde (Brutto).</div></div>
+        <button class="today-btn" onclick="settlementsOpen = true; switchPage('dashboard')">➕ Abrechnung hinzufügen</button>
+      </div>
+      ${blocks}${looseHtml}
+    </div>`;
 }
 
 let lastRenderedPage = null;
@@ -2793,6 +2865,8 @@ function render() {
   if (currentPage === 'dashboard') {
     const enteringDashboard = lastRenderedPage !== 'dashboard';
     html += renderDashboardContent(buildStatsData(), enteringDashboard);
+  } else if (currentPage === 'abrechnungen') {
+    html += renderAbrechnungenContent();
   } else {
     html += renderTrackerContent();
   }
@@ -2858,10 +2932,12 @@ function updateJahrNav() {
 function updateNavTabs() {
   const tabTracker = document.getElementById('tab-tracker');
   const tabDashboard = document.getElementById('tab-dashboard');
+  const tabAbr = document.getElementById('tab-abrechnungen');
   if (!tabTracker || !tabDashboard) return;
   tabTracker.classList.toggle('active', currentPage === 'tracker');
   tabDashboard.classList.toggle('active', currentPage === 'dashboard');
-  const map = { tracker: tabTracker, dashboard: tabDashboard };
+  if (tabAbr) tabAbr.classList.toggle('active', currentPage === 'abrechnungen');
+  const map = { tracker: tabTracker, dashboard: tabDashboard, abrechnungen: tabAbr };
   positionSlider('nav-slider', map[currentPage]);
 }
 
