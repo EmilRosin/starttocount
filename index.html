@@ -157,6 +157,43 @@
   .nav-tab.active { color: #fff; }
   .nav-tab { padding-left:4px; padding-right:4px; white-space:nowrap; }
   .abr-month { margin-bottom:0; }
+  @media (max-width: 560px) { .nav-long { display:none; } .nav-tab { font-size:12px; } }
+  .tm-wrap { display:grid; gap:14px; max-width:760px; margin:0 auto; text-align:left; }
+  .tm-wrap .tm-h { color:var(--text); text-align:left; font-size:18px; }
+  .tm-wrap .tm-sub, .tm-wrap .tm-note { text-align:left; }
+  .tm-card { padding:20px; }
+  .tm-h { font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:18px; margin:0 0 4px; }
+  .tm-sub { font-size:13px; color:var(--text-dim); margin:0 0 14px; line-height:1.45; }
+  .tm-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .tm-in { flex:1; min-width:140px; padding:12px 14px; border-radius:12px; border:1px solid var(--border); background:var(--toggle-bg); color:var(--text); font:inherit; font-size:14px; }
+  .tm-btn { border:none; border-radius:12px; padding:12px 18px; font:inherit; font-size:14px; font-weight:700; cursor:pointer; background:var(--blue); color:#fff; }
+  .tm-btn.sec { background:var(--toggle-bg); color:var(--text); }
+  .tm-btn.danger { background:transparent; color:var(--danger); padding:8px 4px; font-size:12px; text-decoration:underline; }
+  .tm-btn:disabled { opacity:.5; cursor:default; }
+  .tm-seg { display:inline-flex; background:var(--toggle-bg); border-radius:10px; padding:3px; gap:2px; }
+  .tm-seg button { border:none; background:transparent; padding:7px 14px; border-radius:8px; font:inherit; font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer; }
+  .tm-seg button.on { background:var(--blue); color:#fff; }
+  .tm-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .tm-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:6px; }
+  .tm-kpi { background:var(--toggle-bg); border-radius:12px; padding:12px; text-align:center; }
+  .tm-kpi b { display:block; font-family:'Space Grotesk',sans-serif; font-size:18px; }
+  .tm-kpi span { font-size:11px; color:var(--text-dim); }
+  .tm-member { border-top:1px solid var(--border); padding:12px 0; }
+  .tm-member:first-child { border-top:none; }
+  .tm-line { display:flex; align-items:center; gap:12px; cursor:default; }
+  .tm-line.click { cursor:pointer; }
+  .tm-rank { width:26px; height:26px; border-radius:50%; background:var(--toggle-bg); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex:0 0 auto; }
+  .tm-rank.r1 { background:#f5c542; color:#4a3800; }
+  .tm-name { flex:1; min-width:0; font-weight:700; font-size:14px; }
+  .tm-name small { display:block; font-weight:500; font-size:11px; color:var(--text-dim); }
+  .tm-val { font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:15px; text-align:right; }
+  .tm-bar { height:6px; background:var(--toggle-bg); border-radius:4px; margin:8px 0 0 38px; overflow:hidden; }
+  .tm-bar i { display:block; height:100%; background:var(--blue); border-radius:4px; }
+  .tm-detail { margin:12px 0 0 38px; display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px; }
+  .tm-detail .tm-kpi b { font-size:15px; }
+  .tm-link { width:100%; box-sizing:border-box; padding:12px 14px; border-radius:12px; border:1px dashed var(--border); background:var(--toggle-bg); color:var(--text); font:inherit; font-size:12px; }
+  .tm-note { font-size:12px; color:var(--text-dim); line-height:1.5; }
+  .tm-share { margin:0 0 14px; padding-left:18px; font-size:13px; color:var(--text); line-height:1.6; }
   .abr-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
   .abr-actions { display:flex; gap:8px; flex-wrap:wrap; }
   .abr-chart { margin-bottom:16px; }
@@ -1017,7 +1054,8 @@
     <div class="toggle-slider" id="nav-slider"></div>
     <button class="nav-tab" id="tab-dashboard" onclick="switchPage('dashboard')">Dashboard</button>
     <button class="nav-tab" id="tab-tracker" onclick="switchPage('tracker')">Tracker</button>
-    <button class="nav-tab" id="tab-abrechnungen" onclick="switchPage('abrechnungen')">Meine Abrechnungen</button>
+    <button class="nav-tab" id="tab-abrechnungen" onclick="switchPage('abrechnungen')"><span class="nav-long">Meine </span>Abrechnungen</button>
+    <button class="nav-tab" id="tab-team" onclick="switchPage('team')">Team</button>
   </div>
 
   <div class="period-row">
@@ -1228,6 +1266,7 @@ async function saveData() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ days: data, events: events, settlements: settlements, settings: settings }));
     storageOk = true;
     if (typeof cloudMarkDirty === 'function') cloudMarkDirty();
+    if (typeof teamMarkDirty === 'function') teamMarkDirty();
   } catch (e) {
     storageOk = false;
   }
@@ -1286,6 +1325,7 @@ function switchPage(p) {
   if (currentPage === 'dashboard' && p !== 'dashboard') { monatOffset = 0; zeitraumOffset = 0; jahrOffset = 0; }
   currentPage = p;
   render();
+  if (p === 'team' && typeof teamLoad === 'function') teamLoad();
 }
 
 function setStatsPeriod(p) {
@@ -3205,6 +3245,8 @@ function render() {
     html += renderDashboardContent(buildStatsData(), enteringDashboard);
   } else if (currentPage === 'abrechnungen') {
     html += renderAbrechnungenContent();
+  } else if (currentPage === 'team') {
+    html += renderTeamContent();
   } else {
     html += renderTrackerContent();
   }
@@ -3213,7 +3255,7 @@ function render() {
   lastRenderedPage = currentPage;
 
   const wrapEl = document.getElementById('wrap');
-  if (wrapEl) wrapEl.classList.toggle('wrap-wide', currentPage === 'dashboard' || currentPage === 'abrechnungen');
+  if (wrapEl) wrapEl.classList.toggle('wrap-wide', currentPage === 'dashboard' || currentPage === 'abrechnungen' || currentPage === 'team');
 
   if (currentPage === 'tracker') {
     const dp = document.getElementById('datePicker');
@@ -3275,7 +3317,9 @@ function updateNavTabs() {
   tabTracker.classList.toggle('active', currentPage === 'tracker');
   tabDashboard.classList.toggle('active', currentPage === 'dashboard');
   if (tabAbr) tabAbr.classList.toggle('active', currentPage === 'abrechnungen');
-  const map = { tracker: tabTracker, dashboard: tabDashboard, abrechnungen: tabAbr };
+  const tabTeam = document.getElementById('tab-team');
+  if (tabTeam) tabTeam.classList.toggle('active', currentPage === 'team');
+  const map = { tracker: tabTracker, dashboard: tabDashboard, abrechnungen: tabAbr, team: tabTeam };
   positionSlider('nav-slider', map[currentPage]);
 }
 
@@ -3976,6 +4020,7 @@ async function cloudApply(payload, ts) {
   render(); updateHeaderGreeting();
   l.applying = false; l.ts = ts; l.dirty = false; cloudSetLink(l);
   cl.lastSync = new Date();
+  if (typeof teamMarkDirty === 'function') teamMarkDirty();
 }
 
 // Nach Anmeldung bzw. beim Start: Cloud und Gerät abgleichen
@@ -4058,6 +4103,7 @@ function cloudForceLogout(msg) {
   profiles = { active: 'main', list: [{ id: 'main', name: 'Mein Profil' }] };
   STORAGE_KEY = storageKeyFor('main');
   data = {}; events = []; settlements = []; settings = defaultSettings();
+  if (typeof teamReset === 'function') teamReset();
   cl.session = null; cl.busy = false; cl.conflict = null; cl.err = ''; cl.msg = msg || ''; cl.email = cloudRememberedEmail(); cl.pw = ''; cl.mode = 'login';
   if (pf) closeProfiles();
   const ob = document.getElementById('onboarding-root'); if (ob) ob.innerHTML = '';
@@ -4203,6 +4249,257 @@ function showGate() {
   const w = document.getElementById('wrap'); if (w) w.style.display = 'none';
   renderGate();
 }
+
+// ======================= TEAM =======================
+const TEAM_PENDING_KEY = 'tagesumsatz-pending-team';
+const TEAM_PUBLIC_URL = 'https://emilrosin.github.io/starttocount/';
+(function teamCaptureInvite() {
+  try {
+    const c = new URLSearchParams(location.search).get('team');
+    if (c && /^[A-Za-z0-9]{4,32}$/.test(c.trim())) localStorage.setItem(TEAM_PENDING_KEY, c.trim());
+  } catch (e) { /* ignorieren */ }
+})();
+let team = teamFresh();
+let teamTimer = null;
+function teamFresh() {
+  return { loaded: false, loading: false, info: null, me: null, members: [], stats: {}, detail: {}, err: '', msg: '', busy: false,
+    period: 'woche', open: null, sqlMissing: false, pendingCode: '', pendingName: '', createName: '', joinCode: '', myName: '', confirm: '' };
+}
+function teamReset() { clearTimeout(teamTimer); team = teamFresh(); }
+function teamSb() { return cl.session ? getCloud() : null; }
+function teamDefaultName() {
+  const n = (settings.name || '').trim();
+  if (n) return n;
+  const m = cl.session && cl.session.user && cl.session.user.email || '';
+  return m.split('@')[0] || 'Ich';
+}
+function teamIsLeader() { return !!(team.me && team.me.role === 'leader'); }
+function teamInviteLink() { return team.info ? TEAM_PUBLIC_URL + '?team=' + encodeURIComponent(team.info.invite_code) : ''; }
+
+// Kennzahlen aus den eigenen Daten (ohne Overhead, damit alle vergleichbar sind)
+function teamPeriodStats(dates) {
+  let umsatz = 0, neu = 0, bestand = 0, stN = 0, stB = 0, days = 0, best = 0;
+  dates.forEach(k => {
+    const e = data[k]; if (!e) return;
+    const v = dayTotal(e) - overheadOf(e);
+    neu += e.neu || 0; bestand += e.bestand || 0; stN += e.storno_neu || 0; stB += e.storno_bestand || 0;
+    if ((e.neu || 0) + (e.bestand || 0) > 0) days++;
+    umsatz += v; if (v > best) best = v;
+  });
+  const gross = neu + bestand, storno = stN + stB;
+  return { umsatz: Math.round(umsatz * 100) / 100, orders: gross - storno, neu, bestand, storno,
+    stornoQuote: gross > 0 ? Math.round(storno / gross * 1000) / 10 : 0, days, best: Math.round(best * 100) / 100,
+    avgDay: days > 0 ? Math.round(umsatz / days * 100) / 100 : 0 };
+}
+function teamComputeStats() {
+  const win = windowOffsetBack(0);
+  const year = String(new Date().getFullYear());
+  const sets = { woche: daysInRange(win.schreibStart, win.schreibEnd), monat: monthDaysForOffset(0), jahr: Object.keys(data).filter(k => k.startsWith(year)) };
+  const pub = {}, det = {};
+  Object.keys(sets).forEach(p => { const st = teamPeriodStats(sets[p]); pub[p] = { umsatz: st.umsatz, orders: st.orders }; det[p] = st; });
+  return { pub, det };
+}
+function teamMarkDirty() {
+  if (!team.me || !cl.session) return;
+  clearTimeout(teamTimer);
+  teamTimer = setTimeout(() => teamPushStats(), 2500);
+}
+async function teamPushStats() {
+  const sb = teamSb(); if (!sb || !team.me) return;
+  const { pub, det } = teamComputeStats();
+  const uid = cl.session.user.id, ts = new Date().toISOString();
+  const a = await sb.from('team_stats').upsert({ user_id: uid, team_id: team.me.team_id, stats: pub, updated_at: ts });
+  const b = await sb.from('team_stats_detail').upsert({ user_id: uid, team_id: team.me.team_id, stats: det, updated_at: ts });
+  if (a.error || b.error) { team.err = 'Kennzahlen konnten nicht gesendet werden: ' + cloudErrText(a.error || b.error); }
+  else { team.stats[uid] = { user_id: uid, team_id: team.me.team_id, stats: pub, updated_at: ts }; team.detail[uid] = { user_id: uid, team_id: team.me.team_id, stats: det, updated_at: ts }; }
+  if (currentPage === 'team') render();
+}
+function teamByUser(rows) { const o = {}; (rows || []).forEach(r => { o[r.user_id] = r; }); return o; }
+
+async function teamLoad() {
+  const sb = teamSb(); if (!sb) return;
+  team.loading = true;
+  try {
+    const uid = cl.session.user.id;
+    const mem = await sb.from('team_members').select('*');
+    if (mem.error) throw mem.error;
+    team.members = mem.data || [];
+    team.me = team.members.find(m => m.user_id === uid) || null;
+    if (!team.me) { team.info = null; team.stats = {}; team.detail = {}; }
+    else {
+      const [t, st, de] = await Promise.all([sb.from('teams').select('*').eq('id', team.me.team_id).maybeSingle(), sb.from('team_stats').select('*'), sb.from('team_stats_detail').select('*')]);
+      for (const r of [t, st, de]) if (r.error) throw r.error;
+      team.info = t.data; team.stats = teamByUser(st.data); team.detail = teamByUser(de.data);
+    }
+    team.sqlMissing = false; team.err = '';
+  } catch (e) {
+    const m = String((e && e.message) || e || '');
+    team.sqlMissing = /relation|does not exist|schema cache|could not find/i.test(m);
+    team.err = team.sqlMissing ? '' : cloudErrText(e);
+  }
+  team.loading = false; team.loaded = true;
+  if (team.me) await teamPushStats();
+  else await teamCheckPending();
+  if (currentPage === 'team') render();
+}
+async function teamCheckPending() {
+  let code = '';
+  try { code = localStorage.getItem(TEAM_PENDING_KEY) || ''; } catch (e) { /* ignorieren */ }
+  if (!code || team.me) return;
+  const sb = teamSb(); if (!sb) return;
+  const r = await sb.rpc('team_by_code', { p_code: code });
+  const row = r && !r.error && Array.isArray(r.data) ? r.data[0] : (r && !r.error ? r.data : null);
+  if (row && row.name) { team.pendingCode = code; team.pendingName = row.name; if (!team.myName) team.myName = teamDefaultName(); }
+  else { team.pendingCode = ''; team.pendingName = ''; if (r && !r.error) { try { localStorage.removeItem(TEAM_PENDING_KEY); } catch (e) { /* ignorieren */ } team.err = 'Der Einladungslink ist ungültig oder abgelaufen.'; } }
+}
+async function teamInit() {
+  if (!cl.session) return;
+  await teamLoad();
+  if (team.pendingCode && !team.me) { currentPage = 'team'; render(); }
+}
+async function teamRun(fn) {
+  team.busy = true; team.err = ''; team.msg = ''; render();
+  try { await fn(); } catch (e) { team.err = cloudErrText(e); }
+  team.busy = false; render();
+}
+async function teamCreate() {
+  const name = (team.createName || '').trim(); if (!name) { team.err = 'Bitte gib einen Teamnamen ein.'; render(); return; }
+  await teamRun(async () => {
+    const r = await teamSb().rpc('create_team', { p_name: name, p_display: (team.myName || teamDefaultName()) });
+    if (r.error) throw r.error;
+    await teamLoad();
+  });
+}
+async function teamJoin(code) {
+  code = (code || team.joinCode || '').trim().replace(/^.*team=/, '');
+  if (!code) { team.err = 'Bitte gib den Einladungscode oder -link ein.'; render(); return; }
+  await teamRun(async () => {
+    const r = await teamSb().rpc('join_team', { p_code: code, p_display: (team.myName || teamDefaultName()) });
+    if (r.error) throw r.error;
+    try { localStorage.removeItem(TEAM_PENDING_KEY); } catch (e) { /* ignorieren */ }
+    team.pendingCode = ''; team.pendingName = '';
+    await teamLoad();
+  });
+}
+function teamDeclineInvite() { try { localStorage.removeItem(TEAM_PENDING_KEY); } catch (e) { /* ignorieren */ } team.pendingCode = ''; team.pendingName = ''; render(); }
+async function teamLeave() {
+  if (team.confirm !== 'leave') { team.confirm = 'leave'; render(); return; }
+  team.confirm = '';
+  await teamRun(async () => { const r = await teamSb().rpc('leave_team'); if (r.error) throw r.error; team.me = null; team.info = null; await teamLoad(); });
+}
+async function teamDissolve() {
+  if (team.confirm !== 'dissolve') { team.confirm = 'dissolve'; render(); return; }
+  team.confirm = '';
+  await teamRun(async () => { const r = await teamSb().rpc('delete_team'); if (r.error) throw r.error; team.me = null; team.info = null; await teamLoad(); });
+}
+async function teamRemove(uid) {
+  if (team.confirm !== 'rm:' + uid) { team.confirm = 'rm:' + uid; render(); return; }
+  team.confirm = '';
+  await teamRun(async () => {
+    const sb = teamSb();
+    const r = await sb.rpc('remove_member', { p_user: uid });
+    if (r.error) throw r.error;
+    await teamLoad();
+  });
+}
+function teamSetPeriod(p) { team.period = p; render(); }
+function teamToggleOpen(uid) { team.open = team.open === uid ? null : uid; render(); }
+async function teamCopyLink() {
+  const link = teamInviteLink();
+  try { await navigator.clipboard.writeText(link); team.msg = 'Link kopiert – schick ihn per WhatsApp an dein Team.'; }
+  catch (e) {
+    const el = document.getElementById('tm-link'); if (el) { el.focus(); el.select(); }
+    team.msg = 'Markiere den Link und kopiere ihn manuell.';
+  }
+  render();
+}
+async function teamShareLink() {
+  const link = teamInviteLink();
+  if (navigator.share) { try { await navigator.share({ title: 'Start (to) count', text: 'Tritt meinem Team bei:', url: link }); return; } catch (e) { /* abgebrochen */ } }
+  teamCopyLink();
+}
+
+function teamSharedList() {
+  return `<ul class="tm-share"><li>dein Name</li><li>dein Umsatz und deine Aufträge (Zeitraum, Monat, Jahr)</li><li>dem Teamleiter zusätzlich: Neu-/Bestandskunden, Stornoquote, aktive Tage, Ø pro Tag, bester Tag</li></ul>
+    <div class="tm-note" style="margin-bottom:14px">Nicht geteilt: Steuern, Fixkosten, Ziele, Abrechnungen und deine einzelnen Einträge. Du kannst das Team jederzeit verlassen – dann werden deine Kennzahlen gelöscht.</div>`;
+}
+
+function renderTeamContent() {
+  const wrap = inner => `<div class="tm-wrap">${inner}</div>`;
+  const card = inner => `<div class="card tm-card">${inner}</div>`;
+  const err = team.err ? `<div class="ob-error" style="text-align:left">${escapeHtml(team.err)}</div>` : '';
+  const msg = team.msg ? `<div class="tm-note" style="color:var(--green)">${escapeHtml(team.msg)}</div>` : '';
+  if (!cl.session) return wrap(card('<h2 class="tm-h">Team</h2><p class="tm-sub">Bitte melde dich an.</p>'));
+  if (!team.loaded && team.loading) return wrap(card('<p class="tm-sub" style="margin:0">Lade Team …</p>'));
+  if (team.sqlMissing) return wrap(card(`<h2 class="tm-h">Team-Funktion noch nicht eingerichtet</h2><p class="tm-sub">Der Administrator muss einmalig das Team-Skript in Supabase ausführen (SQL Editor). Danach funktioniert dieser Reiter.</p><button class="tm-btn sec" onclick="teamLoad()">Erneut prüfen</button>`));
+  if (!team.me) {
+    const name = escapeHtml(team.myName || teamDefaultName());
+    let html = '';
+    if (team.pendingCode) {
+      html += card(`<h2 class="tm-h">Einladung zu „${escapeHtml(team.pendingName)}“</h2>
+        <p class="tm-sub">Wenn du beitrittst, sieht dein Team Folgendes:</p>${teamSharedList()}
+        <div class="tm-row" style="margin-bottom:12px"><input class="tm-in" id="tm-myname" value="${name}" oninput="team.myName=this.value" placeholder="Dein Anzeigename"></div>
+        <div class="tm-row"><button class="tm-btn" ${team.busy ? 'disabled' : ''} onclick="teamJoin(team.pendingCode)">Team beitreten</button><button class="tm-btn sec" onclick="teamDeclineInvite()">Nicht jetzt</button></div>${err}`);
+    }
+    html += card(`<h2 class="tm-h">Team beitreten</h2><p class="tm-sub">Du hast einen Einladungslink oder -code bekommen? Hier einfügen.</p>
+      <div class="tm-row"><input class="tm-in" placeholder="Link oder Code" value="${escapeHtml(team.joinCode)}" oninput="team.joinCode=this.value">
+      <button class="tm-btn" ${team.busy ? 'disabled' : ''} onclick="teamJoin()">Beitreten</button></div>${team.pendingCode ? '' : err}`);
+    html += card(`<h2 class="tm-h">Team gründen</h2><p class="tm-sub">Du bist Teamleiter? Gründe ein Team, lade deine Leute per Link ein und sieh ihre Performance.</p>
+      <div class="tm-row"><input class="tm-in" placeholder="Teamname" value="${escapeHtml(team.createName)}" oninput="team.createName=this.value">
+      <button class="tm-btn" ${team.busy ? 'disabled' : ''} onclick="teamCreate()">Gründen</button></div>`);
+    return wrap(html);
+  }
+  const leader = teamIsLeader();
+  const uidSelf = cl.session.user.id;
+  const P = team.period;
+  const rows = team.members.map(m => {
+    const st = (team.stats[m.user_id] || {}).stats || {};
+    const cur = st[P] || { umsatz: 0, orders: 0 };
+    const d = ((team.detail[m.user_id] || {}).stats || {})[P] || null;
+    return { m, umsatz: cur.umsatz || 0, orders: cur.orders || 0, d, upd: (team.stats[m.user_id] || {}).updated_at };
+  }).sort((a, b) => b.umsatz - a.umsatz);
+  const max = Math.max(1, ...rows.map(r => r.umsatz));
+  const total = rows.reduce((t, r) => t + r.umsatz, 0), totalOrders = rows.reduce((t, r) => t + r.orders, 0);
+  const periodName = { woche: 'Zeitraum', monat: 'Monat', jahr: 'Jahr' };
+  const seg = `<div class="tm-seg">${['woche', 'monat', 'jahr'].map(p => `<button class="${P === p ? 'on' : ''}" onclick="teamSetPeriod('${p}')">${periodName[p]}</button>`).join('')}</div>`;
+  const fmtPct = n => (Math.round(n * 10) / 10).toLocaleString('de-DE') + ' %';
+  const list = rows.map((r, i) => {
+    const me = r.m.user_id === uidSelf;
+    const open = leader && team.open === r.m.user_id;
+    const roleTag = r.m.role === 'leader' ? 'Teamleiter' : 'Mitglied';
+    const det = open ? (r.d ? `<div class="tm-detail">
+        <div class="tm-kpi"><b>${r.d.neu}</b><span>Neukunden</span></div>
+        <div class="tm-kpi"><b>${r.d.bestand}</b><span>Bestandskunden</span></div>
+        <div class="tm-kpi"><b>${r.d.storno}</b><span>Stornos</span></div>
+        <div class="tm-kpi"><b>${fmtPct(r.d.stornoQuote)}</b><span>Stornoquote</span></div>
+        <div class="tm-kpi"><b>${r.d.days}</b><span>Aktive Tage</span></div>
+        <div class="tm-kpi"><b>${fmtEuro(r.d.avgDay)}</b><span>Ø pro aktivem Tag</span></div>
+        <div class="tm-kpi"><b>${fmtEuro(r.d.best)}</b><span>Bester Tag</span></div></div>` : '<div class="tm-note" style="margin:10px 0 0 38px">Noch keine Kennzahlen übertragen.</div>') +
+      (r.m.user_id !== uidSelf ? `<div style="margin:8px 0 0 38px">${team.confirm === 'rm:' + r.m.user_id ? `<span class="tm-note">Wirklich entfernen? </span><button class="tm-btn danger" onclick="teamRemove('${r.m.user_id}')">Ja, entfernen</button>` : `<button class="tm-btn danger" onclick="teamRemove('${r.m.user_id}')">Aus dem Team entfernen</button>`}</div>` : '') : '';
+    return `<div class="tm-member">
+      <div class="tm-line ${leader ? 'click' : ''}" ${leader ? `onclick="teamToggleOpen('${r.m.user_id}')"` : ''}>
+        <div class="tm-rank ${i === 0 && r.umsatz > 0 ? 'r1' : ''}">${i + 1}</div>
+        <div class="tm-name">${escapeHtml(r.m.display_name)}${me ? ' (Du)' : ''}<small>${roleTag} · ${r.orders} Aufträge</small></div>
+        <div class="tm-val">${fmtEuro(r.umsatz)}</div></div>
+      <div class="tm-bar"><i style="width:${Math.round(r.umsatz / max * 100)}%"></i></div>${det}</div>`;
+  }).join('');
+  let html = card(`<div class="tm-top"><div><h2 class="tm-h">${escapeHtml(team.info ? team.info.name : 'Team')}</h2><p class="tm-sub" style="margin:0">${team.members.length} ${team.members.length === 1 ? 'Mitglied' : 'Mitglieder'}${leader ? ' · du bist Teamleiter' : ''}</p></div>${seg}</div>
+    <div class="tm-kpis"><div class="tm-kpi"><b>${fmtEuro(total)}</b><span>Team-Umsatz</span></div><div class="tm-kpi"><b>${totalOrders}</b><span>Aufträge</span></div><div class="tm-kpi"><b>${fmtEuro(total / Math.max(1, rows.length))}</b><span>Ø pro Person</span></div></div>`);
+  html += card(`<h2 class="tm-h">Rangliste · ${periodName[P]}</h2><p class="tm-sub">${leader ? 'Tippe auf eine Person, um Details zu sehen.' : 'So steht dein Team gerade da.'}</p>${list}${team.err ? err : ''}`);
+  if (leader && team.info) {
+    html += card(`<h2 class="tm-h">Leute einladen</h2><p class="tm-sub">Schick diesen Link an dein Team. Wer ihn öffnet, registriert sich bzw. meldet sich an und kann dann beitreten.</p>
+      <input class="tm-link" id="tm-link" readonly value="${escapeHtml(teamInviteLink())}" onclick="this.select()">
+      <div class="tm-row" style="margin-top:10px"><button class="tm-btn" onclick="teamShareLink()">Link teilen</button><button class="tm-btn sec" onclick="teamCopyLink()">Link kopieren</button></div>${msg}`);
+  }
+  html += card(`<div class="tm-note" style="margin-bottom:10px">Stand der Zahlen: wird bei jeder Änderung automatisch aktualisiert. <button class="tm-btn danger" onclick="teamLoad()">Jetzt neu laden</button></div>
+    ${leader ? (team.confirm === 'dissolve' ? `<span class="tm-note">Team wirklich auflösen? Alle Kennzahlen werden gelöscht. </span><button class="tm-btn danger" onclick="teamDissolve()">Ja, auflösen</button>` : `<button class="tm-btn danger" onclick="teamDissolve()">Team auflösen</button>`)
+      : (team.confirm === 'leave' ? `<span class="tm-note">Team wirklich verlassen? </span><button class="tm-btn danger" onclick="teamLeave()">Ja, verlassen</button>` : `<button class="tm-btn danger" onclick="teamLeave()">Team verlassen</button>`)}`);
+  return wrap(html);
+}
+window.teamCreate = teamCreate; window.teamJoin = teamJoin; window.teamLeave = teamLeave; window.teamDissolve = teamDissolve; window.teamRemove = teamRemove;
+window.teamSetPeriod = teamSetPeriod; window.teamToggleOpen = teamToggleOpen; window.teamCopyLink = teamCopyLink; window.teamShareLink = teamShareLink;
+window.teamDeclineInvite = teamDeclineInvite; window.teamLoad = teamLoad;
+
 async function startApp() {
   gateOn = false;
   cl.loading = false;
@@ -4212,6 +4509,7 @@ async function startApp() {
   render();
   updateHeaderGreeting();
   if (!settings.onboarded) openOnboarding('first');
+  teamInit();
 }
 
 (async function init() {
