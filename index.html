@@ -610,6 +610,10 @@
     .dash-grid { grid-template-columns: 2.1fr 1fr; align-items: start; }
   }
 
+  .dash-ziel-row { display:grid; grid-template-columns: 1fr; gap:16px; margin-bottom:16px; align-items:start; }
+  @media (min-width: 760px) {
+    .dash-ziel-row { grid-template-columns: 1fr 1fr; }
+  }
   .dash-main, .dash-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
   .dash-card { padding: 20px; }
@@ -788,7 +792,13 @@
   .goal-row:not(.ob) input { width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background: var(--toggle-bg); color: var(--text); font: inherit; font-weight:600; box-sizing:border-box; }
   .goal-row.ob .ob-field, .goal-row.ob span { font-size:12.5px; font-weight:600; }
   .ob-hint { display:block; font-size:11.5px; color: var(--text-dim); margin: -4px 0 6px; }
-  .ob-settings { max-width:520px; }
+  .ob-card.ob-settings { max-width:520px; }
+  @media (min-width: 880px) {
+    .ob-card.ob-settings { max-width: 1060px; padding: 28px 36px; }
+    .ob-set-grid { column-count: 2; column-gap: 40px; }
+    .ob-set-grid .ob-set-sec { break-inside: avoid; border-top: none; border-bottom: 1px solid var(--border); }
+    .ob-settings-actions { max-width: 420px; margin-left:auto; margin-right:auto; }
+  }
   .ob-set-sec { padding:16px 0; border-top:1px solid var(--border); text-align:left; }
   .ob-set-sec:first-of-type { border-top:none; }
   .ob-set-title { font-weight:700; font-size:16px; margin-bottom:10px; }
@@ -2659,48 +2669,7 @@ function renderDashboardContent(b, animate) {
 
   return `
     <div class="dashboard-page ${animate ? 'animate-in' : ''}">
-      <div class="dash-grid">
-        <div class="dash-main">
-          <div class="card dash-card">
-            <div class="dash-card-head">
-              <div>
-                <div class="dash-card-title">Kundenmix</div>
-                <div class="dash-card-sub">${kundenmixSub}</div>
-              </div>
-            </div>
-            <div class="dash-donut-area">
-              <div class="donut-wrap">
-                ${donutSvg}
-                <div class="donut-center">
-                  <div class="donut-center-pct">${donutCenterPct}</div>
-                  <div class="donut-center-label">${donutCenterLabel}</div>
-                </div>
-              </div>
-              <div class="dash-donut-legend">
-                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.blue}"></span>Neukunden<b>${viewNeuCount}</b><span class="dash-legend-pct">${neuPct}%</span></div>
-                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.green}"></span>Bestandskunden<b>${viewBestandCount}</b><span class="dash-legend-pct">${bestandPct}%</span></div>
-                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.danger}"></span>Stornos<b>${viewStornoCount}</b><span class="dash-legend-pct">${stornoShare}%</span></div>
-              </div>
-            </div>
-            ${kundenmixNoData ? `<div class="dash-card-sub" style="margin-top:8px;">Tipp: beim Hinzufügen einer Abrechnung die Felder "davon Neukunden/Bestand/Storno" ausfüllen, dann ist der Kundenmix auch hier bestätigt.</div>` : ''}
-          </div>
-
-          <div class="dash-lists">
-            <div class="card dash-card">
-              <div class="dash-card-title">Beste Tage</div>
-              <div class="dash-list">${top5Html}</div>
-            </div>
-            <div class="card dash-card">
-              <div class="dash-card-title">Tage mit Stornos</div>
-              <div class="dash-list">${stornoHtml}</div>
-            </div>
-          </div>
-
-          <div class="card dash-card">
-            <div class="dash-card-title">${monthCardTitle}</div>
-            <div class="dash-month-list">${monthHistoryHtml}</div>
-          </div>
-
+      <div class="dash-ziel-row">
           ${goalCardHtml()}
 
           <div class="card dash-card dash-fix-card">
@@ -2744,11 +2713,48 @@ function renderDashboardContent(b, animate) {
             </div>` : ''}
             ` : ''}
           </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="dash-main">
+          <div class="card dash-card">
+            <div class="dash-card-head">
+              <div>
+                <div class="dash-card-title">Kundenmix</div>
+                <div class="dash-card-sub">${kundenmixSub}</div>
+              </div>
+            </div>
+            <div class="dash-donut-area">
+              <div class="donut-wrap">
+                ${donutSvg}
+                <div class="donut-center">
+                  <div class="donut-center-pct">${donutCenterPct}</div>
+                  <div class="donut-center-label">${donutCenterLabel}</div>
+                </div>
+              </div>
+              <div class="dash-donut-legend">
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.blue}"></span>Neukunden<b>${viewNeuCount}</b><span class="dash-legend-pct">${neuPct}%</span></div>
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.green}"></span>Bestandskunden<b>${viewBestandCount}</b><span class="dash-legend-pct">${bestandPct}%</span></div>
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.danger}"></span>Stornos<b>${viewStornoCount}</b><span class="dash-legend-pct">${stornoShare}%</span></div>
+              </div>
+            </div>
+            ${kundenmixNoData ? `<div class="dash-card-sub" style="margin-top:8px;">Tipp: beim Hinzufügen einer Abrechnung die Felder "davon Neukunden/Bestand/Storno" ausfüllen, dann ist der Kundenmix auch hier bestätigt.</div>` : ''}
+          </div>
+
+          <div class="dash-lists">
+            <div class="card dash-card">
+              <div class="dash-card-title">Beste Tage</div>
+              <div class="dash-list">${top5Html}</div>
+            </div>
+            <div class="card dash-card">
+              <div class="dash-card-title">Tage mit Stornos</div>
+              <div class="dash-list">${stornoHtml}</div>
+            </div>
+          </div>
 
           <div class="card dash-card">
-            <div class="dash-card-title">Wann kommt mein Geld?</div>
-            <div class="dash-card-sub">1.–15. → Auszahlung 20.–25. selber Monat · 16.–Monatsende → Auszahlung 7.–12. Folgemonat</div>
-            <div class="dash-payout-list">${payoutWindowsHtml}</div>
+            <div class="dash-card-title">${monthCardTitle}</div>
+            <div class="dash-month-list">${monthHistoryHtml}</div>
           </div>
 
           <div class="card dash-card">
@@ -2810,6 +2816,12 @@ function renderDashboardContent(b, animate) {
           <div class="card dash-card">
             <div class="dash-card-title">Kennzahlen</div>
             ${kennzahlenHtml}
+          </div>
+
+          <div class="card dash-card">
+            <div class="dash-card-title">Wann kommt mein Geld?</div>
+            <div class="dash-card-sub">1.–15. → Auszahlung 20.–25. selber Monat · 16.–Monatsende → Auszahlung 7.–12. Folgemonat</div>
+            <div class="dash-payout-list">${payoutWindowsHtml}</div>
           </div>
         </div>
       </div>
@@ -3190,6 +3202,7 @@ function renderSettingsPage() {
       <div class="card ob-card ob-settings">
         <h2 class="ob-title" style="font-size:22px;text-align:center;">⚙️ Einstellungen</h2>
         <p class="ob-sub">Hier kannst du alles ändern – Name, Rolle, Provisionen, Fixkosten und Ziele. Änderungen an den Provisionen gelten rückwirkend für alle bisherigen Einträge.</p>
+        <div class="ob-set-grid">
         <section class="ob-set-sec"><div class="ob-set-title">👤 Name</div>
           <label class="ob-field"><span>Wie heißt du? (optional)</span>
             <input class="ob-input" type="text" id="ob-name" value="${escapeHtml(ob.name)}" placeholder="Vorname" maxlength="40" oninput="obSet('name', this.value)"></label>
@@ -3198,6 +3211,7 @@ function renderSettingsPage() {
         ${sec('💶 Provision', 'provision')}
         ${tl ? sec('👥 Team-Overhead', 'overhead') : ''}
         ${sec('🎯 Ziele & Kosten', 'weiteres')}
+        </div>
         <div class="ob-error">${ob.error ? escapeHtml(ob.error) : ''}</div>
         <div class="ob-actions ob-settings-actions">
           <button type="button" class="ob-btn secondary" onclick="closeOnboarding()">Abbrechen</button>
