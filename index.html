@@ -732,6 +732,7 @@
     display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-dim);
     font-weight: 600; flex: 1; min-width: 110px;
   }
+  .dash-fix-inputs select { width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background: var(--toggle-bg); color: var(--text); font: inherit; font-weight:600; }
   .dash-fix-inputs input {
     background: var(--toggle-bg); border: none; border-radius: 7px; padding: 8px 10px;
     font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: var(--text);
@@ -1057,7 +1058,10 @@ function defaultSettings() {
     preisBestand: 15,     // € Provision pro Bestandskunde
     steuer: 30,           // % Steuern
     overheadNeu: 0,       // € Overhead pro Neukunden-Auftrag des Teams (nur Teamleiter)
-    stornoAufschlag: false // Ø Storno-Quote der Abrechnungen auf die Fixkosten-Schwelle aufschlagen?
+    stornoAufschlag: false, // Ø Storno-Quote der Abrechnungen auf die Fixkosten-Schwelle aufschlagen?
+    goalName: '',         // persönliches Finanzziel (z. B. "Rücklage", "Urlaub")
+    goalAmount: 0,        // Zielbetrag in € – netto, also das, was wirklich bei dir bleibt
+    goalPeriod: 'monat'   // 'monat' | 'jahr'
   };
 }
 
@@ -1216,6 +1220,42 @@ function avgStornoQuote() {
   return { pct: (quoten.reduce((a, b) => a + b, 0) / quoten.length) * 100, count: quoten.length };
 }
 
+function goalCardHtml() {
+  const amount = settings.goalAmount || 0;
+  const period = settings.goalPeriod === 'jahr' ? 'jahr' : 'monat';
+  const now = new Date();
+  const periodLabel = period === 'jahr' ? String(now.getFullYear()) : now.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  const title = settings.goalName ? escapeHtml(settings.goalName) : 'Mein Finanzziel';
+  const brutto = goalBruttoFor(period);
+  const share = netShare();
+  const net = brutto * share;
+  const missing = Math.max(0, amount - net);
+  const reached = amount > 0 && net >= amount;
+  const pct = amount > 0 ? Math.min(100, Math.round(net / amount * 100)) : 0;
+  const bruttoNeeded = share > 0 ? missing / share : 0;
+  const inputs = `
+    <div class="dash-fix-inputs">
+      <label>Name (optional)<input type="text" maxlength="40" placeholder="z. B. Rücklage" value="${escapeHtml(settings.goalName || '')}" onchange="setGoal('goalName', this.value)"></label>
+      <label>Ziel – bleibt bei dir (€)<input type="number" min="0" step="50" value="${amount || ''}" placeholder="z. B. 2000" onchange="setGoal('goalAmount', this.value)"></label>
+      <label>Zeitraum<select onchange="setGoal('goalPeriod', this.value)">
+        <option value="monat" ${period === 'monat' ? 'selected' : ''}>pro Monat</option>
+        <option value="jahr" ${period === 'jahr' ? 'selected' : ''}>pro Jahr</option>
+      </select></label>
+    </div>`;
+  return `
+          <div class="card dash-card dash-fix-card">
+            <div class="dash-card-head"><div>
+              <div class="dash-card-title">🎯 ${title} · ${periodLabel}</div>
+              <div class="dash-card-sub">${amount > 0 ? (reached ? 'Ziel erreicht 🎉' : fmtEuro(missing) + ' fehlen noch') : 'Lege fest, was am Ende wirklich bei dir bleiben soll'}</div>
+            </div></div>
+            ${inputs}
+            ${amount > 0 ? `
+            <div class="dash-fix-track"><div class="dash-fix-fill ${reached ? 'reached' : ''}" style="width:${pct}%;"></div></div>
+            <div class="dash-fix-saldo ${reached ? 'pos' : 'neg'}">${fmtEuro(net)} <span style="font-size:13px;font-weight:600;color:var(--text-dim);">von ${fmtEuro(amount)} · ${pct}%</span></div>
+            <div class="dash-fix-sub">${share < 1 ? `Gerechnet mit dem, was wirklich bei dir bleibt (nach ${[stornoAufschlagPct() > 0 ? fmtPct(stornoAufschlagPct()) + ' Storno' : '', STEUER_PROZENT > 0 ? STEUER_PROZENT + '% Steuer' : ''].filter(Boolean).join(' und ')}). ` : ''}${reached ? '' : `Dafür brauchst du noch ca. ${fmtEuro(bruttoNeeded)} Brutto. `}Bisher ${fmtEuro(brutto)} Brutto.</div>` : ''}
+          </div>`;
+}
+
 function fmtPct(p) {
   return (Math.round(p * 10) / 10).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' %';
 }
@@ -1302,6 +1342,26 @@ function playFireworks() {
   setTimeout(() => {
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
   }, bursts * 160 + 1400);
+}
+
+// ---------- Persönliches Finanzziel ----------
+function goalBruttoFor(period) {
+  const now = new Date();
+  const prefix = period === 'jahr' ? String(now.getFullYear()) : todayKey().slice(0, 7);
+  return Object.keys(data).reduce((sum, k) => k.startsWith(prefix) ? sum + dayTotal(data[k]) : sum, 0);
+}
+
+// Wie viel von 1 € Brutto am Ende wirklich bei dir bleibt (nach Storno-Puffer und Steuer)
+function netShare() {
+  return (1 - stornoAufschlagPct() / 100) * (1 - STEUER_PROZENT / 100);
+}
+
+function setGoal(field, value) {
+  if (field === 'goalAmount') settings.goalAmount = Math.max(0, parseFloat(String(value).replace(',', '.')) || 0);
+  else if (field === 'goalName') settings.goalName = String(value || '').trim().slice(0, 40);
+  else if (field === 'goalPeriod') settings.goalPeriod = value === 'jahr' ? 'jahr' : 'monat';
+  saveData();
+  render();
 }
 
 function setFixkosten(v) {
@@ -2455,6 +2515,8 @@ function renderDashboardContent(b, animate) {
             ` : ''}
           </div>
 
+          ${goalCardHtml()}
+
           <div class="card dash-card">
             <div class="dash-card-title">Wann kommt mein Geld?</div>
             <div class="dash-card-sub">1.–15. → Auszahlung 20.–25. selber Monat · 16.–Monatsende → Auszahlung 7.–12. Folgemonat</div>
@@ -2764,6 +2826,9 @@ function openOnboarding(mode) {
     steuer: !prefill ? '' : (settings.steuer > 0 ? fmtNumInput(settings.steuer) : ''),
     fixkosten: settings.fixkosten ? fmtNumInput(settings.fixkosten) : '',
     stornoAufschlag: !!settings.stornoAufschlag,
+    goalName: settings.goalName || '',
+    goalAmount: settings.goalAmount ? fmtNumInput(settings.goalAmount) : '',
+    goalPeriod: settings.goalPeriod === 'jahr' ? 'jahr' : 'monat',
     overheadNeu: settings.overheadNeu ? fmtNumInput(settings.overheadNeu) : '',
     error: ''
   };
@@ -2808,6 +2873,7 @@ function obValidateStep() {
       if (!(s >= 0 && s < 100)) return 'Der Steuersatz muss zwischen 0 und 99 % liegen (oder leer bleiben).';
     }
     if (String(ob.fixkosten).trim() !== '' && !(parseNum(ob.fixkosten) >= 0)) return 'Die Fixkosten müssen eine Zahl sein (oder leer bleiben).';
+    if (String(ob.goalAmount).trim() !== '' && !(parseNum(ob.goalAmount) >= 0)) return 'Das Finanzziel muss eine Zahl sein (oder leer bleiben).';
   }
   return '';
 }
@@ -2842,6 +2908,9 @@ async function obFinish() {
   settings.steuer = parseNum(ob.steuer) >= 0 && parseNum(ob.steuer) < 100 ? parseNum(ob.steuer) : 0; // leer = keine Steuer
   settings.fixkosten = parseNum(ob.fixkosten) >= 0 ? parseNum(ob.fixkosten) : 0;
   settings.stornoAufschlag = !!ob.stornoAufschlag;
+  settings.goalName = String(ob.goalName || '').trim().slice(0, 40);
+  settings.goalAmount = parseNum(ob.goalAmount) >= 0 ? parseNum(ob.goalAmount) : 0;
+  settings.goalPeriod = ob.goalPeriod === 'jahr' ? 'jahr' : 'monat';
   settings.overheadNeu = parseNum(ob.overheadNeu) >= 0 ? parseNum(ob.overheadNeu) : 0;
   settings.onboarded = true;
   applySettings();
@@ -2937,7 +3006,13 @@ function renderOnboarding() {
       <label class="ob-check">
         <input type="checkbox" ${ob.stornoAufschlag ? 'checked' : ''} onchange="obSet('stornoAufschlag', this.checked)">
         <span>Ø Storno-Quote als Puffer auf das Ziel aufschlagen<small>${(() => { const a = avgStornoQuote(); return a.count > 0 ? `Aktuell ${fmtPct(a.pct)} im Schnitt aus ${a.count} Abrechnung${a.count === 1 ? '' : 'en'} – so planst du schon ein, dass ein Teil der Aufträge noch storniert wird.` : 'Sobald du Abrechnungen eingescannt hast, berechnet die App deine durchschnittliche Storno-Quote und schlägt sie auf.'; })()}</small></span>
-      </label>`;
+      </label>
+      <div class="ob-goal">
+        <label class="ob-field"><span>Persönliches Finanzziel (optional)</span>
+          <input class="ob-input" type="text" id="ob-goalName" maxlength="40" value="${escapeHtml(ob.goalName)}" placeholder="Wofür? z. B. Rücklage, Urlaub" oninput="obSet('goalName', this.value)"></label>
+        ${obInput('goalAmount', 'Wie viel soll am Ende bei dir bleiben (netto)?', { placeholder: 'z. B. 2000', hint: 'Die App rechnet Steuern und Storno-Puffer heraus und zeigt dir, wie weit du bist.' })}
+        <div class="ob-chips"><button type="button" class="ob-chip ${ob.goalPeriod === 'monat' ? 'active' : ''}" onclick="obSetChip('goalPeriod','monat')">pro Monat</button><button type="button" class="ob-chip ${ob.goalPeriod === 'jahr' ? 'active' : ''}" onclick="obSetChip('goalPeriod','jahr')">pro Jahr</button></div>
+      </div>`;
   } else {
     primaryLabel = edit ? 'Speichern' : 'Speichern & starten';
     primaryAction = 'obFinish()';
@@ -2952,6 +3027,7 @@ function renderOnboarding() {
     rows.push(['Steuersatz', parseNum(ob.steuer) > 0 ? parseNum(ob.steuer).toLocaleString('de-DE') + ' %' : '–']);
     rows.push(['Fixkosten / Zeitraum', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
     rows.push(['Storno-Puffer auf Ziel', ob.stornoAufschlag ? 'an' : 'aus']);
+    rows.push([escapeHtml(ob.goalName.trim()) || 'Finanzziel', parseNum(ob.goalAmount) > 0 ? fmtNumPlain(parseNum(ob.goalAmount)) + (ob.goalPeriod === 'jahr' ? ' / Jahr' : ' / Monat') : '–']);
     body = `
       <h2 class="ob-title">${edit ? 'Alles korrekt?' : 'Alles bereit!'}</h2>
       <p class="ob-sub">${edit ? 'Prüfe deine Angaben und speichere sie.' : 'Das hast du eingestellt – du kannst es jederzeit über das ⚙️ oben rechts ändern.'}</p>
