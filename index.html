@@ -2699,12 +2699,13 @@ function renderDashboardContent(b, animate) {
             <div class="dash-fix-track"><div class="dash-fix-fill ${fixReached ? 'reached' : ''}" style="width:${fixPct}%;"></div></div>
             <div class="dash-fix-saldo ${fixReached ? 'pos' : 'neg'}">${fixReached ? '+' : '−'}${fmtEuro(Math.abs(fixSaldo))}</div>
             <div class="dash-fix-sub">Bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
-            ${(STEUER_PROZENT > 0 || fixStornoPct > 0) && fixLiveBrutto > 0 ? `
+            ${(STEUER_PROZENT > 0 || fixStornoPct > 0 || (settings.fixkosten || 0) > 0) && fixLiveBrutto > 0 ? `
             <div class="dash-fix-reserve">
               <div class="top"><span>📈 Geschätzter Umsatz (Brutto)</span><b>${fmtEuro(fixLiveBrutto)}</b></div>
               ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
               ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}%)</span><b>${fmtEuro(fixLiveBrutto * (1 - fixStornoPct / 100) * STEUER_PROZENT / 100)}</b></div>` : ''}
-              <div><span>💶 Davon wirklich deins</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>
+              ${(settings.fixkosten || 0) > 0 ? `<div><span>🏠 Fixkosten abziehen</span><b>${fmtEuro(settings.fixkosten)}</b></div>` : ''}
+              <div><span>💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 ? ' (nach Fixkosten)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0))}</b></div>
             </div>` : ''}
             ` : ''}
           </div>
