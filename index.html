@@ -1394,14 +1394,16 @@ function nettoOf(brutto) {
 
 // Durchschnittliche Storno-Quote über alle Abrechnungen, in denen Neu-/Bestandskunden-Mengen
 // hinterlegt sind: pro Abrechnung Storno / (Neu + Bestand), davon der Mittelwert.
+// Gewichtete Storno-Quote über alle Abrechnungen: alle Stornos ÷ alle gemeldeten Kunden
+// (gleiche Rechnung wie Kundenmix/Kennzahlen, damit überall dieselbe Zahl steht)
 function avgStornoQuote() {
-  const quoten = [];
+  let gross = 0, storno = 0, count = 0;
   settlements.forEach(s => {
-    const gross = (s.neuMenge || 0) + (s.bestandMenge || 0);
-    if (gross > 0) quoten.push(Math.min(1, (s.stornoMenge || 0) / gross));
+    const g = (s.neuMenge || 0) + (s.bestandMenge || 0);
+    if (g > 0) { gross += g; storno += Math.min(g, s.stornoMenge || 0); count++; }
   });
-  if (!quoten.length) return { pct: 0, count: 0 };
-  return { pct: (quoten.reduce((a, b) => a + b, 0) / quoten.length) * 100, count: quoten.length };
+  if (!count || gross <= 0) return { pct: 0, count: 0 };
+  return { pct: storno / gross * 100, count };
 }
 
 const GOAL_PERIODS = { woche: 'Woche', monat: 'Monat', jahr: 'Jahr', custom: 'Eigener Zeitraum' };
@@ -2669,7 +2671,7 @@ function renderDashboardContent(b, animate) {
   const totalCustomers = isAusgezahltView ? Math.max(0, grossCustomers - viewStornoCount) : grossCustomers;
   const neuPct = totalCustomers > 0 ? Math.min(100, Math.round((viewNeuCount / totalCustomers) * 100)) : 0;
   const bestandPct = totalCustomers > 0 ? Math.max(0, 100 - neuPct) : 0;
-  const stornoShare = grossCustomers > 0 ? Math.round((viewStornoCount / grossCustomers) * 100) : 0;
+  const stornoShare = grossCustomers > 0 ? fmtPct((viewStornoCount / grossCustomers) * 100) : '0 %';
 
   // Stornos als roter Abschnitt; in der Ausgezahlt-Ansicht sind sie in Neu/Bestand schon enthalten
   const donutStorno = Math.min(viewStornoCount, isAusgezahltView ? grossCustomers : Infinity);
@@ -2841,7 +2843,7 @@ function renderDashboardContent(b, animate) {
   const monthCardTitle = isAusgezahltView ? 'Performance der letzten Monate (ausgezahlt)' : 'Performance der letzten Monate';
 
   const kennzahlenHtml = isAusgezahltView ? `
-    <div class="dash-kv-row"><span>Storno-Quote (Abrechnungen)</span><b>${grossCustomers > 0 ? stornoShare + '%' : '–'}</b></div>
+    <div class="dash-kv-row"><span>Storno-Quote (Abrechnungen, im Zeitraum)</span><b>${grossCustomers > 0 ? stornoShare : '–'}</b></div>
     <div class="dash-kv-row"><span>Anzahl Abrechnungen</span><b>${settlements.length}</b></div>
     <div class="dash-kv-row"><span>Ø pro Abrechnung</span><b>${periodSettlements.length ? fmtEuro(agg.betrag / periodSettlements.length) : '–'}</b></div>
   ` : `
@@ -2877,7 +2879,7 @@ function renderDashboardContent(b, animate) {
               ${(settings.fixkosten || 0) > 0 ? `<div><span>🏠 Fixkosten abziehen</span><b>${fmtEuro(settings.fixkosten)}</b></div>` : ''}
               ${fixAufbau.goal > 0 ? `<div><span>🎯 Finanzziel${settings.goalName ? ' (' + escapeHtml(settings.goalName) + ')' : ''} zurücklegen</span><b>${fmtEuro(fixAufbau.goal)}</b></div>` : ''}
               ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}%)</span><b>${fmtEuro(fixLiveBrutto * (1 - fixStornoPct / 100) * STEUER_PROZENT / 100)}</b></div>` : ''}
-              ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (geschätzt nach den letzten Abrechnungen, ${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
+              ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (Quote aller Abrechnungen, ${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
               <div class="pocket"><span>💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 || fixAufbau.goal > 0 ? ' (nach Abzügen)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0) - fixAufbau.goal)}</b></div>
               ${settings.ustPflicht ? `<div class="ust-row"><span>🏛️ + Umsatzsteuer 19 % (wird mitüberwiesen) – ans Finanzamt weiterleiten</span><b>${fmtEuro(fixLiveBrutto * 0.19)}</b></div>` : ''}
             </div>` : ''}
@@ -2915,7 +2917,7 @@ function renderDashboardContent(b, animate) {
               <div class="dash-donut-legend">
                 <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.blue}"></span>Neukunden<b>${viewNeuCount}</b><span class="dash-legend-pct">${neuPct}%</span></div>
                 <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.green}"></span>Bestandskunden<b>${viewBestandCount}</b><span class="dash-legend-pct">${bestandPct}%</span></div>
-                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.danger}"></span>Stornos<b>${viewStornoCount}</b><span class="dash-legend-pct">${stornoShare}%</span></div>
+                <div class="dash-legend-row"><span class="legend-dot" style="background:${colors.danger}"></span>Stornos<b>${viewStornoCount}</b><span class="dash-legend-pct">${stornoShare}</span></div>
               </div>
             </div>
             ${kundenmixNoData ? `<div class="dash-card-sub" style="margin-top:8px;">Tipp: beim Hinzufügen einer Abrechnung die Felder "davon Neukunden/Bestand/Storno" ausfüllen, dann ist der Kundenmix auch hier bestätigt.</div>` : ''}
