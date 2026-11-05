@@ -789,6 +789,8 @@
   .goal-row.ob .ob-field, .goal-row.ob span { font-size:12.5px; font-weight:600; }
   .ob-hint { display:block; font-size:11.5px; color: var(--text-dim); margin: -4px 0 6px; }
   .ob-mine { margin-bottom:6px; }
+  .ob-round { margin-left:8px; padding:3px 10px; border-radius:999px; border:1px solid var(--border); background: var(--toggle-bg); color: var(--text); font: inherit; font-size:11.5px; font-weight:700; cursor:pointer; }
+  .ob-round.active { background: var(--blue); border-color: var(--blue); color:#fff; }
   .ob-goal.first { margin-top:0; padding-top:0; border-top:none; margin-bottom:6px; }
   .ob-section-title { font-weight:700; font-size:15px; margin-bottom:4px; }
   .ob-section-title em { font-style:normal; font-weight:500; font-size:12px; color: var(--text-dim); }
@@ -1088,6 +1090,7 @@ function defaultSettings() {
     stornoAufschlag: false, // Ø Storno-Quote der Abrechnungen auf die Fixkosten-Schwelle aufschlagen?
     goalName: '',         // persönliches Finanzziel (z. B. "Rücklage", "Urlaub")
     goalAmount: 0,        // Zielbetrag in € – netto, also das, was wirklich bei dir bleibt
+    zielAufrunden: false, // Brutto-Ziel pro Abrechnungsperiode auf volle 10 € aufrunden?
     mineAmount: 0,        // € pro Monat, die nach allen Kosten NUR für mich übrig bleiben sollen (Lebenshaltung/Taschengeld)
     goalPeriod: 'monat',  // 'woche' | 'monat' | 'jahr' | 'custom' – Zeitraum, für den der Zielbetrag gilt
     goalCount: 2,         // nur bei 'custom': Anzahl ...
@@ -1363,14 +1366,31 @@ function goalPerWindow() {
 }
 
 // Aufbau des Ziels pro Abrechnungszeitraum: (Fixkosten + persönliches Ziel) + Steuer + Storno-Puffer
-function zielAufbau() {
-  const fix = settings.fixkosten || 0;
-  const goal = goalPerWindow();
-  const mine = (settings.mineAmount || 0) / 2; // Monatsbetrag -> halber Monat pro Abrechnungszeitraum
+function zielAufbauCalc(p) {
+  const fix = p.fix || 0, goal = p.goal || 0, mine = p.mine || 0;
   const base = fix + goal + mine;
-  const withTax = base * (1 + STEUER_PROZENT / 100);
-  const total = withTax * (1 + stornoAufschlagPct() / 100);
-  return { fix, goal, mine, base, tax: withTax - base, storno: total - withTax, total };
+  const withTax = base * (1 + (p.taxPct || 0) / 100);
+  const raw = withTax * (1 + (p.stornoPct || 0) / 100);
+  const total = p.runden && raw > 0 ? Math.ceil(raw / 10 - 1e-9) * 10 : raw;
+  return { fix, goal, mine, base, tax: withTax - base, storno: raw - withTax, raw, round: total - raw, total };
+}
+
+function zielAufbau() {
+  return zielAufbauCalc({
+    fix: settings.fixkosten || 0,
+    goal: goalPerWindow(),
+    mine: (settings.mineAmount || 0) / 2, // Monatsbetrag -> halber Monat pro Abrechnungszeitraum
+    taxPct: STEUER_PROZENT,
+    stornoPct: stornoAufschlagPct(),
+    runden: !!settings.zielAufrunden,
+  });
+}
+
+function toggleZielAufrunden(on) {
+  settings.zielAufrunden = !!on;
+  saveData();
+  render();
+  checkFireworksTrigger();
 }
 
 function fixkostenSchwelle() {
@@ -1701,21 +1721,31 @@ function detectWindowIdFromText(text) {
   return `${year}-${String(monthIdx + 1).padStart(2, '0')}-${suffix}`;
 }
 
+async function extractPdfText(file) {
+  await ensurePdfJsLoaded();
+  const buf = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+  let fullText = '';
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    fullText += content.items.map(it => it.str).join(' ') + '\n';
+  }
+  return fullText;
+}
+
+// Status-Text der letzten Sammel-Einlesung (bleibt nach dem Neuzeichnen sichtbar)
+let bulkUploadStatus = '';
+
 async function handlePdfUpload(event) {
-  const file = event.target.files && event.target.files[0];
+  const files = Array.from((event.target.files) || []);
   const statusEl = document.getElementById('pdfUploadStatus');
-  if (!file) return;
+  if (!files.length) return;
+  if (files.length > 1) { await handleBulkPdfUpload(files, statusEl); event.target.value = ''; return; }
+  const file = files[0];
   if (statusEl) statusEl.textContent = 'Lese PDF …';
   try {
-    await ensurePdfJsLoaded();
-    const buf = await file.arrayBuffer();
-    const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
-    let fullText = '';
-    for (let p = 1; p <= pdf.numPages; p++) {
-      const page = await pdf.getPage(p);
-      const content = await page.getTextContent();
-      fullText += content.items.map(it => it.str).join(' ') + '\n';
-    }
+    const fullText = await extractPdfText(file);
     const parsed = parseAbrechnungText(fullText);
     const windowId = detectWindowIdFromText(fullText);
     const labelEl = document.getElementById('settlementLabel');
@@ -1750,6 +1780,44 @@ async function handlePdfUpload(event) {
   } finally {
     event.target.value = '';
   }
+}
+
+// Mehrere Abrechnungs-PDFs auf einmal: jede wird ausgelesen und direkt hinzugefügt.
+// Bereits vorhandene (gleiches Zeitfenster/Label + gleicher Betrag) werden übersprungen.
+async function handleBulkPdfUpload(files, statusEl) {
+  const added = [], skipped = [], failed = [];
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    if (statusEl) statusEl.textContent = `Lese PDF ${i + 1} von ${files.length} …`;
+    try {
+      const text = await extractPdfText(f);
+      const parsed = parseAbrechnungText(text);
+      if (parsed.betrag == null && parsed.auftraege == null) { failed.push(f.name); continue; }
+      const windowId = detectWindowIdFromText(text);
+      const label = parsed.label || (f.name || 'Abrechnung').replace(/\.pdf$/i, '');
+      const betrag = parsed.betrag != null ? Math.max(0, parsed.betrag) : 0;
+      const hasSplit = parsed.neuMenge != null || parsed.bestandMenge != null;
+      const dup = settlements.some(x => x.label === label && Math.abs((x.betrag || 0) - betrag) < 0.005 && (!windowId || x.windowId === windowId || !x.windowId));
+      if (dup) { skipped.push(label); continue; }
+      const auftraege = parsed.auftraege != null ? parsed.auftraege : 0;
+      settlements.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2),
+        label, betrag, auftraege, windowId,
+        neuMenge: hasSplit ? (parsed.neuMenge || 0) : null,
+        bestandMenge: hasSplit ? (parsed.bestandMenge || 0) : null,
+        stornoMenge: hasSplit ? (parsed.stornoMenge || 0) : null,
+      });
+      added.push(label);
+    } catch (e) {
+      failed.push(f.name);
+    }
+  }
+  if (added.length) saveData();
+  bulkUploadStatus = `✅ ${added.length} Abrechnung${added.length === 1 ? '' : 'en'} hinzugefügt`
+    + (skipped.length ? ` · ${skipped.length} schon vorhanden (übersprungen)` : '')
+    + (failed.length ? ` · ⚠️ nicht lesbar: ${failed.join(', ')}` : '')
+    + (added.length ? ' – bitte unten kurz prüfen.' : '');
+  render();
 }
 
 function weekKeyOf(key) {
@@ -2656,7 +2724,9 @@ function renderDashboardContent(b, animate) {
               ${fixAufbau.goal > 0 ? `<div><span>Persönliches Ziel${settings.goalName ? ' (' + escapeHtml(settings.goalName) + ')' : ''}</span><b>+ ${fmtEuro(fixAufbau.goal)}</b></div>` : ''}
               ${STEUER_PROZENT > 0 ? `<div><span>Steuer (+${STEUER_PROZENT}%)</span><b>+ ${fmtEuro(fixAufbau.tax)}</b></div>` : ''}
               ${fixStornoPct > 0 ? `<div><span>Storno-Puffer (+${fmtPct(fixStornoPct)})</span><b>+ ${fmtEuro(fixAufbau.storno)}</b></div>` : ''}
+              ${fixAufbau.round > 0.005 ? `<div><span>Aufgerundet (auf volle 10 €)</span><b>+ ${fmtEuro(fixAufbau.round)}</b></div>` : ''}
               <div class="sum"><span>= Brutto-Ziel</span><b>${fmtEuro(fixSchwelle)}</b></div>
+              <label class="dash-fix-check" style="margin:6px 0 0;"><input type="checkbox" ${settings.zielAufrunden ? 'checked' : ''} onchange="toggleZielAufrunden(this.checked)"><span>Auf volle 10 € aufrunden</span></label>
             </div>
             <div class="dash-fix-sub">Bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
             ${(STEUER_PROZENT > 0 || fixStornoPct > 0) && fixLiveBrutto > 0 ? `
@@ -2692,9 +2762,9 @@ function renderDashboardContent(b, animate) {
               <div class="dash-kv-row"><span>Bestätigungsquote</span><b>${trackedCountAll > 0 ? settleQuote + '%' : '–'}</b></div>
             </div>
             <div class="dash-settle-upload">
-              <input type="file" id="settlementPdfInput" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event)">
-              <button class="today-btn" onclick="document.getElementById('settlementPdfInput').click()">📄 PDF hochladen &amp; auslesen</button>
-              <span class="dash-settle-upload-status" id="pdfUploadStatus"></span>
+              <input type="file" id="settlementPdfInput" accept="application/pdf" multiple style="display:none;" onchange="handlePdfUpload(event)">
+              <button class="today-btn" onclick="document.getElementById('settlementPdfInput').click()">📄 PDF(s) hochladen &amp; auslesen</button>
+              <span class="dash-settle-upload-status" id="pdfUploadStatus">${escapeHtml(bulkUploadStatus)}</span>
             </div>
             <div class="dash-settle-form">
               <input type="text" id="settlementLabel" placeholder="z.B. Oktober 2026">
@@ -2706,7 +2776,7 @@ function renderDashboardContent(b, animate) {
               <select id="settlementWindow">${settlementWindowOptionsHtml}</select>
               <button class="today-btn" onclick="addSettlement()">+ Hinzufügen</button>
             </div>
-            <div class="dash-card-sub" style="margin-top:-4px; margin-bottom:8px;">Tipp: "davon Neukunden/Bestand/Storno" ausfüllen (oder per PDF automatisch erkannt), dann zeigt die Ausgezahlt-Ansicht auch den Kundenmix bestätigt an.</div>
+            <div class="dash-card-sub" style="margin-top:-4px; margin-bottom:8px;">Tipp: Wähle mehrere PDFs gleichzeitig aus – dann werden alle Abrechnungen auf einmal eingelesen und direkt hinzugefügt. Eine einzelne PDF füllt nur das Formular vor; dort kannst du „davon Neukunden/Bestand/Storno“ prüfen, damit die Ausgezahlt-Ansicht den Kundenmix bestätigt zeigt.</div>
             <div class="dash-list">${settlementsHtml}</div>
             ` : ''}
           </div>
@@ -2978,6 +3048,7 @@ function openOnboarding(mode) {
     steuer: !prefill ? '' : (settings.steuer > 0 ? fmtNumInput(settings.steuer) : ''),
     fixkosten: settings.fixkosten ? fmtNumInput(settings.fixkosten) : '',
     stornoAufschlag: !!settings.stornoAufschlag,
+    runden: !!settings.zielAufrunden,
     goalName: settings.goalName || '',
     mine: settings.mineAmount ? fmtNumInput(settings.mineAmount) : '',
     goalAmount: settings.goalAmount ? fmtNumInput(settings.goalAmount) : '',
@@ -3005,6 +3076,12 @@ function obSet(field, value) {
 
 function obSetChip(field, value) {
   obSet(field, value);
+  renderOnboarding();
+}
+
+function obToggleRunden() {
+  if (!ob) return;
+  ob.runden = !ob.runden;
   renderOnboarding();
 }
 
@@ -3065,6 +3142,7 @@ async function obFinish() {
   settings.steuer = parseNum(ob.steuer) >= 0 && parseNum(ob.steuer) < 100 ? parseNum(ob.steuer) : 0; // leer = keine Steuer
   settings.fixkosten = parseNum(ob.fixkosten) >= 0 ? parseNum(ob.fixkosten) : 0;
   settings.stornoAufschlag = !!ob.stornoAufschlag;
+  settings.zielAufrunden = !!ob.runden;
   settings.goalName = String(ob.goalName || '').trim().slice(0, 40);
   settings.mineAmount = parseNum(ob.mine) >= 0 ? parseNum(ob.mine) : 0;
   settings.goalAmount = parseNum(ob.goalAmount) >= 0 ? parseNum(ob.goalAmount) : 0;
@@ -3212,6 +3290,22 @@ function renderOnboarding() {
     rows.push(['Nur für mich / Monat', parseNum(ob.mine) > 0 ? fmtNumPlain(parseNum(ob.mine)) : '–']);
     rows.push(['Storno-Puffer auf Ziel', ob.stornoAufschlag ? 'an' : 'aus']);
     rows.push([escapeHtml(ob.goalName.trim()) || 'Finanzziel', parseNum(ob.goalAmount) > 0 ? fmtNumPlain(parseNum(ob.goalAmount)) + (ob.goalPeriod === 'custom' ? ' in ' + goalUnitLabel(ob.goalCount, ob.goalUnit) : ' / ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)]) : '–']);
+    // Berechnetes Brutto-Ziel pro Abrechnungsperiode aus den eingegebenen Werten
+    const obPeriod = goalPeriodOf(ob.goalPeriod);
+    const obGoalAmt = Math.max(0, parseNum(ob.goalAmount) || 0);
+    const obGoalMonthly = obPeriod === 'woche' ? obGoalAmt * 52 / 12 : obPeriod === 'jahr' ? obGoalAmt / 12
+      : obPeriod === 'custom' ? obGoalAmt / goalCustomMonths(ob.goalCount, ob.goalUnit) : obGoalAmt;
+    const obAufbau = zielAufbauCalc({
+      fix: Math.max(0, parseNum(ob.fixkosten) || 0),
+      goal: obGoalMonthly / 2,
+      mine: Math.max(0, parseNum(ob.mine) || 0) / 2,
+      taxPct: Math.max(0, parseNum(ob.steuer) || 0),
+      stornoPct: ob.stornoAufschlag ? avgStornoQuote().pct : 0,
+      runden: !!ob.runden,
+    });
+    const roundBtn = obAufbau.raw > 0
+      ? `<button type="button" class="ob-round ${ob.runden ? 'active' : ''}" onclick="obToggleRunden()">${ob.runden ? '✓ Aufgerundet' : '⬆️ Aufrunden'}</button>` : '';
+    rows.push(['Brutto-Ziel pro Abrechnungsperiode', obAufbau.total > 0 ? fmtEuro(obAufbau.total) + roundBtn : '–']);
     body = `
       <h2 class="ob-title">${edit ? 'Alles korrekt?' : 'Alles bereit!'}</h2>
       <p class="ob-sub">${edit ? 'Prüfe deine Angaben und speichere sie.' : 'Das hast du eingestellt – du kannst es jederzeit über das ⚙️ oben rechts ändern.'}</p>
