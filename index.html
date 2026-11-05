@@ -674,6 +674,25 @@
     .wrap.wrap-wide { max-width: 1180px; }
   }
 
+  /* --- TRACKER auf Tablet & Computer --- */
+  .tracker-page { display:block; }
+  .tr-right .section-title { margin-top: 18px; }
+  @media (min-width: 640px) {
+    .wrap.wrap-tracker { max-width: 720px; }
+    .wrap.wrap-tracker .meter-display { font-size: 44px; }
+    .wrap.wrap-tracker .qcard-count { font-size: 56px; }
+    .wrap.wrap-tracker .btn-round { height: 52px; }
+    .wrap.wrap-tracker .stat-value { font-size: 20px; }
+    .wrap.wrap-tracker .cards { gap: 14px; margin-bottom: 14px; }
+  }
+  @media (min-width: 1000px) {
+    .wrap.wrap-tracker { max-width: 1180px; }
+    .tracker-page { display:grid; grid-template-columns: minmax(0, 540px) minmax(0, 1fr); gap: 24px; align-items:start; }
+    .tr-right { position: sticky; top: 16px; }
+    .tr-right .section-title { margin-top: 0; text-align:left; }
+    .wrap.wrap-tracker .table-card tbody td { padding-top: 12px; padding-bottom: 12px; font-size: 14px; }
+  }
+
   .dashboard-page.animate-in .dash-card {
     animation: fadeInUp 0.32s ease both;
   }
@@ -2372,6 +2391,8 @@ function renderTrackerContent() {
   }
 
   return `
+    <div class="tracker-page">
+    <div class="tr-left">
     <div class="card meter">
       <div class="meter-label">Umsatz am ${fmtDateLabel(selectedDate)}</div>
       <div class="meter-top">
@@ -2456,6 +2477,8 @@ function renderTrackerContent() {
       <div class="card stat"><div class="stat-value">${fmtEuro(avg)}</div><div class="stat-label">Ø / Tag</div></div>
     </div>
 
+    </div>
+    <div class="tr-right">
     <div class="section-title">Verlauf</div>
     <div class="card table-card ${teamMode ? 'compact' : ''}">
       <table>
@@ -2476,6 +2499,8 @@ function renderTrackerContent() {
       </table>
     </div>
     ${storageOk ? '' : '<div class="storage-warn">Speichern hat gerade nicht geklappt — Änderungen gelten evtl. nur für diese Sitzung.</div>'}
+    </div>
+    </div>
   `;
 }
 
@@ -3311,6 +3336,7 @@ function render() {
 
   const wrapEl = document.getElementById('wrap');
   if (wrapEl) wrapEl.classList.toggle('wrap-wide', currentPage === 'dashboard' || currentPage === 'abrechnungen' || currentPage === 'team');
+  if (wrapEl) wrapEl.classList.toggle('wrap-tracker', currentPage === 'tracker');
 
   if (currentPage === 'tracker') {
     const dp = document.getElementById('datePicker');
