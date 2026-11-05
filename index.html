@@ -754,6 +754,8 @@
   .ob-pillars small { font-size: 12px; color: var(--text-dim); line-height: 1.4; margin-top: 2px; }
   .dash-fix-reserve { display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border, rgba(128,128,128,.2)); font-size:12.5px; }
   .dash-fix-reserve div { display:flex; justify-content:space-between; gap:10px; }
+  .dash-fix-reserve .top { padding-bottom:8px; border-bottom:1px dashed var(--border); font-size:13.5px; }
+  .dash-fix-reserve .top b { font-size:15px; }
   .dash-fix-reserve span { color: var(--text-dim); }
   .dash-fix-reserve b { font-variant-numeric: tabular-nums; }
   .pf-list { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
@@ -2508,6 +2510,7 @@ function renderDashboardContent(b, animate) {
             <div class="dash-fix-sub">Schwelle${(STEUER_PROZENT > 0 || fixStornoPct > 0) ? ' inkl. automatisch' : ''}${STEUER_PROZENT > 0 ? ` +${STEUER_PROZENT}% Steuer` : ''}${fixStornoPct > 0 ? `${STEUER_PROZENT > 0 ? ' und' : ''} +${fmtPct(fixStornoPct)} Ø Storno-Quote` : ''}: ${fmtEuro(fixSchwelle)} · bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
             ${(STEUER_PROZENT > 0 || fixStornoPct > 0) && fixLiveBrutto > 0 ? `
             <div class="dash-fix-reserve">
+              <div class="top"><span>📈 Geschätzter Umsatz (Brutto)</span><b>${fmtEuro(fixLiveBrutto)}</b></div>
               ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
               ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}%)</span><b>${fmtEuro(fixLiveBrutto * (1 - fixStornoPct / 100) * STEUER_PROZENT / 100)}</b></div>` : ''}
               <div><span>💶 Davon wirklich deins</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>
