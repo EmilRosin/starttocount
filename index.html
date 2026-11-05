@@ -2672,7 +2672,7 @@ function renderDashboardContent(b, animate) {
 
   // (isAusgezahltView bereits oben für Kundenmix/Umsatz-Mix berechnet)
   const totalCardValue = isAusgezahltView ? periodPaid : b.periodTotal;
-  const totalCardSub = isAusgezahltView ? (periodSettlements.length ? `Ausgezahlt · ${selectedPeriodText()}` : `Noch keine Abrechnung · ${selectedPeriodText()}`) : `Umsatz · ${selectedPeriodText()}`;
+  const totalCardSub = isAusgezahltView ? (periodSettlements.length ? `Ausgezahlt brutto · ${selectedPeriodText()}` : `Noch keine Abrechnung · ${selectedPeriodText()}`) : `Umsatz · ${selectedPeriodText()}`;
   const totalCardChips = isAusgezahltView
     ? [
         { value: periodSettlements.length, label: 'Abrechnungen' },
@@ -2866,6 +2866,7 @@ function renderDashboardContent(b, animate) {
             <div class="dash-card-sub">${totalCardSub}</div>
             <div class="dash-total-value">${fmtEuro(totalCardValue)}</div>
             ${(STEUER_PROZENT > 0 || stornoAufschlagPct() > 0) && !isAusgezahltView ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue * (1 - stornoAufschlagPct() / 100)))} ${STEUER_PROZENT > 0 ? 'netto' : 'erwartet'} (${[stornoAufschlagPct() > 0 ? '−' + fmtPct(stornoAufschlagPct()) + ' Ø Storno' : '', STEUER_PROZENT > 0 ? '−' + STEUER_PROZENT + '% Steuer' : ''].filter(Boolean).join(', ')})</div>` : ''}
+            ${isAusgezahltView && STEUER_PROZENT > 0 && periodSettlements.length ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(periodPaid))} netto (−${STEUER_PROZENT}% Steuer)</div>` : ''}
             ${!isAusgezahltView ? trendBadge : ''}
             <div class="dash-chip-row">
               ${totalCardChips.map(c => `<div class="dash-chip"><div class="dash-chip-value">${c.value}</div><div class="dash-chip-label">${c.label}</div></div>`).join('')}
