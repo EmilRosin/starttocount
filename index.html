@@ -1650,9 +1650,26 @@ function selectedPeriodWindowIds() {
   }
   return { year: String(now.getFullYear() - jahrOffset) };
 }
+// Monat aus dem Label ("Oktober 2026"), wenn keine windowId gesetzt ist: -> "2026-10" oder null
+function settlementMonthKey(x) {
+  const names = ['januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
+  const m = String(x.label || '').toLowerCase().match(new RegExp('(' + names.join('|') + ')\\s+(\\d{4})'));
+  return m ? `${m[2]}-${String(names.indexOf(m[1]) + 1).padStart(2, '0')}` : null;
+}
+function settlementInSelectedPeriod(x, sel) {
+  if (x.windowId && /^\d{4}-\d{2}-[AB]$/.test(x.windowId)) {
+    return sel.ids ? sel.ids.includes(x.windowId) : x.windowId.startsWith(sel.year + '-');
+  }
+  // Ohne Zuordnung: Monat aus dem Namen ableiten; sonst nur im aktuellen Jahr mitzählen
+  const mk = settlementMonthKey(x);
+  if (statsPeriod === 'woche') return false;
+  if (statsPeriod === 'monat') return !!mk && sel.ids.includes(mk + '-A');
+  if (mk) return mk.startsWith(sel.year + '-');
+  return jahrOffset === 0;
+}
 function settlementsInSelectedPeriod() {
   const sel = selectedPeriodWindowIds();
-  return settlements.filter(x => x.windowId && (sel.ids ? sel.ids.includes(x.windowId) : x.windowId.startsWith(sel.year + '-')));
+  return settlements.filter(x => settlementInSelectedPeriod(x, sel));
 }
 function selectedPeriodText() {
   if (statsPeriod === 'woche') { const w = windowOffsetBack(zeitraumOffset); return fmtWindowRange(w.schreibStart, w.schreibEnd) + ' ' + w.schreibStart.getFullYear(); }
