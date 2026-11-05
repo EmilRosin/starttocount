@@ -2637,7 +2637,7 @@ function renderDashboardContent(b, animate) {
               </div>
             </div>
             <div class="dash-fix-inputs">
-              <label>Fixkosten pro Zeitraum (€)<input type="number" inputmode="decimal" min="0" step="any" value="${settings.fixkosten || 0}" onchange="setFixkosten(this.value)"></label>
+              <label>Fixkosten pro Abrechnungsperiode (€)<input type="number" inputmode="decimal" min="0" step="any" value="${settings.fixkosten || 0}" onchange="setFixkosten(this.value)"></label>
               <label>💶 Nur für mich übrig – pro Monat (€)<input type="number" inputmode="decimal" min="0" step="any" value="${settings.mineAmount || ''}" placeholder="z. B. 1000" oninput="setMine(this.value, true)" onchange="setMine(this.value)" onkeydown="if(event.key==='Enter')this.blur()"></label>
             </div>
             <label class="dash-fix-check">
@@ -3191,7 +3191,7 @@ function renderOnboarding() {
       </div>
       <div class="ob-section-title" style="margin-top:20px;">💼 Steuern & Fixkosten <em>(optional)</em></div>
       ${obInput('steuer', 'Steuersatz (optional)', { unit: '%', placeholder: 'z. B. 30', hint: 'Wird für die Netto-Anzeige abgezogen. Leer lassen = es werden keine Steuern angezeigt.' })}
-      ${obInput('fixkosten', 'Fixkosten pro Abrechnungszeitraum (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Zeitraum (1.–15. bzw. 16.–Monatsende). Steuern schlägt die App automatisch drauf – bei Erreichen gibt’s ein Feuerwerk 🎆' })}
+      ${obInput('fixkosten', 'Fixkosten pro Abrechnungsperiode (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Abrechnungsperiode (1.–15. bzw. 16.–Monatsende). Steuern schlägt die App automatisch drauf – bei Erreichen gibt’s ein Feuerwerk 🎆' })}
       <label class="ob-check">
         <input type="checkbox" ${ob.stornoAufschlag ? 'checked' : ''} onchange="obSet('stornoAufschlag', this.checked)">
         <span>Ø Storno-Quote als Puffer auf das Ziel aufschlagen<small>${(() => { const a = avgStornoQuote(); return a.count > 0 ? `Aktuell ${fmtPct(a.pct)} im Schnitt aus ${a.count} Abrechnung${a.count === 1 ? '' : 'en'} – so planst du schon ein, dass ein Teil der Aufträge noch storniert wird.` : 'Sobald du Abrechnungen eingescannt hast, berechnet die App deine durchschnittliche Storno-Quote und schlägt sie auf.'; })()}</small></span>
@@ -3208,7 +3208,7 @@ function renderOnboarding() {
       rows.push(['Overhead pro Neukunde (Team)', fmtNumPlain(parseNum(ob.overheadNeu) || 0)]);
     }
     rows.push(['Steuersatz', parseNum(ob.steuer) > 0 ? parseNum(ob.steuer).toLocaleString('de-DE') + ' %' : '–']);
-    rows.push(['Fixkosten / Zeitraum', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
+    rows.push(['Fixkosten pro Abrechnungsperiode', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
     rows.push(['Nur für mich / Monat', parseNum(ob.mine) > 0 ? fmtNumPlain(parseNum(ob.mine)) : '–']);
     rows.push(['Storno-Puffer auf Ziel', ob.stornoAufschlag ? 'an' : 'aus']);
     rows.push([escapeHtml(ob.goalName.trim()) || 'Finanzziel', parseNum(ob.goalAmount) > 0 ? fmtNumPlain(parseNum(ob.goalAmount)) + (ob.goalPeriod === 'custom' ? ' in ' + goalUnitLabel(ob.goalCount, ob.goalUnit) : ' / ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)]) : '–']);
