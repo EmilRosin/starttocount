@@ -447,6 +447,11 @@
 
   /* --- STATISTIKEN PAGE --- */
   .period-toggle-card { padding: 6px; margin-bottom: 14px; }
+  .period-row { display:flex; flex-wrap:wrap; gap:10px; align-items:stretch; margin-bottom:14px; }
+  .period-row > .card { margin-bottom:0 !important; }
+  .period-row > #period-toggle-root { flex:0 1 340px; }
+  .period-row > .month-nav-card { flex:1 1 260px; }
+  @media (max-width: 700px) { .period-row > #period-toggle-root { flex:1 1 100%; } }
   .period-toggle {
     display: flex;
     gap: 2px;
@@ -970,6 +975,7 @@
     <button class="nav-tab" id="tab-abrechnungen" onclick="switchPage('abrechnungen')">Meine Abrechnungen</button>
   </div>
 
+  <div class="period-row">
   <div class="card period-toggle-card" id="period-toggle-root" style="display:none;">
     <div class="period-toggle">
       <div class="toggle-slider" id="period-slider"></div>
@@ -995,6 +1001,8 @@
     <button class="month-nav-arrow" onclick="shiftJahr(1)" title="Vorheriges Jahr">‹</button>
     <div class="month-nav-label" id="jahr-nav-label"></div>
     <button class="month-nav-arrow" id="jahr-nav-next" onclick="shiftJahr(-1)" title="Nächstes Jahr">›</button>
+  </div>
+
   </div>
 
   <div id="app" class="loading">Lade Daten …</div>
