@@ -1031,12 +1031,8 @@ async function loadData() {
       settlements = parsed.settlements || [];
       const storedSettings = parsed.settings || {};
       settings = Object.assign(defaultSettings(), storedSettings);
-      // Bestehende Nutzer (haben schon Daten/Einstellungen, aber das Onboarding noch nie gesehen)
-      // werden nicht plötzlich ausgebremst: sie behalten ihre bisherigen Werte (110 € / 15 € / 30 %).
-      if (storedSettings.onboarded === undefined &&
-          (Object.keys(data).length > 0 || settlements.length > 0 || storedSettings.fixkosten > 0)) {
-        settings.onboarded = true;
-      }
+      // Bestehende Nutzer (haben schon Daten, aber das Onboarding noch nie gesehen) sehen den Dialog
+      // einmalig ebenfalls – vorausgefüllt mit ihren bisherigen Werten (110 € / 15 € / 30 %).
       applySettings();
       return;
     }
@@ -1047,10 +1043,7 @@ async function loadData() {
   settings = defaultSettings();
   try {
     const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) {
-      data = JSON.parse(legacy) || {};
-      if (Object.keys(data).length > 0) settings.onboarded = true;
-    }
+    if (legacy) data = JSON.parse(legacy) || {};
   } catch (e) { /* keine alten Daten vorhanden */ }
   applySettings();
 }
@@ -2373,7 +2366,7 @@ function renderDashboardContent(b, animate) {
             ${fixSchwelle > 0 ? `
             <div class="dash-fix-track"><div class="dash-fix-fill ${fixReached ? 'reached' : ''}" style="width:${fixPct}%;"></div></div>
             <div class="dash-fix-saldo ${fixReached ? 'pos' : 'neg'}">${fixReached ? '+' : '−'}${fmtEuro(Math.abs(fixSaldo))}</div>
-            <div class="dash-fix-sub">Schwelle inkl. automatisch +${STEUER_PROZENT}% Steuer: ${fmtEuro(fixSchwelle)} · bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
+            <div class="dash-fix-sub">Schwelle${STEUER_PROZENT > 0 ? ` inkl. automatisch +${STEUER_PROZENT}% Steuer` : ''}: ${fmtEuro(fixSchwelle)} · bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
             ` : ''}
           </div>
 
@@ -2396,7 +2389,7 @@ function renderDashboardContent(b, animate) {
               <div class="dash-kv-row"><span>Getrackt (Brutto, gesamt)</span><b>${fmtEuro(trackedAll)}</b></div>
               <div class="dash-kv-row"><span>Ausgezahlt (Brutto, gesamt)</span><b>${fmtEuro(settlePaidTotal)}</b></div>
               <div class="dash-kv-row"><span>Differenz</span><b style="color:${settleDiff < 0 ? 'var(--danger)' : 'var(--green)'};">${settleDiff >= 0 ? '+' : ''}${fmtEuro(settleDiff)}</b></div>
-              <div class="dash-kv-row"><span>Ausgezahlt netto (−${STEUER_PROZENT}% Steuer)</span><b>${fmtEuro(nettoOf(settlePaidTotal))}</b></div>
+              ${STEUER_PROZENT > 0 ? `<div class="dash-kv-row"><span>Ausgezahlt netto (−${STEUER_PROZENT}% Steuer)</span><b>${fmtEuro(nettoOf(settlePaidTotal))}</b></div>` : ''}
               <div class="dash-kv-row"><span>Bestätigungsquote</span><b>${trackedCountAll > 0 ? settleQuote + '%' : '–'}</b></div>
             </div>
             <div class="dash-settle-upload">
@@ -2428,7 +2421,7 @@ function renderDashboardContent(b, animate) {
             </div>
             <div class="dash-card-sub">${totalCardSub}</div>
             <div class="dash-total-value">${fmtEuro(totalCardValue)}</div>
-            <div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue))} netto (−${STEUER_PROZENT}% Steuer)</div>
+            ${STEUER_PROZENT > 0 ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue))} netto (−${STEUER_PROZENT}% Steuer)</div>` : ''}
             ${!isAusgezahltView ? trendBadge : ''}
             <div class="dash-chip-row">
               ${totalCardChips.map(c => `<div class="dash-chip"><div class="dash-chip-value">${c.value}</div><div class="dash-chip-label">${c.label}</div></div>`).join('')}
@@ -2669,15 +2662,19 @@ function getObRoot() {
 
 function openOnboarding(mode) {
   const edit = mode === 'edit';
+  // Wer die App schon mit Daten nutzt, bekommt seine bisherigen Werte vorausgefüllt
+  const hasData = Object.keys(data).length > 0 || settlements.length > 0 || settings.fixkosten > 0;
+  const prefill = edit || hasData;
   ob = {
     mode: edit ? 'edit' : 'first',
     step: edit ? 1 : 0,
     name: settings.name || '',
     role: settings.role === 'teamleiter' ? 'teamleiter' : 'vertreter',
     // Beim ersten Mal bewusst leer, damit jeder SEINE Provision eintippt (statt Standardwerte zu übernehmen)
-    preisNeu: edit ? fmtNumInput(settings.preisNeu) : '',
-    preisBestand: edit ? fmtNumInput(settings.preisBestand) : '',
-    steuer: fmtNumInput(settings.steuer),
+    preisNeu: prefill ? fmtNumInput(settings.preisNeu) : '',
+    preisBestand: prefill ? fmtNumInput(settings.preisBestand) : '',
+    // Steuersatz ist optional: leer = keine Netto-/Steuer-Anzeige. Bei 0 bleibt das Feld ebenfalls leer.
+    steuer: !prefill ? '' : (settings.steuer > 0 ? fmtNumInput(settings.steuer) : ''),
     fixkosten: settings.fixkosten ? fmtNumInput(settings.fixkosten) : '',
     overheadNeu: settings.overheadNeu ? fmtNumInput(settings.overheadNeu) : '',
     overheadBestand: settings.overheadBestand ? fmtNumInput(settings.overheadBestand) : '',
@@ -2720,8 +2717,10 @@ function obValidateStep() {
     if (String(ob.overheadBestand).trim() !== '' && !(parseNum(ob.overheadBestand) >= 0)) return 'Der Overhead pro Bestandskunde muss eine Zahl sein (oder leer bleiben).';
   }
   if (step === 'weiteres') {
-    const s = parseNum(ob.steuer);
-    if (!(s >= 0 && s < 100)) return 'Der Steuersatz muss zwischen 0 und 99 % liegen.';
+    if (String(ob.steuer).trim() !== '') {
+      const s = parseNum(ob.steuer);
+      if (!(s >= 0 && s < 100)) return 'Der Steuersatz muss zwischen 0 und 99 % liegen (oder leer bleiben).';
+    }
     if (String(ob.fixkosten).trim() !== '' && !(parseNum(ob.fixkosten) >= 0)) return 'Die Fixkosten müssen eine Zahl sein (oder leer bleiben).';
   }
   return '';
@@ -2750,7 +2749,7 @@ async function obFinish() {
   settings.role = ob.role === 'teamleiter' ? 'teamleiter' : 'vertreter';
   settings.preisNeu = parseNum(ob.preisNeu) >= 0 ? parseNum(ob.preisNeu) : settings.preisNeu;
   settings.preisBestand = parseNum(ob.preisBestand) >= 0 ? parseNum(ob.preisBestand) : settings.preisBestand;
-  settings.steuer = parseNum(ob.steuer) >= 0 && parseNum(ob.steuer) < 100 ? parseNum(ob.steuer) : settings.steuer;
+  settings.steuer = parseNum(ob.steuer) >= 0 && parseNum(ob.steuer) < 100 ? parseNum(ob.steuer) : 0; // leer = keine Steuer
   settings.fixkosten = parseNum(ob.fixkosten) >= 0 ? parseNum(ob.fixkosten) : 0;
   settings.overheadNeu = parseNum(ob.overheadNeu) >= 0 ? parseNum(ob.overheadNeu) : 0;
   settings.overheadBestand = parseNum(ob.overheadBestand) >= 0 ? parseNum(ob.overheadBestand) : 0;
@@ -2835,7 +2834,7 @@ function renderOnboarding() {
     body = `
       <h2 class="ob-title">Noch ein paar Details</h2>
       <p class="ob-sub">Damit dir die App auch Netto-Zahlen und dein Ziel anzeigen kann.</p>
-      ${obInput('steuer', 'Steuersatz', { unit: '%', placeholder: '30', hint: 'Wird für die Netto-Anzeige abgezogen.' })}
+      ${obInput('steuer', 'Steuersatz (optional)', { unit: '%', placeholder: 'z. B. 30', hint: 'Wird für die Netto-Anzeige abgezogen. Leer lassen = es werden keine Steuern angezeigt.' })}
       ${obInput('fixkosten', 'Fixkosten pro Abrechnungszeitraum (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Zeitraum (1.–15. bzw. 16.–Monatsende). Steuern schlägt die App automatisch drauf – bei Erreichen gibt’s ein Feuerwerk 🎆' })}`;
   } else {
     primaryLabel = edit ? 'Speichern' : 'Speichern & starten';
@@ -2849,7 +2848,7 @@ function renderOnboarding() {
       rows.push(['Overhead Neukunde (Team)', fmtNumPlain(parseNum(ob.overheadNeu) || 0)]);
       rows.push(['Overhead Bestand (Team)', fmtNumPlain(parseNum(ob.overheadBestand) || 0)]);
     }
-    rows.push(['Steuersatz', (parseNum(ob.steuer) || 0).toLocaleString('de-DE') + ' %']);
+    rows.push(['Steuersatz', parseNum(ob.steuer) > 0 ? parseNum(ob.steuer).toLocaleString('de-DE') + ' %' : '–']);
     rows.push(['Fixkosten / Zeitraum', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
     body = `
       <h2 class="ob-title">${edit ? 'Alles korrekt?' : 'Alles bereit!'}</h2>
