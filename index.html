@@ -680,6 +680,15 @@
 
   .dash-top { display:grid; grid-template-columns:1fr; gap:16px; }
   @media (min-width: 640px) { .dash-top { grid-template-columns: 1fr 1fr; align-items:stretch; } }
+  @media (min-width: 640px) { .dash-top.goal-collapsed { grid-template-columns: 1fr 52px; } }
+  .dash-top > .dash-goal-tab { display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; font:inherit; color:var(--text-dim); padding:10px 14px; background:var(--card); }
+  .dash-goal-tab-txt { font-size:12px; font-weight:700; }
+  .dash-goal-tab-arrow { font-size:18px; font-weight:800; color:var(--blue); line-height:1; }
+  @media (min-width: 640px) {
+    .dash-top > .dash-goal-tab { flex-direction:column; padding:14px 6px; }
+    .dash-goal-tab-txt { writing-mode:vertical-rl; letter-spacing:.02em; }
+  }
+  .dash-top > .dash-goal-tab:hover { color:var(--text); }
   .dash-top > .card { margin:0; padding:14px 16px; border-top:3px solid var(--blue); }
   .dash-top .dash-card-title { font-size:15px; }
   .dash-top .dash-fix-saldo { font-size:22px; margin:2px 0; }
@@ -1440,6 +1449,10 @@ function isoWeekOf(d) {
 
 function goalCardHtml() {
   const amount = settings.goalAmount || 0;
+  if (!(amount > 0)) {
+    // Kein Finanzziel festgelegt: Karte klappt zu einem schmalen Streifen zur Seite, die andere Karte nutzt den Platz
+    return `<button type="button" class="card dash-goal-tab" onclick="openSettings()" title="Finanzziel in den Einstellungen festlegen"><span class="dash-goal-tab-ico">🎯</span><span class="dash-goal-tab-txt">Finanzziel festlegen</span><span class="dash-goal-tab-arrow">›</span></button>`;
+  }
   const period = goalPeriodOf(settings.goalPeriod);
   const now = new Date();
   const customStart = settings.goalStart || todayKey();
@@ -2821,7 +2834,7 @@ function renderDashboardContent(b, animate) {
     <div class="dashboard-page ${animate ? 'animate-in' : ''}">
       <div class="dash-grid">
         <div class="dash-main">
-      <div class="dash-top">
+      <div class="dash-top${(settings.goalAmount || 0) > 0 ? '' : ' goal-collapsed'}">
           <div class="card dash-card dash-fix-card">
             <div class="dash-card-head">
               <div>
