@@ -2457,7 +2457,7 @@ function renderDashboardContent(b, animate) {
             </div>
             <div class="dash-card-sub">${totalCardSub}</div>
             <div class="dash-total-value">${fmtEuro(totalCardValue)}</div>
-            ${STEUER_PROZENT > 0 && !isAusgezahltView ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue))} netto (−${STEUER_PROZENT}% Steuer)</div>` : ''}
+            ${(STEUER_PROZENT > 0 || stornoAufschlagPct() > 0) && !isAusgezahltView ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue * (1 - stornoAufschlagPct() / 100)))} ${STEUER_PROZENT > 0 ? 'netto' : 'erwartet'} (${[stornoAufschlagPct() > 0 ? '−' + fmtPct(stornoAufschlagPct()) + ' Ø Storno' : '', STEUER_PROZENT > 0 ? '−' + STEUER_PROZENT + '% Steuer' : ''].filter(Boolean).join(', ')})</div>` : ''}
             ${!isAusgezahltView ? trendBadge : ''}
             <div class="dash-chip-row">
               ${totalCardChips.map(c => `<div class="dash-chip"><div class="dash-chip-value">${c.value}</div><div class="dash-chip-label">${c.label}</div></div>`).join('')}
