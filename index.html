@@ -788,6 +788,7 @@
   .goal-row:not(.ob) input { width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background: var(--toggle-bg); color: var(--text); font: inherit; font-weight:600; box-sizing:border-box; }
   .goal-row.ob .ob-field, .goal-row.ob span { font-size:12.5px; font-weight:600; }
   .ob-hint { display:block; font-size:11.5px; color: var(--text-dim); margin: -4px 0 6px; }
+  .ob-mine { margin-bottom:6px; }
   .ob-goal.first { margin-top:0; padding-top:0; border-top:none; margin-bottom:6px; }
   .ob-section-title { font-weight:700; font-size:15px; margin-bottom:4px; }
   .ob-section-title em { font-style:normal; font-weight:500; font-size:12px; color: var(--text-dim); }
@@ -1087,6 +1088,7 @@ function defaultSettings() {
     stornoAufschlag: false, // Ø Storno-Quote der Abrechnungen auf die Fixkosten-Schwelle aufschlagen?
     goalName: '',         // persönliches Finanzziel (z. B. "Rücklage", "Urlaub")
     goalAmount: 0,        // Zielbetrag in € – netto, also das, was wirklich bei dir bleibt
+    mineAmount: 0,        // € pro Monat, die nach allen Kosten NUR für mich übrig bleiben sollen (Lebenshaltung/Taschengeld)
     goalPeriod: 'monat',  // 'woche' | 'monat' | 'jahr' | 'custom' – Zeitraum, für den der Zielbetrag gilt
     goalCount: 2,         // nur bei 'custom': Anzahl ...
     goalUnit: 'jahre',    // ... 'wochen' | 'monate' | 'jahre'
@@ -1320,7 +1322,7 @@ function goalCardHtml() {
       <input type="date" value="${customStart}" onchange="setGoal('goalStart', this.value)">
     </div>` : ''}
     <div class="goal-box">
-    <div class="goal-question">💶 Wie viel soll ${period === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[period]} nach allen Kosten bei dir bleiben?</div>
+    <div class="goal-question">🎯 Worauf sparst du? Wie viel soll dafür ${period === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[period]} zusätzlich bei dir bleiben?</div>
     <div class="goal-row">
       <label class="goal-name">Wofür? Name des Ziels (optional)<input type="text" maxlength="40" placeholder="z. B. Urlaub, Rücklage, Auto" value="${escapeHtml(settings.goalName || '')}" onchange="setGoal('goalName', this.value)"></label>
       <label class="goal-amt">👉 Betrag in €<input type="number" inputmode="decimal" min="0" step="any" value="${amount || ''}" placeholder="z. B. 2000" oninput="setGoalLive('goalAmount', this.value)" onchange="setGoal('goalAmount', this.value)" onkeydown="if(event.key==='Enter')this.blur()"></label>
@@ -1364,10 +1366,11 @@ function goalPerWindow() {
 function zielAufbau() {
   const fix = settings.fixkosten || 0;
   const goal = goalPerWindow();
-  const base = fix + goal;
+  const mine = (settings.mineAmount || 0) / 2; // Monatsbetrag -> halber Monat pro Abrechnungszeitraum
+  const base = fix + goal + mine;
   const withTax = base * (1 + STEUER_PROZENT / 100);
   const total = withTax * (1 + stornoAufschlagPct() / 100);
-  return { fix, goal, base, tax: withTax - base, storno: total - withTax, total };
+  return { fix, goal, mine, base, tax: withTax - base, storno: total - withTax, total };
 }
 
 function fixkostenSchwelle() {
@@ -1493,6 +1496,12 @@ function setGoal(field, value) {
   else if (field === 'goalName') settings.goalName = String(value || '').trim().slice(0, 40);
   saveData();
   render();
+}
+
+function setMine(v, live) {
+  settings.mineAmount = Math.max(0, parseFloat(String(v).replace(',', '.')) || 0);
+  saveData();
+  if (!live) { render(); checkFireworksTrigger(); }
 }
 
 function setFixkosten(v) {
@@ -2628,7 +2637,8 @@ function renderDashboardContent(b, animate) {
               </div>
             </div>
             <div class="dash-fix-inputs">
-              <label>Fixkosten (€)<input type="number" min="0" step="10" value="${settings.fixkosten || 0}" onchange="setFixkosten(this.value)"></label>
+              <label>Fixkosten pro Zeitraum (€)<input type="number" inputmode="decimal" min="0" step="any" value="${settings.fixkosten || 0}" onchange="setFixkosten(this.value)"></label>
+              <label>💶 Nur für mich übrig – pro Monat (€)<input type="number" inputmode="decimal" min="0" step="any" value="${settings.mineAmount || ''}" placeholder="z. B. 1000" oninput="setMine(this.value, true)" onchange="setMine(this.value)" onkeydown="if(event.key==='Enter')this.blur()"></label>
             </div>
             <label class="dash-fix-check">
               <input type="checkbox" ${settings.stornoAufschlag ? 'checked' : ''} ${fixAvgStorno.count === 0 ? 'disabled' : ''} onchange="toggleStornoAufschlag(this.checked)">
@@ -2642,6 +2652,7 @@ function renderDashboardContent(b, animate) {
             <div class="dash-fix-reserve build">
               <div class="top"><span>🧮 So setzt sich dein Ziel zusammen</span></div>
               ${fixAufbau.fix > 0 ? `<div><span>Fixkosten</span><b>${fmtEuro(fixAufbau.fix)}</b></div>` : ''}
+              ${fixAufbau.mine > 0 ? `<div><span>Nur für mich übrig (Monatsbetrag ÷ 2)</span><b>+ ${fmtEuro(fixAufbau.mine)}</b></div>` : ''}
               ${fixAufbau.goal > 0 ? `<div><span>Persönliches Ziel${settings.goalName ? ' (' + escapeHtml(settings.goalName) + ')' : ''}</span><b>+ ${fmtEuro(fixAufbau.goal)}</b></div>` : ''}
               ${STEUER_PROZENT > 0 ? `<div><span>Steuer (+${STEUER_PROZENT}%)</span><b>+ ${fmtEuro(fixAufbau.tax)}</b></div>` : ''}
               ${fixStornoPct > 0 ? `<div><span>Storno-Puffer (+${fmtPct(fixStornoPct)})</span><b>+ ${fmtEuro(fixAufbau.storno)}</b></div>` : ''}
@@ -2968,6 +2979,7 @@ function openOnboarding(mode) {
     fixkosten: settings.fixkosten ? fmtNumInput(settings.fixkosten) : '',
     stornoAufschlag: !!settings.stornoAufschlag,
     goalName: settings.goalName || '',
+    mine: settings.mineAmount ? fmtNumInput(settings.mineAmount) : '',
     goalAmount: settings.goalAmount ? fmtNumInput(settings.goalAmount) : '',
     goalPeriod: goalPeriodOf(settings.goalPeriod),
     goalCount: String(goalCountOf(settings.goalCount)),
@@ -3017,6 +3029,7 @@ function obValidateStep() {
       if (!(s >= 0 && s < 100)) return 'Der Steuersatz muss zwischen 0 und 99 % liegen (oder leer bleiben).';
     }
     if (String(ob.fixkosten).trim() !== '' && !(parseNum(ob.fixkosten) >= 0)) return 'Die Fixkosten müssen eine Zahl sein (oder leer bleiben).';
+    if (String(ob.mine).trim() !== '' && !(parseNum(ob.mine) >= 0)) return 'Der Betrag „nur für mich“ muss eine Zahl sein (oder leer bleiben).';
     if (String(ob.goalAmount).trim() !== '' && !(parseNum(ob.goalAmount) >= 0)) return 'Das Finanzziel muss eine Zahl sein (oder leer bleiben).';
   }
   return '';
@@ -3053,6 +3066,7 @@ async function obFinish() {
   settings.fixkosten = parseNum(ob.fixkosten) >= 0 ? parseNum(ob.fixkosten) : 0;
   settings.stornoAufschlag = !!ob.stornoAufschlag;
   settings.goalName = String(ob.goalName || '').trim().slice(0, 40);
+  settings.mineAmount = parseNum(ob.mine) >= 0 ? parseNum(ob.mine) : 0;
   settings.goalAmount = parseNum(ob.goalAmount) >= 0 ? parseNum(ob.goalAmount) : 0;
   settings.goalPeriod = goalPeriodOf(ob.goalPeriod);
   settings.goalCount = goalCountOf(ob.goalCount);
@@ -3148,8 +3162,13 @@ function renderOnboarding() {
     body = `
       <h2 class="ob-title">Dein Finanzziel</h2>
       <p class="ob-sub">Ziel = was bei dir bleiben soll + Fixkosten + Steuern + Storno-Puffer. Alles ist freiwillig, du kannst es jederzeit im ⚙️ ändern.</p>
-      <div class="ob-goal first">
-        <div class="ob-section-title">🎯 Dein persönliches Finanzziel <em>(optional)</em></div>
+      <div class="ob-mine">
+        <div class="ob-section-title">💶 Nur für mich übrig <em>(optional)</em></div>
+        <p class="ob-section-sub">Wie viel soll jeden Monat nach Steuern, Fixkosten und Storno einfach nur für dich bleiben? Zum Beispiel 1000 €. Die App rechnet es in dein Ziel ein.</p>
+        ${obInput('mine', 'Betrag pro Monat', { placeholder: 'z. B. 1000' })}
+      </div>
+      <div class="ob-goal">
+        <div class="ob-section-title">🎯 Dein Sparziel <em>(optional)</em></div>
         <p class="ob-section-sub">Das ist dein eigentliches Ziel: Wie viel Geld soll am Ende bei dir bleiben? Die App rechnet Fixkosten, Steuern und Storno-Puffer obendrauf und sagt dir, wie viel Brutto du dafür brauchst.</p>
         <div class="ob-field"><span>Für welchen Zeitraum gilt dein Ziel?</span></div>
         <div class="ob-chips" style="margin-top:-2px">${Object.keys(GOAL_PERIODS).map(k => `<button type="button" class="ob-chip ${ob.goalPeriod === k ? 'active' : ''}" onclick="obSetChip('goalPeriod','${k}')">${goalChipLabel(k)}</button>`).join('')}</div>
@@ -3160,7 +3179,7 @@ function renderOnboarding() {
           <span>ab heute</span>
         </div>` : ''}
         <div class="goal-box">
-        <div class="goal-question">💶 Wie viel soll ${ob.goalPeriod === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)]} nach allen Kosten bei dir bleiben?</div>
+        <div class="goal-question">🎯 Worauf sparst du? Wie viel soll dafür ${ob.goalPeriod === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)]} zusätzlich bei dir bleiben?</div>
         <div class="goal-row ob">
           <label class="goal-name"><span>Wofür? (optional)</span>
             <input class="ob-input" type="text" id="ob-goalName" maxlength="40" value="${escapeHtml(ob.goalName)}" placeholder="z. B. Urlaub, Auto" oninput="obSet('goalName', this.value)"></label>
@@ -3190,6 +3209,7 @@ function renderOnboarding() {
     }
     rows.push(['Steuersatz', parseNum(ob.steuer) > 0 ? parseNum(ob.steuer).toLocaleString('de-DE') + ' %' : '–']);
     rows.push(['Fixkosten / Zeitraum', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
+    rows.push(['Nur für mich / Monat', parseNum(ob.mine) > 0 ? fmtNumPlain(parseNum(ob.mine)) : '–']);
     rows.push(['Storno-Puffer auf Ziel', ob.stornoAufschlag ? 'an' : 'aus']);
     rows.push([escapeHtml(ob.goalName.trim()) || 'Finanzziel', parseNum(ob.goalAmount) > 0 ? fmtNumPlain(parseNum(ob.goalAmount)) + (ob.goalPeriod === 'custom' ? ' in ' + goalUnitLabel(ob.goalCount, ob.goalUnit) : ' / ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)]) : '–']);
     body = `
