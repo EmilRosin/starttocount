@@ -4453,15 +4453,11 @@ function teamComputeStats() {
   const year = String(new Date().getFullYear());
   const today = todayKey();
   const sets = { woche: daysInRange(win.schreibStart, win.schreibEnd), monat: monthDaysForOffset(0), jahr: Object.keys(data).filter(k => k.startsWith(year)) };
-  // Vergleich: gleicher Stand im Vorzeitraum (gleich viele Tage seit Beginn), damit der Vergleich fair ist
-  const pw = windowOffsetBack(1);
-  const prevSets = {
-    woche: daysInRange(pw.schreibStart, pw.schreibEnd).slice(0, sets.woche.filter(k => k <= today).length),
-    monat: monthDaysForOffset(1).slice(0, sets.monat.length),
-    jahr: Object.keys(data).filter(k => k.startsWith(String(Number(year) - 1)) && k.slice(5) <= today.slice(5)),
-  };
+  // Vergleich immer mit dem Vortag: Umsatz heute vs. gestern
+  const yd = new Date(); yd.setDate(yd.getDate() - 1);
   const pub = {}, det = {};
-  Object.keys(sets).forEach(p => { const st = teamPeriodStats(sets[p]); const pv = teamPeriodStats(prevSets[p]); pub[p] = { umsatz: st.umsatz, orders: st.orders, prev: { umsatz: pv.umsatz, orders: pv.orders } }; det[p] = st; });
+  Object.keys(sets).forEach(p => { const st = teamPeriodStats(sets[p]); pub[p] = { umsatz: st.umsatz, orders: st.orders }; det[p] = st; });
+  pub.tag = { day: today, umsatz: teamPeriodStats([today]).umsatz, prev: teamPeriodStats([todayKey(yd)]).umsatz };
   return { pub, det };
 }
 function teamMarkDirty() {
@@ -4478,6 +4474,14 @@ async function teamPushStats() {
   if (a.error || b.error) { team.err = 'Kennzahlen konnten nicht gesendet werden: ' + cloudErrText(a.error || b.error); }
   else { team.stats[uid] = { user_id: uid, team_id: team.me.team_id, stats: pub, updated_at: ts }; team.detail[uid] = { user_id: uid, team_id: team.me.team_id, stats: det, updated_at: ts }; }
   if (currentPage === 'team') render();
+}
+// Tagesvergleich eines Mitglieds: heute vs. gestern (veraltete Zahlen von gestern werden korrekt eingeordnet)
+function teamDayCmp(stats) {
+  const t = stats && stats.tag; if (!t || !t.day) return null;
+  const today = todayKey(), yd = new Date(); yd.setDate(yd.getDate() - 1);
+  if (t.day === today) return { cur: t.umsatz || 0, prev: t.prev || 0 };
+  if (t.day === todayKey(yd)) return { cur: 0, prev: t.umsatz || 0 };
+  return { cur: 0, prev: 0 };
 }
 function teamByUser(rows) { const o = {}; (rows || []).forEach(r => { o[r.user_id] = r; }); return o; }
 
@@ -4498,7 +4502,8 @@ async function teamLoad() {
     }
     team.sqlMissing = false; team.err = '';
     const own = team.me && team.stats[uid];
-    if (own && !((own.stats || {}).woche || {}).prev) teamMarkDirty();
+    if (own && !((own.stats || {}).tag || {}).day) teamMarkDirty();
+    else if (own && own.stats.tag.day !== todayKey()) teamMarkDirty();
   } catch (e) {
     const m = String((e && e.message) || e || '');
     team.sqlMissing = /relation|does not exist|schema cache|could not find/i.test(m);
@@ -4769,7 +4774,7 @@ function renderTeamContent() {
     const st = (team.stats[m.user_id] || {}).stats || {};
     const cur = st[P] || { umsatz: 0, orders: 0 };
     const d = ((team.detail[m.user_id] || {}).stats || {})[P] || null;
-    return { m, umsatz: cur.umsatz || 0, orders: cur.orders || 0, prev: cur.prev || null, d, upd: (team.stats[m.user_id] || {}).updated_at };
+    return { m, umsatz: cur.umsatz || 0, orders: cur.orders || 0, tag: teamDayCmp((team.stats[m.user_id] || {}).stats), d, upd: (team.stats[m.user_id] || {}).updated_at };
   }).sort((a, b) => b.umsatz - a.umsatz);
   const max = Math.max(1, ...rows.map(r => r.umsatz));
   const total = rows.reduce((t, r) => t + r.umsatz, 0), totalOrders = rows.reduce((t, r) => t + r.orders, 0);
@@ -4781,8 +4786,9 @@ function renderTeamContent() {
     const p = Math.round((cur - prev) / prev * 100);
     return p > 0 ? `<span class="tm-pct up">▲ ${p} %</span>` : p < 0 ? `<span class="tm-pct down">▼ ${Math.abs(p)} %</span>` : `<span class="tm-pct flat">± 0 %</span>`;
   };
-  const withPrev = rows.filter(r => r.prev);
-  const teamBadge = withPrev.length ? pctBadge(withPrev.reduce((t, r) => t + r.umsatz, 0), withPrev.reduce((t, r) => t + r.prev.umsatz, 0)) : '';
+  const withTag = rows.filter(r => r.tag);
+  const dayBadge = c => !c ? '' : (c.cur === 0 && c.prev > 0) ? `<span class="tm-pct flat">heute noch nichts</span>` : pctBadge(c.cur, c.prev);
+  const teamBadge = withTag.length ? dayBadge({ cur: withTag.reduce((t, r) => t + r.tag.cur, 0), prev: withTag.reduce((t, r) => t + r.tag.prev, 0) }) : '';
   const list = rows.map((r, i) => {
     const me = r.m.user_id === uidSelf;
     const open = leader && team.open === r.m.user_id;
@@ -4800,12 +4806,12 @@ function renderTeamContent() {
       <div class="tm-line ${leader ? 'click' : ''}" ${leader ? `onclick="teamToggleOpen('${r.m.user_id}')"` : ''}>
         <div class="tm-rank ${i === 0 && r.umsatz > 0 ? 'r1' : ''}">${i + 1}</div>
         <div class="tm-name">${escapeHtml(r.m.display_name)}${me ? ' (Du)' : ''}<small>${roleTag} · ${r.orders} Aufträge</small></div>
-        <div class="tm-val">${fmtEuro(r.umsatz)}${r.prev ? pctBadge(r.umsatz, r.prev.umsatz) : ''}</div></div>
+        <div class="tm-val">${fmtEuro(r.umsatz)}${dayBadge(r.tag)}</div></div>
       <div class="tm-bar"><i style="width:${Math.round(r.umsatz / max * 100)}%"></i></div>${det}</div>`;
   }).join('');
   let html = card(`<div class="tm-top"><div><h2 class="tm-h">${escapeHtml(team.info ? team.info.name : 'Team')}</h2><p class="tm-sub" style="margin:0">${team.members.length} ${team.members.length === 1 ? 'Mitglied' : 'Mitglieder'}${leader ? ' · du bist Teamleiter' : ''}</p></div>${seg}</div>
     <div class="tm-kpis"><div class="tm-kpi"><b>${fmtEuro(total)}</b>${teamBadge}<span>Team-Umsatz</span></div><div class="tm-kpi"><b>${totalOrders}</b><span>Aufträge</span></div><div class="tm-kpi"><b>${fmtEuro(total / Math.max(1, rows.length))}</b><span>Ø pro Person</span></div></div>
-    <div class="tm-note" style="margin-top:8px;text-align:center">Prozent: im Vergleich zum gleichen Stand im Vorzeitraum (<span style="color:var(--green);font-weight:700">grün = mehr</span>, <span style="color:var(--danger);font-weight:700">rot = weniger</span>).</div>`);
+    <div class="tm-note" style="margin-top:8px;text-align:center">Prozent: heute im Vergleich zu gestern (<span style="color:var(--green);font-weight:700">grün = mehr</span>, <span style="color:var(--danger);font-weight:700">rot = weniger</span>).</div>`);
   html += card(`<h2 class="tm-h">Rangliste · ${periodName[P]}</h2><p class="tm-sub">${leader ? 'Tippe auf eine Person, um Details zu sehen.' : 'So steht dein Team gerade da.'}</p>${list}${team.err ? err : ''}`);
   html += teamEventsCard();
   if (leader && team.info) {
