@@ -612,11 +612,14 @@
     animation: fadeInUp 0.32s ease both;
   }
 
-  .dash-top { display:grid; grid-template-columns:1fr; gap:16px; margin-bottom:16px; }
-  @media (min-width: 880px) { .dash-top { grid-template-columns: 1fr 1fr; align-items:stretch; } }
-  .dash-top > .card { margin:0; border-top:4px solid var(--blue); }
-  .dash-top .dash-card-title { font-size:17px; }
-  .dash-top .dash-fix-saldo { font-size:30px; }
+  .dash-top { display:grid; grid-template-columns:1fr; gap:16px; }
+  @media (min-width: 640px) { .dash-top { grid-template-columns: 1fr 1fr; align-items:stretch; } }
+  .dash-top > .card { margin:0; padding:14px 16px; border-top:3px solid var(--blue); }
+  .dash-top .dash-card-title { font-size:15px; }
+  .dash-top .dash-fix-saldo { font-size:22px; margin:2px 0; }
+  .dash-top .dash-fix-sub { font-size:11.5px; line-height:1.35; }
+  .dash-top .dash-fix-reserve { margin-top:8px; padding-top:8px; gap:4px; font-size:12px; }
+  .dash-top .dash-fix-track { margin:8px 0; }
   .dash-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -2667,6 +2670,8 @@ function renderDashboardContent(b, animate) {
 
   return `
     <div class="dashboard-page ${animate ? 'animate-in' : ''}">
+      <div class="dash-grid">
+        <div class="dash-main">
       <div class="dash-top">
           <div class="card dash-card dash-fix-card">
             <div class="dash-card-head">
@@ -2693,8 +2698,6 @@ function renderDashboardContent(b, animate) {
 
           ${goalCardHtml()}
       </div>
-      <div class="dash-grid">
-        <div class="dash-main">
           <div class="dash-lists">
             <div class="card dash-card">
               <div class="dash-card-title">Beste Tage</div>
