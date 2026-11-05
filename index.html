@@ -1476,8 +1476,7 @@ function goalCardHtml() {
             ${amount > 0 ? `
             <div class="dash-fix-track"><div class="dash-fix-fill ${reached ? 'reached' : ''}" style="width:${pct}%;"></div></div>
             <div class="dash-fix-saldo ${reached ? 'pos' : 'neg'}">${fmtEuro(net)} <span style="font-size:13px;font-weight:600;color:var(--text-dim);">von ${fmtEuro(amount)} · ${pct}%</span></div>
-            <div class="dash-fix-sub">Du legst pro Abrechnungszeitraum <b>${fmtEuro(gp.perWin)}</b> zurück (Zielbetrag ÷ Dauer). Geschafft in ${gp.count} ${gp.count === 1 ? 'Zeitraum' : 'Zeiträumen'}. ${gp.curReached ? 'Dieser Zeitraum: ✓ geschafft.' : `Dieser Zeitraum: noch ${fmtEuro(Math.max(0, gp.schwelle - gp.curBrutto))} Brutto bis zur Schwelle.`}</div>
-            <div class="dash-fix-sub" style="margin-top:6px;">${reached ? '🎉 Ziel erreicht.' : `Bis zum Ziel: noch <b>${gp.missingWin} ${gp.missingWin === 1 ? 'Abrechnung' : 'Abrechnungen'}</b> (≈ <b>${gp.missingMonths.toLocaleString('de-DE', { maximumFractionDigits: 1 })} ${gp.missingMonths === 1 ? 'Monat' : 'Monate'}</b>), wenn du jeden Zeitraum die Schwelle schaffst.`}</div>` : ''}
+            <div class="dash-fix-sub">${reached ? '🎉 Ziel erreicht.' : `Bis zum Ziel: noch <b>${gp.missingWin} ${gp.missingWin === 1 ? 'Abrechnung' : 'Abrechnungen'}</b> (≈ <b>${gp.missingMonths.toLocaleString('de-DE', { maximumFractionDigits: 1 })} ${gp.missingMonths === 1 ? 'Monat' : 'Monate'}</b>), wenn du jeden Zeitraum die Schwelle schaffst.`}</div>` : ''}
           </div>`;
 }
 
