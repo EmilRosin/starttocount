@@ -773,7 +773,12 @@
   .pf-del { border:none; border-radius:14px; background: var(--toggle-bg); padding:0 12px; font: inherit; cursor:pointer; color: var(--text); }
   .pf-del.confirm { background: var(--danger, #ef4444); color:#fff; font-size:12px; font-weight:700; }
   .ob-goal { margin-top:20px; padding-top:18px; border-top:1px solid var(--border); }
-  .goal-period { display:flex; gap:8px; margin:12px 0; }
+  .goal-period { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+  .goal-period .ob-chip { white-space:nowrap; }
+  .goal-custom { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px; font-size:13px; font-weight:600; color: var(--text-dim); }
+  .goal-custom input, .goal-custom select { padding:8px 10px; border-radius:12px; border:1px solid var(--border); background: var(--toggle-bg); color: var(--text); font: inherit; font-weight:600; }
+  .goal-custom input[type=number] { width:64px; }
+  .goal-question { font-size:13px; font-weight:700; margin:4px 0 10px; line-height:1.35; text-align:left; }
   .goal-row { display:flex; gap:10px; align-items:flex-end; margin: 0 0 12px; }
   .goal-row label { display:flex; flex-direction:column; gap:6px; font-size:12px; font-weight:600; color: var(--text-dim); text-align:left; }
   .goal-row .goal-name { flex: 1.7; min-width:0; }
@@ -1080,7 +1085,10 @@ function defaultSettings() {
     stornoAufschlag: false, // Ø Storno-Quote der Abrechnungen auf die Fixkosten-Schwelle aufschlagen?
     goalName: '',         // persönliches Finanzziel (z. B. "Rücklage", "Urlaub")
     goalAmount: 0,        // Zielbetrag in € – netto, also das, was wirklich bei dir bleibt
-    goalPeriod: 'monat'   // 'woche' | 'monat' | 'jahr' – Zeitraum, für den der Zielbetrag gilt
+    goalPeriod: 'monat',  // 'woche' | 'monat' | 'jahr' | 'custom' – Zeitraum, für den der Zielbetrag gilt
+    goalCount: 2,         // nur bei 'custom': Anzahl ...
+    goalUnit: 'jahre',    // ... 'wochen' | 'monate' | 'jahre'
+    goalStart: ''         // nur bei 'custom': Startdatum (YYYY-MM-DD)
   };
 }
 
@@ -1239,13 +1247,40 @@ function avgStornoQuote() {
   return { pct: (quoten.reduce((a, b) => a + b, 0) / quoten.length) * 100, count: quoten.length };
 }
 
-const GOAL_PERIODS = { woche: 'Woche', monat: 'Monat', jahr: 'Jahr' };
+const GOAL_PERIODS = { woche: 'Woche', monat: 'Monat', jahr: 'Jahr', custom: 'Eigener Zeitraum' };
+const GOAL_UNITS = { wochen: 'Wochen', monate: 'Monate', jahre: 'Jahre' };
+const GOAL_UNIT_MONTHS = { wochen: 12 / 52, monate: 1, jahre: 12 };
 function goalPeriodOf(v) { return GOAL_PERIODS[v] ? v : 'monat'; }
-// Zielbetrag auf einen Monat umgerechnet (Woche: 52 Wochen ÷ 12 Monate, Jahr: ÷ 12)
+function goalChipLabel(k) { return k === 'custom' ? 'Eigener Zeitraum' : 'pro ' + GOAL_PERIODS[k]; }
+function goalUnitOf(v) { return GOAL_UNITS[v] ? v : 'jahre'; }
+function goalCountOf(v) { const n = Math.round(Number(v)); return n >= 1 && n <= 520 ? n : 1; }
+// Gesamtdauer des eigenen Zeitraums in Monaten (Wochen: 52 Wochen ÷ 12 Monate)
+function goalCustomMonths(count, unit) { return goalCountOf(count) * GOAL_UNIT_MONTHS[goalUnitOf(unit)]; }
+function goalUnitLabel(count, unit) {
+  const n = goalCountOf(count), u = goalUnitOf(unit);
+  const one = { wochen: 'Woche', monate: 'Monat', jahre: 'Jahr' }[u];
+  return n + ' ' + (n === 1 ? one : GOAL_UNITS[u]);
+}
+function goalEndKey(startKey, count, unit) {
+  const [y, m, d] = startKey.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const u = goalUnitOf(unit), n = goalCountOf(count);
+  if (u === 'wochen') dt.setDate(dt.getDate() + n * 7);
+  else dt.setMonth(dt.getMonth() + (u === 'jahre' ? n * 12 : n));
+  return todayKey(dt);
+}
+// Zielbetrag auf einen Monat umgerechnet (Woche: 52 Wochen ÷ 12 Monate, Jahr: ÷ 12, eigener Zeitraum: ÷ Gesamtmonate)
 function goalMonthly(amount, period) {
   if (period === 'woche') return amount * 52 / 12;
   if (period === 'jahr') return amount / 12;
+  if (period === 'custom') return amount / goalCustomMonths(settings.goalCount, settings.goalUnit);
   return amount;
+}
+function goalMonthlyHint(amount, period) {
+  if (period === 'jahr') return `${fmtEuro(amount)} ÷ 12`;
+  if (period === 'woche') return `${fmtEuro(amount)} × 52 ÷ 12`;
+  if (period === 'custom') return `${fmtEuro(amount)} ÷ ${(Math.round(goalCustomMonths(settings.goalCount, settings.goalUnit) * 10) / 10).toLocaleString('de-DE')} Monate`;
+  return '';
 }
 function isoWeekOf(d) {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -1259,9 +1294,11 @@ function goalCardHtml() {
   const amount = settings.goalAmount || 0;
   const period = goalPeriodOf(settings.goalPeriod);
   const now = new Date();
-  const periodLabel = period === 'jahr' ? String(now.getFullYear()) : period === 'woche' ? 'KW ' + isoWeekOf(now) : now.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  const customStart = settings.goalStart || todayKey();
+  const periodLabel = period === 'custom' ? goalUnitLabel(settings.goalCount, settings.goalUnit) : period === 'jahr' ? String(now.getFullYear()) : period === 'woche' ? 'KW ' + isoWeekOf(now) : now.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
   const title = settings.goalName ? escapeHtml(settings.goalName) : 'Mein Finanzziel';
   const brutto = goalBruttoFor(period);
+  const customEnd = period === 'custom' ? goalEndKey(customStart, settings.goalCount, settings.goalUnit) : '';
   const share = netShare();
   const net = brutto * share;
   const missing = Math.max(0, amount - net);
@@ -1270,13 +1307,22 @@ function goalCardHtml() {
   const bruttoNeeded = share > 0 ? missing / share : 0;
   const inputs = `
     <div class="goal-period">
-      ${Object.keys(GOAL_PERIODS).map(k => `<button type="button" class="ob-chip ${period === k ? 'active' : ''}" onclick="setGoal('goalPeriod','${k}')">pro ${GOAL_PERIODS[k]}</button>`).join('')}
+      ${Object.keys(GOAL_PERIODS).map(k => `<button type="button" class="ob-chip ${period === k ? 'active' : ''}" onclick="setGoal('goalPeriod','${k}')">${goalChipLabel(k)}</button>`).join('')}
     </div>
+    ${period === 'custom' ? `
+    <div class="goal-custom">
+      <span>Zeitraum:</span>
+      <input type="number" min="1" max="520" value="${goalCountOf(settings.goalCount)}" onchange="setGoal('goalCount', this.value)">
+      <select onchange="setGoal('goalUnit', this.value)">${Object.keys(GOAL_UNITS).map(u => `<option value="${u}" ${goalUnitOf(settings.goalUnit) === u ? 'selected' : ''}>${GOAL_UNITS[u]}</option>`).join('')}</select>
+      <span>ab</span>
+      <input type="date" value="${customStart}" onchange="setGoal('goalStart', this.value)">
+    </div>` : ''}
+    <div class="goal-question">💶 Wie viel soll ${period === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[period]} nach allen Kosten bei dir bleiben?</div>
     <div class="goal-row">
       <label class="goal-name">Wofür? Name des Ziels (optional)<input type="text" maxlength="40" placeholder="z. B. Urlaub, Rücklage, Auto" value="${escapeHtml(settings.goalName || '')}" onchange="setGoal('goalName', this.value)"></label>
       <label class="goal-amt">Betrag (€)<input type="number" min="0" step="50" value="${amount || ''}" placeholder="2000" onchange="setGoal('goalAmount', this.value)"></label>
     </div>
-    ${amount > 0 && period !== 'monat' ? `<div class="dash-fix-sub" style="margin:0 0 10px;">Zum Rechnen wird das auf den Monat umgerechnet: ${fmtEuro(amount)} ${period === 'jahr' ? '÷ 12' : '× 52 ÷ 12'} = <b>${fmtEuro(goalMonthly(amount, period))} pro Monat</b>.</div>` : ''}`;
+    ${amount > 0 && period !== 'monat' ? `<div class="dash-fix-sub" style="margin:0 0 10px;">Zum Rechnen wird das auf den Monat umgerechnet: ${goalMonthlyHint(amount, period)} = <b>${fmtEuro(goalMonthly(amount, period))} pro Monat</b>.${period === 'custom' ? ` Zeitraum bis ${fmtDateShort(customEnd)}.` : ''}</div>` : ''}`;
 
   return `
           <div class="card dash-card dash-fix-card">
@@ -1411,6 +1457,11 @@ function goalBruttoFor(period) {
     }
     return sum;
   }
+  if (period === 'custom') {
+    const start = settings.goalStart || todayKey();
+    const end = goalEndKey(start, settings.goalCount, settings.goalUnit);
+    return Object.keys(data).reduce((sum, k) => (k >= start && k < end) ? sum + dayTotal(data[k]) : sum, 0);
+  }
   const prefix = period === 'jahr' ? String(new Date().getFullYear()) : todayKey().slice(0, 7);
   return Object.keys(data).reduce((sum, k) => k.startsWith(prefix) ? sum + dayTotal(data[k]) : sum, 0);
 }
@@ -1422,7 +1473,13 @@ function netShare() {
 
 function setGoal(field, value) {
   if (field === 'goalAmount') settings.goalAmount = Math.max(0, parseFloat(String(value).replace(',', '.')) || 0);
-  else if (field === 'goalPeriod') settings.goalPeriod = goalPeriodOf(value);
+  else if (field === 'goalPeriod') {
+    settings.goalPeriod = goalPeriodOf(value);
+    if (settings.goalPeriod === 'custom' && !settings.goalStart) settings.goalStart = todayKey();
+  }
+  else if (field === 'goalCount') settings.goalCount = goalCountOf(value);
+  else if (field === 'goalUnit') settings.goalUnit = goalUnitOf(value);
+  else if (field === 'goalStart') settings.goalStart = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : todayKey();
   else if (field === 'goalName') settings.goalName = String(value || '').trim().slice(0, 40);
   saveData();
   render();
@@ -2903,6 +2960,9 @@ function openOnboarding(mode) {
     goalName: settings.goalName || '',
     goalAmount: settings.goalAmount ? fmtNumInput(settings.goalAmount) : '',
     goalPeriod: goalPeriodOf(settings.goalPeriod),
+    goalCount: String(goalCountOf(settings.goalCount)),
+    goalUnit: goalUnitOf(settings.goalUnit),
+    goalStart: settings.goalStart || '',
     overheadNeu: settings.overheadNeu ? fmtNumInput(settings.overheadNeu) : '',
     error: ''
   };
@@ -2985,6 +3045,9 @@ async function obFinish() {
   settings.goalName = String(ob.goalName || '').trim().slice(0, 40);
   settings.goalAmount = parseNum(ob.goalAmount) >= 0 ? parseNum(ob.goalAmount) : 0;
   settings.goalPeriod = goalPeriodOf(ob.goalPeriod);
+  settings.goalCount = goalCountOf(ob.goalCount);
+  settings.goalUnit = goalUnitOf(ob.goalUnit);
+  settings.goalStart = settings.goalPeriod === 'custom' ? (/^\d{4}-\d{2}-\d{2}$/.test(ob.goalStart) ? ob.goalStart : (settings.goalStart || todayKey())) : (settings.goalStart || '');
   settings.overheadNeu = parseNum(ob.overheadNeu) >= 0 ? parseNum(ob.overheadNeu) : 0;
   settings.onboarded = true;
   applySettings();
@@ -3079,14 +3142,21 @@ function renderOnboarding() {
         <div class="ob-section-title">🎯 Dein persönliches Finanzziel <em>(optional)</em></div>
         <p class="ob-section-sub">Das ist dein eigentliches Ziel: Wie viel Geld soll am Ende bei dir bleiben? Die App rechnet Fixkosten, Steuern und Storno-Puffer obendrauf und sagt dir, wie viel Brutto du dafür brauchst.</p>
         <div class="ob-field"><span>Für welchen Zeitraum gilt dein Ziel?</span></div>
-        <div class="ob-chips" style="margin-top:-2px">${Object.keys(GOAL_PERIODS).map(k => `<button type="button" class="ob-chip ${ob.goalPeriod === k ? 'active' : ''}" onclick="obSetChip('goalPeriod','${k}')">pro ${GOAL_PERIODS[k]}</button>`).join('')}</div>
+        <div class="ob-chips" style="margin-top:-2px">${Object.keys(GOAL_PERIODS).map(k => `<button type="button" class="ob-chip ${ob.goalPeriod === k ? 'active' : ''}" onclick="obSetChip('goalPeriod','${k}')">${goalChipLabel(k)}</button>`).join('')}</div>
+        ${ob.goalPeriod === 'custom' ? `<div class="goal-custom">
+          <span>Zeitraum:</span>
+          <input type="number" min="1" max="520" id="ob-goalCount" value="${escapeHtml(ob.goalCount)}" oninput="obSet('goalCount', this.value)">
+          <select onchange="obSet('goalUnit', this.value)">${Object.keys(GOAL_UNITS).map(u => `<option value="${u}" ${ob.goalUnit === u ? 'selected' : ''}>${GOAL_UNITS[u]}</option>`).join('')}</select>
+          <span>ab heute</span>
+        </div>` : ''}
+        <div class="goal-question">💶 Wie viel soll ${ob.goalPeriod === 'custom' ? 'in diesem Zeitraum insgesamt' : 'pro ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)]} nach allen Kosten bei dir bleiben?</div>
         <div class="goal-row ob">
           <label class="goal-name"><span>Wofür? (optional)</span>
             <input class="ob-input" type="text" id="ob-goalName" maxlength="40" value="${escapeHtml(ob.goalName)}" placeholder="z. B. Urlaub, Auto" oninput="obSet('goalName', this.value)"></label>
           <label class="goal-amt"><span>Betrag</span>
             <div class="ob-input-wrap"><input class="ob-input" type="text" inputmode="decimal" id="ob-goalAmount" value="${escapeHtml(ob.goalAmount)}" placeholder="2000" oninput="obSet('goalAmount', this.value)"><span class="ob-unit">€</span></div></label>
         </div>
-        <small class="ob-hint">${ob.goalPeriod === 'jahr' ? 'Pro Jahr wird automatisch auf den Monat heruntergerechnet (÷ 12).' : ob.goalPeriod === 'woche' ? 'Pro Woche wird automatisch auf den Monat hochgerechnet (× 52 ÷ 12).' : 'Die App teilt den Monatsbetrag auf die zwei Abrechnungszeiträume pro Monat auf.'}</small>
+        <small class="ob-hint">${ob.goalPeriod === 'jahr' ? 'Pro Jahr wird automatisch auf den Monat heruntergerechnet (÷ 12).' : ob.goalPeriod === 'woche' ? 'Pro Woche wird automatisch auf den Monat hochgerechnet (× 52 ÷ 12).' : ob.goalPeriod === 'custom' ? 'Gesamtbetrag über den ganzen Zeitraum – die App rechnet ihn auf den Monat herunter.' : 'Die App teilt den Monatsbetrag auf die zwei Abrechnungszeiträume pro Monat auf.'}</small>
       </div>
       <div class="ob-section-title" style="margin-top:20px;">💼 Steuern & Fixkosten <em>(optional)</em></div>
       ${obInput('steuer', 'Steuersatz (optional)', { unit: '%', placeholder: 'z. B. 30', hint: 'Wird für die Netto-Anzeige abgezogen. Leer lassen = es werden keine Steuern angezeigt.' })}
@@ -3109,7 +3179,7 @@ function renderOnboarding() {
     rows.push(['Steuersatz', parseNum(ob.steuer) > 0 ? parseNum(ob.steuer).toLocaleString('de-DE') + ' %' : '–']);
     rows.push(['Fixkosten / Zeitraum', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
     rows.push(['Storno-Puffer auf Ziel', ob.stornoAufschlag ? 'an' : 'aus']);
-    rows.push([escapeHtml(ob.goalName.trim()) || 'Finanzziel', parseNum(ob.goalAmount) > 0 ? fmtNumPlain(parseNum(ob.goalAmount)) + ' / ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)] : '–']);
+    rows.push([escapeHtml(ob.goalName.trim()) || 'Finanzziel', parseNum(ob.goalAmount) > 0 ? fmtNumPlain(parseNum(ob.goalAmount)) + (ob.goalPeriod === 'custom' ? ' in ' + goalUnitLabel(ob.goalCount, ob.goalUnit) : ' / ' + GOAL_PERIODS[goalPeriodOf(ob.goalPeriod)]) : '–']);
     body = `
       <h2 class="ob-title">${edit ? 'Alles korrekt?' : 'Alles bereit!'}</h2>
       <p class="ob-sub">${edit ? 'Prüfe deine Angaben und speichere sie.' : 'Das hast du eingestellt – du kannst es jederzeit über das ⚙️ oben rechts ändern.'}</p>
