@@ -158,6 +158,14 @@
   .nav-tab { padding-left:4px; padding-right:4px; white-space:nowrap; }
   .abr-month { margin-bottom:0; }
   @media (max-width: 560px) { .nav-long { display:none; } .nav-tab { font-size:12px; } }
+  .tm-badge { display:inline-block; min-width:16px; padding:1px 5px; border-radius:9px; background:var(--danger); color:#fff; font-size:10px; font-weight:800; line-height:14px; vertical-align:1px; }
+  .tm-toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:9997; background:#0f1b3d; color:#fff; padding:12px 18px; border-radius:14px; font-size:14px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,.25); max-width:90vw; text-align:center; }
+  .tm-ev { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--border); font-size:13px; }
+  .tm-ev:first-of-type { border-top:none; }
+  .tm-ev-dot { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; background:var(--toggle-bg); flex:0 0 auto; }
+  .tm-ev-t { flex:1; min-width:0; }
+  .tm-ev-t small { display:block; color:var(--text-dim); font-size:11px; }
+  .tm-sw { display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .tm-wrap { display:grid; gap:14px; max-width:760px; margin:0 auto; text-align:left; }
   .tm-wrap .tm-h { color:var(--text); text-align:left; font-size:18px; }
   .tm-wrap .tm-sub, .tm-wrap .tm-note { text-align:left; }
@@ -1215,6 +1223,7 @@ function defaultSettings() {
     ustPflicht: false,    // umsatzsteuerpflichtig? 19 % USt werden mitüberwiesen und müssen ans Finanzamt
     overheadNeu: 0,       // € Overhead pro Neukunden-Auftrag des Teams (nur Teamleiter)
     stornoAufschlag: false, // Ø Storno-Quote der Abrechnungen auf die Fixkosten-Schwelle aufschlagen?
+    teamNotify: true,     // Benachrichtigung, wenn jemand im Team einen Kunden schreibt
     goalName: '',         // persönliches Finanzziel (z. B. "Rücklage", "Urlaub")
     goalAmount: 0,        // Zielbetrag in € – netto, also das, was wirklich bei dir bleibt
     zielAufrunden: false, // Brutto-Ziel pro Abrechnungsperiode auf volle 10 € aufrunden?
@@ -1274,6 +1283,7 @@ async function saveData() {
 
 async function changeCount(field, delta) {
   const entry = getEntry(selectedDate);
+  const prevCount = entry[field];
   entry[field] = Math.max(0, entry[field] + delta);
   if (delta > 0) {
     events.push({ date: selectedDate, hour: new Date().getHours(), type: field });
@@ -1284,6 +1294,7 @@ async function changeCount(field, delta) {
   }
   if (isEntryEmpty(entry)) delete data[selectedDate];
   await saveData();
+  if ((field === 'neu' || field === 'bestand') && (delta > 0 || prevCount > 0) && typeof teamSendEvent === 'function') teamSendEvent(field, delta, selectedDate);
   render();
   checkFireworksTrigger();
 }
@@ -1325,7 +1336,7 @@ function switchPage(p) {
   if (currentPage === 'dashboard' && p !== 'dashboard') { monatOffset = 0; zeitraumOffset = 0; jahrOffset = 0; }
   currentPage = p;
   render();
-  if (p === 'team' && typeof teamLoad === 'function') teamLoad();
+  if (p === 'team' && typeof teamLoad === 'function') { team.unread = 0; teamLoad(); }
 }
 
 function setStatsPeriod(p) {
@@ -3318,7 +3329,11 @@ function updateNavTabs() {
   tabDashboard.classList.toggle('active', currentPage === 'dashboard');
   if (tabAbr) tabAbr.classList.toggle('active', currentPage === 'abrechnungen');
   const tabTeam = document.getElementById('tab-team');
-  if (tabTeam) tabTeam.classList.toggle('active', currentPage === 'team');
+  if (tabTeam) {
+    tabTeam.classList.toggle('active', currentPage === 'team');
+    const n = (team && team.unread && currentPage !== 'team') ? team.unread : 0;
+    tabTeam.innerHTML = 'Team' + (n ? ` <span class="tm-badge">${n > 9 ? '9+' : n}</span>` : '');
+  }
   const map = { tracker: tabTracker, dashboard: tabDashboard, abrechnungen: tabAbr, team: tabTeam };
   positionSlider('nav-slider', map[currentPage]);
 }
@@ -4263,9 +4278,9 @@ let team = teamFresh();
 let teamTimer = null;
 function teamFresh() {
   return { loaded: false, loading: false, info: null, me: null, members: [], stats: {}, detail: {}, err: '', msg: '', busy: false,
-    period: 'woche', open: null, sqlMissing: false, pendingCode: '', pendingName: '', createName: '', joinCode: '', myName: '', confirm: '' };
+    period: 'woche', open: null, sqlMissing: false, events: [], lastId: null, unread: 0, pollTimer: null, eventsOk: true, pendingCode: '', pendingName: '', createName: '', joinCode: '', myName: '', confirm: '' };
 }
-function teamReset() { clearTimeout(teamTimer); team = teamFresh(); }
+function teamReset() { clearTimeout(teamTimer); if (team && team.pollTimer) clearInterval(team.pollTimer); team = teamFresh(); }
 function teamSb() { return cl.session ? getCloud() : null; }
 function teamDefaultName() {
   const n = (settings.name || '').trim();
@@ -4338,7 +4353,7 @@ async function teamLoad() {
     team.err = team.sqlMissing ? '' : cloudErrText(e);
   }
   team.loading = false; team.loaded = true;
-  if (team.me) await teamPushStats();
+  if (team.me) { await teamPushStats(); await teamLoadEvents(true); teamStartPoll(); }
   else await teamCheckPending();
   if (currentPage === 'team') render();
 }
@@ -4419,6 +4434,92 @@ async function teamShareLink() {
   teamCopyLink();
 }
 
+
+// ---- Aktivitäts-Log + Benachrichtigungen ----
+function teamKindText(ev, you) {
+  const who = you ? 'Du' : ev.display_name;
+  return ev.kind === 'neu' ? `${who} ${you ? 'hast' : 'hat'} einen Neukunden geschrieben` : `${who} ${you ? 'hast' : 'hat'} einen Bestandskunden geschrieben`;
+}
+function teamAgo(iso) {
+  const sec = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+  if (sec < 60) return 'gerade eben';
+  if (sec < 3600) return `vor ${Math.round(sec / 60)} Min`;
+  if (sec < 86400) return `vor ${Math.round(sec / 3600)} Std`;
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ' ' + new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+function teamToast(msg) {
+  let el = document.getElementById('tm-toast');
+  if (!el) { el = document.createElement('div'); el.id = 'tm-toast'; el.className = 'tm-toast'; document.body.appendChild(el); }
+  el.textContent = msg; el.style.display = 'block';
+  clearTimeout(teamToast.t); teamToast.t = setTimeout(() => { el.style.display = 'none'; }, 4500);
+}
+function teamNotifyOn() { return settings.teamNotify !== false; }
+function teamNotify(evs) {
+  if (!evs.length || !teamNotifyOn()) return;
+  const last = evs[0];
+  const text = evs.length === 1 ? (last.kind === 'neu' ? '🎉 ' : '✅ ') + teamKindText(last, false) : `🎉 ${evs.length} neue Aufträge im Team (zuletzt ${last.display_name})`;
+  teamToast(text);
+  try {
+    if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
+      new Notification('Start (to) count', { body: text });
+    }
+  } catch (e) { /* ignorieren */ }
+}
+async function teamLoadEvents(initial) {
+  const sb = teamSb(); if (!sb || !team.me) return;
+  const r = await sb.from('team_events').select('*').order('id', { ascending: false }).limit(50);
+  if (r.error) { team.eventsOk = false; return; }
+  team.eventsOk = true;
+  const list = r.data || [];
+  const maxId = list.reduce((m, e) => Math.max(m, Number(e.id)), 0);
+  if (initial || team.lastId === null) team.lastId = maxId;
+  else {
+    const uid = cl.session.user.id;
+    const fresh = list.filter(e => Number(e.id) > team.lastId && e.user_id !== uid);
+    team.lastId = Math.max(team.lastId, maxId);
+    if (fresh.length) { if (currentPage !== 'team') team.unread += fresh.length; teamNotify(fresh); }
+  }
+  team.events = list;
+  if (currentPage === 'team') render(); else updateNavTabs();
+}
+function teamStartPoll() {
+  if (team.pollTimer) clearInterval(team.pollTimer);
+  team.pollTimer = setInterval(() => { if (document.visibilityState === 'visible' || teamNotifyOn()) teamLoadEvents(false); }, 10000);
+}
+async function teamSendEvent(kind, delta, dateKey) {
+  const sb = teamSb(); if (!sb || !team.me || dateKey !== todayKey()) return;
+  try {
+    if (delta > 0) {
+      const r = await sb.from('team_events').insert({ team_id: team.me.team_id, user_id: cl.session.user.id, display_name: team.me.display_name, kind });
+      if (r && r.error) team.eventsOk = false;
+    } else {
+      const own = team.events.find(e => e.user_id === cl.session.user.id && e.kind === kind);
+      if (own) await sb.from('team_events').delete().eq('id', own.id);
+    }
+    teamLoadEvents(false);
+  } catch (e) { /* Log ist optional */ }
+}
+async function teamToggleNotify() {
+  if (teamNotifyOn()) { settings.teamNotify = false; }
+  else {
+    settings.teamNotify = true;
+    try { if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission(); } catch (e) { /* ignorieren */ }
+  }
+  await saveData(); render();
+}
+function teamEventsCard() {
+  const uid = cl.session.user.id;
+  const list = team.events.slice(0, 30).map(e => `<div class="tm-ev"><div class="tm-ev-dot">${e.kind === 'neu' ? '🎉' : '✅'}</div><div class="tm-ev-t">${escapeHtml(teamKindText(e, e.user_id === uid))}<small>${teamAgo(e.created_at)}</small></div></div>`).join('');
+  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const hint = teamNotifyOn()
+    ? (perm === 'granted' ? 'Du bekommst eine Meldung, sobald jemand im Team einen Kunden schreibt (auch wenn die App im Hintergrund offen ist).' : perm === 'denied' ? 'Hinweis in der App erscheint weiterhin. Systemmeldungen sind im Browser blockiert – erlaube sie in den Seiteneinstellungen.' : 'Meldungen erscheinen in der App. Für Systemmeldungen erlaube sie im Browser.')
+    : 'Benachrichtigungen sind aus.';
+  return `<div class="card tm-card"><div class="tm-sw"><div><h2 class="tm-h">Aktivität</h2><p class="tm-sub" style="margin:0">${hint}</p></div>
+    <button class="tm-btn ${teamNotifyOn() ? '' : 'sec'}" onclick="teamToggleNotify()">${teamNotifyOn() ? 'Benachrichtigung an' : 'Benachrichtigung aus'}</button></div>
+    <div style="margin-top:14px">${team.eventsOk === false ? '<p class="tm-note">Das Aktivitäts-Log ist noch nicht eingerichtet. Der Administrator muss das aktualisierte Team-Skript in Supabase ausführen.</p>' : list || '<p class="tm-note">Noch keine Aktivität. Sobald jemand einen Kunden schreibt, erscheint er hier.</p>'}</div></div>`;
+}
+window.teamToggleNotify = teamToggleNotify;
+
 function teamSharedList() {
   return `<ul class="tm-share"><li>dein Name</li><li>dein Umsatz und deine Aufträge (Zeitraum, Monat, Jahr)</li><li>dem Teamleiter zusätzlich: Neu-/Bestandskunden, Stornoquote, aktive Tage, Ø pro Tag, bester Tag</li></ul>
     <div class="tm-note" style="margin-bottom:14px">Nicht geteilt: Steuern, Fixkosten, Ziele, Abrechnungen und deine einzelnen Einträge. Du kannst das Team jederzeit verlassen – dann werden deine Kennzahlen gelöscht.</div>`;
@@ -4487,6 +4588,7 @@ function renderTeamContent() {
   let html = card(`<div class="tm-top"><div><h2 class="tm-h">${escapeHtml(team.info ? team.info.name : 'Team')}</h2><p class="tm-sub" style="margin:0">${team.members.length} ${team.members.length === 1 ? 'Mitglied' : 'Mitglieder'}${leader ? ' · du bist Teamleiter' : ''}</p></div>${seg}</div>
     <div class="tm-kpis"><div class="tm-kpi"><b>${fmtEuro(total)}</b><span>Team-Umsatz</span></div><div class="tm-kpi"><b>${totalOrders}</b><span>Aufträge</span></div><div class="tm-kpi"><b>${fmtEuro(total / Math.max(1, rows.length))}</b><span>Ø pro Person</span></div></div>`);
   html += card(`<h2 class="tm-h">Rangliste · ${periodName[P]}</h2><p class="tm-sub">${leader ? 'Tippe auf eine Person, um Details zu sehen.' : 'So steht dein Team gerade da.'}</p>${list}${team.err ? err : ''}`);
+  html += teamEventsCard();
   if (leader && team.info) {
     html += card(`<h2 class="tm-h">Leute einladen</h2><p class="tm-sub">Schick diesen Link an dein Team. Wer ihn öffnet, registriert sich bzw. meldet sich an und kann dann beitreten.</p>
       <input class="tm-link" id="tm-link" readonly value="${escapeHtml(teamInviteLink())}" onclick="this.select()">
