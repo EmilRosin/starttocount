@@ -1458,14 +1458,11 @@ function goalCardHtml() {
   const customStart = settings.goalStart || todayKey();
   const periodLabel = period === 'custom' ? goalUnitLabel(settings.goalCount, settings.goalUnit) : period === 'jahr' ? String(now.getFullYear()) : period === 'woche' ? 'KW ' + isoWeekOf(now) : now.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
   const title = settings.goalName ? escapeHtml(settings.goalName) : 'Mein Finanzziel';
-  const brutto = goalBruttoFor(period);
-  const customEnd = period === 'custom' ? goalEndKey(customStart, settings.goalCount, settings.goalUnit) : '';
-  const share = netShare();
-  const net = brutto * share;
+  const gp = goalProgress(period);
+  const net = gp.net;
   const missing = Math.max(0, amount - net);
   const reached = amount > 0 && net >= amount;
   const pct = amount > 0 ? Math.min(100, Math.round(net / amount * 100)) : 0;
-  const bruttoNeeded = share > 0 ? missing / share : 0;
   return `
           <div class="card dash-card dash-fix-card">
             <div class="dash-card-head"><div>
@@ -1475,7 +1472,7 @@ function goalCardHtml() {
             ${amount > 0 ? `
             <div class="dash-fix-track"><div class="dash-fix-fill ${reached ? 'reached' : ''}" style="width:${pct}%;"></div></div>
             <div class="dash-fix-saldo ${reached ? 'pos' : 'neg'}">${fmtEuro(net)} <span style="font-size:13px;font-weight:600;color:var(--text-dim);">von ${fmtEuro(amount)} · ${pct}%</span></div>
-            <div class="dash-fix-sub">${share < 1 ? `Gerechnet mit dem, was wirklich bei dir bleibt (nach ${[stornoAufschlagPct() > 0 ? fmtPct(stornoAufschlagPct()) + ' Storno' : '', STEUER_PROZENT > 0 ? STEUER_PROZENT + '% Steuer' : ''].filter(Boolean).join(' und ')}). ` : ''}${reached ? '' : `Dafür brauchst du noch ca. ${fmtEuro(bruttoNeeded)} Brutto. `}Bisher ${fmtEuro(brutto)} Brutto.</div>` : ''}
+            <div class="dash-fix-sub">Du legst pro Abrechnungszeitraum <b>${fmtEuro(gp.perWin)}</b> zurück (Zielbetrag ÷ Dauer). Geschafft in ${gp.count} ${gp.count === 1 ? 'Zeitraum' : 'Zeiträumen'}. ${gp.curReached ? 'Dieser Zeitraum: ✓ geschafft.' : `Dieser Zeitraum: noch ${fmtEuro(Math.max(0, gp.schwelle - gp.curBrutto))} Brutto bis zur Schwelle.`}</div>` : ''}
           </div>`;
 }
 
@@ -1623,6 +1620,34 @@ function goalBruttoFor(period) {
   }
   const prefix = period === 'jahr' ? String(new Date().getFullYear()) : todayKey().slice(0, 7);
   return Object.keys(data).reduce((sum, k) => k.startsWith(prefix) ? sum + dayTotal(data[k]) : sum, 0);
+}
+
+// Fortschritt zum Finanzziel: Das Ziel ist ein FESTER Betrag, den du pro Abrechnungszeitraum zurücklegst
+// (Zielbetrag ÷ Dauer, siehe goalPerWindow). Ein Zeitraum zählt, sobald sein Brutto die Schwelle
+// (Fixkosten + Ziel + Steuer + Storno-Puffer) erreicht – mehr Umsatz erhöht den Betrag NICHT.
+function goalProgress(period) {
+  const amount = settings.goalAmount || 0;
+  const perWin = goalPerWindow();
+  const schwelle = fixkostenSchwelle();
+  let inRange;
+  if (period === 'woche') {
+    const d = new Date(); const wd = (d.getDay() + 6) % 7;
+    const keys = new Set(); for (let i = 0; i < 7; i++) keys.add(todayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() - wd + i)));
+    inRange = k => keys.has(k);
+  } else if (period === 'custom') {
+    const start = settings.goalStart || todayKey();
+    const end = goalEndKey(start, settings.goalCount, settings.goalUnit);
+    inRange = k => k >= start && k < end;
+  } else {
+    const prefix = period === 'jahr' ? String(new Date().getFullYear()) : todayKey().slice(0, 7);
+    inRange = k => k.startsWith(prefix);
+  }
+  const sums = {};
+  Object.keys(data).forEach(k => { if (inRange(k)) { const id = payoutWindowOf(k).id; sums[id] = (sums[id] || 0) + dayTotal(data[k]); } });
+  const count = schwelle > 0 ? Object.keys(sums).filter(id => sums[id] >= schwelle - 1e-9).length : 0;
+  const net = Math.min(amount, count * perWin);
+  const curBrutto = currentWindowBruttoLive();
+  return { count, net, perWin, schwelle, curBrutto, curReached: schwelle > 0 && curBrutto >= schwelle - 1e-9 };
 }
 
 // Wie viel von 1 € Brutto am Ende wirklich bei dir bleibt (nach Storno-Puffer und Steuer)
