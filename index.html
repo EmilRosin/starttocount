@@ -383,6 +383,9 @@
   }
 
   .table-card { padding: 4px 0; overflow: hidden; }
+  .table-card.compact thead th, .table-card.compact tbody td { padding-left: 6px; padding-right: 6px; }
+  .table-card.compact thead th:first-child, .table-card.compact tbody td:first-child { padding-left: 12px; }
+  .table-card.compact thead th:last-child, .table-card.compact tbody td:last-child { padding-right: 12px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
   thead th {
@@ -767,6 +770,73 @@
   .dash-settle-form select { min-width: 150px; }
   .dash-settle-form button { flex-shrink: 0; }
 
+  /* --- TEAM-KARTEN (Overhead, nur Teamleiter) --- */
+  .qcard.team .qcard-count { color: var(--violet); }
+  .qcard.team .plus { background: var(--violet); color: #fff; }
+  .qcard.team .minus { background: var(--violet-soft); color: var(--violet); }
+
+  /* --- HEADER-BUTTONS --- */
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+  .settings-btn { font-size: 17px; }
+
+  /* --- ONBOARDING / EINSTELLUNGEN --- */
+  .ob-overlay {
+    position: fixed; inset: 0; z-index: 10000; background: var(--bg);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    display: flex; justify-content: center; align-items: flex-start;
+    padding: max(24px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+  }
+  .ob-card { width: 100%; max-width: 440px; margin: auto 0; padding: 24px 20px; }
+  .ob-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
+  .ob-dot { width: 22px; height: 4px; border-radius: 4px; background: var(--border); transition: background 0.2s ease; }
+  .ob-dot.done { background: var(--blue); }
+  .ob-logo {
+    width: 52px; height: 52px; border-radius: 14px; background: var(--blue);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+  }
+  .ob-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.01em; text-align: center; }
+  .ob-sub { font-size: 13px; color: var(--text-dim); text-align: center; margin: 0 0 20px; line-height: 1.45; }
+  .ob-field { display: block; margin-bottom: 14px; }
+  .ob-field > span { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .ob-field small { display: block; font-size: 11px; color: var(--text-faint); margin-top: 5px; line-height: 1.4; }
+  .ob-input {
+    width: 100%; box-sizing: border-box; padding: 12px 14px; font-size: 16px;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text);
+    font-family: inherit;
+  }
+  .ob-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+  .ob-input-wrap { position: relative; }
+  .ob-input-wrap .ob-input { padding-right: 38px; }
+  .ob-unit { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-faint); font-weight: 700; pointer-events: none; }
+  .ob-choices { display: grid; gap: 10px; margin-bottom: 8px; }
+  .ob-choice {
+    text-align: left; border: 1.5px solid var(--border); background: var(--card); color: var(--text);
+    border-radius: 12px; padding: 14px 16px; cursor: pointer; font-family: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .ob-choice b { display: block; font-size: 15px; margin-bottom: 3px; }
+  .ob-choice span { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+  .ob-choice.active { border-color: var(--blue); background: var(--blue-soft); }
+  .ob-chips { display: flex; gap: 6px; margin: -6px 0 16px; }
+  .ob-chip {
+    border: 1px solid var(--border); background: var(--toggle-bg); color: var(--text);
+    border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .ob-chip.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .ob-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .ob-btn {
+    flex: 1; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: inherit; background: var(--blue); color: #fff;
+  }
+  .ob-btn.secondary { background: var(--toggle-bg); color: var(--text); flex: 0 0 auto; padding: 14px 18px; }
+  .ob-btn:disabled { opacity: 0.4; cursor: default; }
+  .ob-link { display: block; margin: 14px auto 0; background: none; border: none; color: var(--text-faint); font-size: 12px; cursor: pointer; font-family: inherit; text-decoration: underline; }
+  .ob-error { color: var(--danger); font-size: 12px; margin-top: 8px; min-height: 16px; text-align: center; }
+  .ob-summary { background: var(--toggle-bg); border-radius: 12px; padding: 4px 14px; margin-bottom: 4px; }
+  .ob-summary div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .ob-summary div:last-child { border-bottom: none; }
+  .ob-summary b { text-align: right; }
+
   .firework-overlay {
     position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden;
   }
@@ -794,10 +864,13 @@
       </div>
       <div>
         <h1>Start (to) count</h1>
-        <div class="eyebrow">Energie Direktvertrieb</div>
+        <div class="eyebrow" id="header-eyebrow">Energie Direktvertrieb</div>
       </div>
     </div>
-    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Darstellung wechseln">🌙</button>
+    <div class="header-actions">
+      <button class="theme-toggle settings-btn" id="settingsBtn" onclick="openOnboarding('edit')" title="Einstellungen">⚙️</button>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Darstellung wechseln">🌙</button>
+    </div>
   </header>
 
   <div class="nav-tabs" id="nav-tabs">
@@ -840,8 +913,10 @@
 const STORAGE_KEY = 'tagesumsatz-v3';
 const LEGACY_KEY = 'tagesumsatz-eintraege-v2';
 const THEME_KEY = 'tagesumsatz-theme';
-const PREIS_NEUKUNDE = 110;
-const PREIS_BESTANDSKUNDE = 15;
+// Provisionen/Steuersatz sind jetzt pro Person einstellbar (Onboarding / Zahnrad im Header).
+// applySettings() schreibt die Werte aus `settings` in diese Variablen.
+let PREIS_NEUKUNDE = 110;
+let PREIS_BESTANDSKUNDE = 15;
 
 let data = {};       // { 'YYYY-MM-DD': {neu, bestand, storno_neu, storno_bestand} }
 let events = [];     // [{date:'YYYY-MM-DD', hour:0-23, type:'neu'|'bestand'|'storno_neu'|'storno_bestand'}]
@@ -856,11 +931,8 @@ let jahrOffset = 0;          // Jahre zurück ab aktuellem Jahr, nur für Dashbo
 let dashboardView = 'brutto'; // 'brutto' (getrackte Schätzung) | 'ausgezahlt' (bestätigt aus Abrechnungen)
 let settlementsOpen = false; // Abrechnungen-Karte im Dashboard: eingeklappt (Dropdown) oder ausgeklappt
 let settlements = [];        // [{id, label, betrag, auftraege}] - echte Abrechnungen/Auszahlungen
-const STEUER_PROZENT = 30;   // % Steuern, die immer automatisch abgezogen (Netto) bzw. auf Fixkosten aufgeschlagen werden
-let settings = {
-  fixkosten: 0,          // € Fixkosten-Basisbetrag pro Auszahlungsfenster (1.-15. / 16.-Monatsende)
-  fireworksWindow: null  // z.B. '2026-11-A' - für welches Auszahlungsfenster das Feuerwerk schon gezeigt wurde
-};
+let STEUER_PROZENT = 30;     // % Steuern, die immer automatisch abgezogen (Netto) bzw. auf Fixkosten aufgeschlagen werden
+let settings = defaultSettings();
 
 function todayKey(d = new Date()) {
   const y = d.getFullYear();
@@ -871,6 +943,11 @@ function todayKey(d = new Date()) {
 
 function fmtEuro(n) {
   return Math.round(n).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €';
+}
+
+// Für Provisionssätze: zeigt auch Cent-Beträge (12,5 €) statt auf ganze Euro zu runden
+function fmtPrice(n) {
+  return (Math.round(n * 100) / 100).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' €';
 }
 
 function fmtDateLabel(key) {
@@ -884,7 +961,7 @@ function fmtDateShort(key) {
 }
 
 function blankEntry() {
-  return { neu: 0, bestand: 0, storno_neu: 0, storno_bestand: 0 };
+  return { neu: 0, bestand: 0, storno_neu: 0, storno_bestand: 0, team_neu: 0, team_bestand: 0 };
 }
 
 function getEntry(key) {
@@ -892,7 +969,25 @@ function getEntry(key) {
   const e = data[key];
   if (e.storno_neu === undefined) e.storno_neu = 0;
   if (e.storno_bestand === undefined) e.storno_bestand = 0;
+  if (e.team_neu === undefined) e.team_neu = 0;
+  if (e.team_bestand === undefined) e.team_bestand = 0;
   return e;
+}
+
+function isEntryEmpty(entry) {
+  return !entry.neu && !entry.bestand && !entry.storno_neu && !entry.storno_bestand
+    && !entry.team_neu && !entry.team_bestand;
+}
+
+function isTeamleiter() {
+  return settings.role === 'teamleiter';
+}
+
+// Overhead (nur Teamleiter): Team-Aufträge × Overhead-Satz pro Fall
+function overheadOf(entry) {
+  if (!entry || !isTeamleiter()) return 0;
+  return (entry.team_neu || 0) * (settings.overheadNeu || 0)
+    + (entry.team_bestand || 0) * (settings.overheadBestand || 0);
 }
 
 function dayTotal(entry) {
@@ -900,11 +995,30 @@ function dayTotal(entry) {
   return entry.neu * PREIS_NEUKUNDE
     + entry.bestand * PREIS_BESTANDSKUNDE
     - (entry.storno_neu || 0) * PREIS_NEUKUNDE
-    - (entry.storno_bestand || 0) * PREIS_BESTANDSKUNDE;
+    - (entry.storno_bestand || 0) * PREIS_BESTANDSKUNDE
+    + overheadOf(entry);
 }
 
 function defaultSettings() {
-  return { fixkosten: 0, fireworksWindow: null };
+  return {
+    fixkosten: 0,
+    fireworksWindow: null,
+    onboarded: false,     // wurde der Willkommens-Dialog schon durchlaufen?
+    name: '',
+    role: 'vertreter',    // 'vertreter' | 'teamleiter'
+    preisNeu: 110,        // € Provision pro Neukunde
+    preisBestand: 15,     // € Provision pro Bestandskunde
+    steuer: 30,           // % Steuern
+    overheadNeu: 0,       // € Overhead pro Neukunden-Auftrag des Teams (nur Teamleiter)
+    overheadBestand: 0    // € Overhead pro Bestandskunden-Auftrag des Teams (nur Teamleiter)
+  };
+}
+
+function applySettings() {
+  const n = Number(settings.preisNeu), b = Number(settings.preisBestand), s = Number(settings.steuer);
+  PREIS_NEUKUNDE = isFinite(n) && n >= 0 ? n : 110;
+  PREIS_BESTANDSKUNDE = isFinite(b) && b >= 0 ? b : 15;
+  STEUER_PROZENT = isFinite(s) && s >= 0 && s < 100 ? s : 30;
 }
 
 async function loadData() {
@@ -915,7 +1029,15 @@ async function loadData() {
       data = parsed.days || {};
       events = parsed.events || [];
       settlements = parsed.settlements || [];
-      settings = Object.assign(defaultSettings(), parsed.settings || {});
+      const storedSettings = parsed.settings || {};
+      settings = Object.assign(defaultSettings(), storedSettings);
+      // Bestehende Nutzer (haben schon Daten/Einstellungen, aber das Onboarding noch nie gesehen)
+      // werden nicht plötzlich ausgebremst: sie behalten ihre bisherigen Werte (110 € / 15 € / 30 %).
+      if (storedSettings.onboarded === undefined &&
+          (Object.keys(data).length > 0 || settlements.length > 0 || storedSettings.fixkosten > 0)) {
+        settings.onboarded = true;
+      }
+      applySettings();
       return;
     }
   } catch (e) { /* noch keine v3 Daten vorhanden */ }
@@ -925,8 +1047,12 @@ async function loadData() {
   settings = defaultSettings();
   try {
     const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) data = JSON.parse(legacy) || {};
+    if (legacy) {
+      data = JSON.parse(legacy) || {};
+      if (Object.keys(data).length > 0) settings.onboarded = true;
+    }
   } catch (e) { /* keine alten Daten vorhanden */ }
+  applySettings();
 }
 
 async function saveData() {
@@ -948,7 +1074,18 @@ async function changeCount(field, delta) {
       if (events[i].date === selectedDate && events[i].type === field) { events.splice(i, 1); break; }
     }
   }
-  if (!entry.neu && !entry.bestand && !entry.storno_neu && !entry.storno_bestand) delete data[selectedDate];
+  if (isEntryEmpty(entry)) delete data[selectedDate];
+  await saveData();
+  render();
+  checkFireworksTrigger();
+}
+
+// Team-Aufträge (Overhead, nur Teamleiter). Bewusst ohne `events`, damit die
+// Uhrzeit-Auswertung nur die eigenen Verkäufe zählt.
+async function changeTeam(field, delta) {
+  const entry = getEntry(selectedDate);
+  entry[field] = Math.max(0, (entry[field] || 0) + delta);
+  if (isEntryEmpty(entry)) delete data[selectedDate];
   await saveData();
   render();
   checkFireworksTrigger();
@@ -1553,18 +1690,21 @@ function computeStreak() {
 }
 
 function breakdown(periodDates) {
-  let neu = 0, bestand = 0;
+  let neu = 0, bestand = 0, overhead = 0;
   periodDates.forEach(k => {
     const e = data[k];
     if (!e) return;
     neu += (e.neu || 0) * PREIS_NEUKUNDE;
     bestand += (e.bestand || 0) * PREIS_BESTANDSKUNDE;
+    overhead += overheadOf(e);
   });
-  const total = neu + bestand;
-  return [
+  const total = neu + bestand + overhead;
+  const items = [
     { label: 'Neukunden', value: neu, color: 'var(--blue)' },
     { label: 'Bestandskunden', value: bestand, color: 'var(--green)' }
-  ].sort((a, b) => b.value - a.value)
+  ];
+  if (overhead > 0) items.push({ label: 'Overhead (Team)', value: overhead, color: 'var(--violet)' });
+  return items.sort((a, b) => b.value - a.value)
    .map(c => ({ ...c, pct: total ? Math.round((c.value / total) * 100) : 0 }));
 }
 
@@ -1642,6 +1782,9 @@ function renderTrackerContent() {
   const bestandRevenue = entry.bestand * PREIS_BESTANDSKUNDE;
   const stornoCount = (entry.storno_neu || 0) + (entry.storno_bestand || 0);
   const stornoLoss = (entry.storno_neu || 0) * PREIS_NEUKUNDE + (entry.storno_bestand || 0) * PREIS_BESTANDSKUNDE;
+  const teamMode = isTeamleiter();
+  const overheadRevenue = overheadOf(entry);
+  const tableCols = teamMode ? 7 : 6;
 
   const prevTotal = dayTotal(data[prevDayKey(selectedDate)]);
   let trendHtml = '';
@@ -1668,7 +1811,7 @@ function renderTrackerContent() {
 
   let rowsHtml = '';
   if (keys.length === 0) {
-    rowsHtml = `<tr><td colspan="6"><div class="empty-state">Noch keine Einträge. Leg direkt oben los.</div></td></tr>`;
+    rowsHtml = `<tr><td colspan="${tableCols}"><div class="empty-state">Noch keine Einträge. Leg direkt oben los.</div></td></tr>`;
   } else {
     rowsHtml = keys.slice(0, 30).map(k => {
       const e = getEntry(k);
@@ -1680,6 +1823,7 @@ function renderTrackerContent() {
           <td class="num">${e.neu}</td>
           <td class="num">${e.bestand}</td>
           <td class="num" style="color:${stC > 0 ? 'var(--danger)' : 'inherit'};">${stC > 0 ? '−' + stC : stC}</td>
+          ${teamMode ? `<td class="num" style="color:var(--violet);">${(e.team_neu || 0) + (e.team_bestand || 0)}</td>` : ''}
           <td class="num total">${fmtEuro(t)}</td>
           <td class="num"><button class="del-btn" onclick="deleteDay('${k}')" title="Tag löschen">✕</button></td>
         </tr>`;
@@ -1696,6 +1840,7 @@ function renderTrackerContent() {
       <div class="meter-sub">
         <span class="sub-item"><span class="legend-dot" style="background:var(--blue)"></span><span class="lbl">Neukunden</span><span class="val">${fmtEuro(neuRevenue)}</span></span>
         <span class="sub-item"><span class="legend-dot" style="background:var(--green)"></span><span class="lbl">Bestand</span><span class="val">${fmtEuro(bestandRevenue)}</span></span>
+        ${overheadRevenue > 0 ? `<span class="sub-item"><span class="legend-dot" style="background:var(--violet)"></span><span class="lbl">Overhead</span><span class="val">${fmtEuro(overheadRevenue)}</span></span>` : ''}
         ${stornoCount > 0 ? `<span class="sub-item"><span class="legend-dot" style="background:var(--danger)"></span><span class="lbl">Storno</span><span class="val" style="color:var(--danger);">−${fmtEuro(stornoLoss)}</span></span>` : ''}
       </div>
     </div>
@@ -1711,7 +1856,7 @@ function renderTrackerContent() {
         <div class="qcard-head">
           <div class="qcard-title">Neukunde</div>
         </div>
-        <div class="qcard-price">110 €</div>
+        <div class="qcard-price">${fmtPrice(PREIS_NEUKUNDE)}</div>
         <div class="qcard-count">${entry.neu}</div>
         <div class="qcard-buttons">
           <button class="btn-round minus" onclick="changeCount('neu', -1)">−</button>
@@ -1722,7 +1867,7 @@ function renderTrackerContent() {
         <div class="qcard-head">
           <div class="qcard-title">Bestandskunde</div>
         </div>
-        <div class="qcard-price">15 €</div>
+        <div class="qcard-price">${fmtPrice(PREIS_BESTANDSKUNDE)}</div>
         <div class="qcard-count">${entry.bestand}</div>
         <div class="qcard-buttons">
           <button class="btn-round minus" onclick="changeCount('bestand', -1)">−</button>
@@ -1730,6 +1875,32 @@ function renderTrackerContent() {
         </div>
       </div>
     </div>
+
+    ${teamMode ? `
+    <div class="cards">
+      <div class="card qcard team">
+        <div class="qcard-head">
+          <div class="qcard-title">Team-Neukunde</div>
+        </div>
+        <div class="qcard-price">Overhead ${fmtPrice(settings.overheadNeu || 0)} pro Fall</div>
+        <div class="qcard-count">${entry.team_neu || 0}</div>
+        <div class="qcard-buttons">
+          <button class="btn-round minus" onclick="changeTeam('team_neu', -1)">−</button>
+          <button class="btn-round plus" onclick="changeTeam('team_neu', 1)">+</button>
+        </div>
+      </div>
+      <div class="card qcard team">
+        <div class="qcard-head">
+          <div class="qcard-title">Team-Bestand</div>
+        </div>
+        <div class="qcard-price">Overhead ${fmtPrice(settings.overheadBestand || 0)} pro Fall</div>
+        <div class="qcard-count">${entry.team_bestand || 0}</div>
+        <div class="qcard-buttons">
+          <button class="btn-round minus" onclick="changeTeam('team_bestand', -1)">−</button>
+          <button class="btn-round plus" onclick="changeTeam('team_bestand', 1)">+</button>
+        </div>
+      </div>
+    </div>` : ''}
 
     <div class="cards full">
       <div class="card qcard storno">
@@ -1740,7 +1911,7 @@ function renderTrackerContent() {
             <button class="${stornoType === 'bestand' ? 'active' : ''}" onclick="setStornoType('bestand')">Bestand</button>
           </div>
         </div>
-        <div class="qcard-price">Aktuell: −${stornoType === 'neu' ? PREIS_NEUKUNDE : PREIS_BESTANDSKUNDE} € pro Storno · heute ${stornoCount}× (Neukunde: ${entry.storno_neu || 0}, Bestand: ${entry.storno_bestand || 0})</div>
+        <div class="qcard-price">Aktuell: −${fmtPrice(stornoType === 'neu' ? PREIS_NEUKUNDE : PREIS_BESTANDSKUNDE)} pro Storno · heute ${stornoCount}× (Neukunde: ${entry.storno_neu || 0}, Bestand: ${entry.storno_bestand || 0})</div>
         <div class="qcard-count" style="color:var(--danger);">${stornoType === 'neu' ? (entry.storno_neu || 0) : (entry.storno_bestand || 0)}</div>
         <div class="qcard-buttons">
           <button class="btn-round minus" onclick="changeStorno(-1)">−</button>
@@ -1756,7 +1927,7 @@ function renderTrackerContent() {
     </div>
 
     <div class="section-title">Verlauf</div>
-    <div class="card table-card">
+    <div class="card table-card ${teamMode ? 'compact' : ''}">
       <table>
         <thead>
           <tr>
@@ -1764,6 +1935,7 @@ function renderTrackerContent() {
             <th class="num">Neu</th>
             <th class="num">Bestand</th>
             <th class="num">Storno</th>
+            ${teamMode ? '<th class="num">Team</th>' : ''}
             <th class="num">Gesamt</th>
             <th class="num"></th>
           </tr>
@@ -2309,6 +2481,7 @@ function render() {
   updateMonthNav();
   updateZeitraumInfo();
   updateJahrNav();
+  updateHeaderGreeting();
 }
 
 function updateMonthNav() {
@@ -2454,11 +2627,267 @@ function setupManifest() {
   } catch (e) { /* Manifest ist ein Nice-to-have, kein Problem wenn es fehlschlägt */ }
 }
 
+// ===== Onboarding / Einstellungen =====
+// Mehrstufiger Dialog: Willkommen -> Rolle -> Provision -> (Overhead, nur Teamleiter) -> Details -> Fertig.
+// Beim ersten Öffnen automatisch (mode 'first'), später über das Zahnrad im Header (mode 'edit').
+let ob = null;
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function parseNum(v) {
+  if (v === null || v === undefined) return NaN;
+  const s = String(v).trim().replace(',', '.');
+  if (s === '') return NaN;
+  return Number(s);
+}
+
+function fmtNumInput(n) {
+  return String(n).replace('.', ',');
+}
+
+function fmtNumPlain(n) {
+  return (Math.round(n * 100) / 100).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + ' €';
+}
+
+function obSteps() {
+  return ob && ob.role === 'teamleiter'
+    ? ['welcome', 'rolle', 'provision', 'overhead', 'weiteres', 'fertig']
+    : ['welcome', 'rolle', 'provision', 'weiteres', 'fertig'];
+}
+
+function getObRoot() {
+  let root = document.getElementById('onboarding-root');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'onboarding-root';
+    document.body.appendChild(root);
+  }
+  return root;
+}
+
+function openOnboarding(mode) {
+  const edit = mode === 'edit';
+  ob = {
+    mode: edit ? 'edit' : 'first',
+    step: edit ? 1 : 0,
+    name: settings.name || '',
+    role: settings.role === 'teamleiter' ? 'teamleiter' : 'vertreter',
+    // Beim ersten Mal bewusst leer, damit jeder SEINE Provision eintippt (statt Standardwerte zu übernehmen)
+    preisNeu: edit ? fmtNumInput(settings.preisNeu) : '',
+    preisBestand: edit ? fmtNumInput(settings.preisBestand) : '',
+    steuer: fmtNumInput(settings.steuer),
+    fixkosten: settings.fixkosten ? fmtNumInput(settings.fixkosten) : '',
+    overheadNeu: settings.overheadNeu ? fmtNumInput(settings.overheadNeu) : '',
+    overheadBestand: settings.overheadBestand ? fmtNumInput(settings.overheadBestand) : '',
+    error: ''
+  };
+  renderOnboarding();
+}
+
+function closeOnboarding() {
+  const root = getObRoot();
+  root.innerHTML = '';
+  ob = null;
+}
+
+function obSet(field, value) {
+  if (!ob) return;
+  ob[field] = value;
+  ob.error = '';
+}
+
+function obSetChip(field, value) {
+  obSet(field, value);
+  renderOnboarding();
+}
+
+function obSetRole(role) {
+  obSet('role', role);
+  renderOnboarding();
+}
+
+function obValidateStep() {
+  const step = obSteps()[ob.step];
+  if (step === 'provision') {
+    const n = parseNum(ob.preisNeu), b = parseNum(ob.preisBestand);
+    if (!(n >= 0) || !(b >= 0)) return 'Bitte gib beide Beträge in € ein (z. B. 110 und 15).';
+  }
+  if (step === 'overhead') {
+    const n = parseNum(ob.overheadNeu);
+    if (!(n >= 0)) return 'Bitte gib den Overhead pro Neukunden-Auftrag in € ein.';
+    if (String(ob.overheadBestand).trim() !== '' && !(parseNum(ob.overheadBestand) >= 0)) return 'Der Overhead pro Bestandskunde muss eine Zahl sein (oder leer bleiben).';
+  }
+  if (step === 'weiteres') {
+    const s = parseNum(ob.steuer);
+    if (!(s >= 0 && s < 100)) return 'Der Steuersatz muss zwischen 0 und 99 % liegen.';
+    if (String(ob.fixkosten).trim() !== '' && !(parseNum(ob.fixkosten) >= 0)) return 'Die Fixkosten müssen eine Zahl sein (oder leer bleiben).';
+  }
+  return '';
+}
+
+function obNext() {
+  if (!ob) return;
+  const err = obValidateStep();
+  if (err) { ob.error = err; renderOnboarding(); return; }
+  const steps = obSteps();
+  if (ob.step < steps.length - 1) ob.step++;
+  renderOnboarding();
+}
+
+function obBack() {
+  if (!ob) return;
+  const min = ob.mode === 'edit' ? 1 : 0;
+  if (ob.step > min) ob.step--;
+  ob.error = '';
+  renderOnboarding();
+}
+
+async function obFinish() {
+  if (!ob) return;
+  settings.name = String(ob.name || '').trim().slice(0, 40);
+  settings.role = ob.role === 'teamleiter' ? 'teamleiter' : 'vertreter';
+  settings.preisNeu = parseNum(ob.preisNeu) >= 0 ? parseNum(ob.preisNeu) : settings.preisNeu;
+  settings.preisBestand = parseNum(ob.preisBestand) >= 0 ? parseNum(ob.preisBestand) : settings.preisBestand;
+  settings.steuer = parseNum(ob.steuer) >= 0 && parseNum(ob.steuer) < 100 ? parseNum(ob.steuer) : settings.steuer;
+  settings.fixkosten = parseNum(ob.fixkosten) >= 0 ? parseNum(ob.fixkosten) : 0;
+  settings.overheadNeu = parseNum(ob.overheadNeu) >= 0 ? parseNum(ob.overheadNeu) : 0;
+  settings.overheadBestand = parseNum(ob.overheadBestand) >= 0 ? parseNum(ob.overheadBestand) : 0;
+  settings.onboarded = true;
+  applySettings();
+  await saveData();
+  closeOnboarding();
+  render();
+  checkFireworksTrigger();
+}
+
+// "Später einrichten": Standardwerte behalten, Dialog nicht mehr automatisch zeigen
+async function obSkip() {
+  settings.onboarded = true;
+  applySettings();
+  await saveData();
+  closeOnboarding();
+  render();
+}
+
+function obInput(field, label, opts) {
+  opts = opts || {};
+  const chips = opts.chips
+    ? `<div class="ob-chips">${opts.chips.map(c =>
+        `<button type="button" class="ob-chip ${String(ob[field]) === String(c) ? 'active' : ''}" onclick="obSetChip('${field}','${c}')">${c} €</button>`).join('')}</div>`
+    : '';
+  return `
+    <label class="ob-field"><span>${label}</span>
+      <div class="ob-input-wrap">
+        <input class="ob-input" type="text" inputmode="decimal" id="ob-${field}" value="${escapeHtml(ob[field])}"
+          placeholder="${escapeHtml(opts.placeholder || '')}" oninput="obSet('${field}', this.value)">
+        <span class="ob-unit">${opts.unit || '€'}</span>
+      </div>
+      ${opts.hint ? `<small>${opts.hint}</small>` : ''}
+    </label>${chips}`;
+}
+
+function renderOnboarding() {
+  if (!ob) return;
+  const steps = obSteps();
+  const step = steps[ob.step];
+  const edit = ob.mode === 'edit';
+  const dots = steps.map((s, i) => `<div class="ob-dot ${i <= ob.step ? 'done' : ''}"></div>`).join('');
+  let body = '';
+  let primaryLabel = 'Weiter';
+  let primaryAction = 'obNext()';
+
+  if (step === 'welcome') {
+    primaryLabel = 'Los geht’s';
+    body = `
+      <div class="ob-logo"><svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+        <rect x="3" y="3" width="7" height="7" rx="2" fill="#fff"/><rect x="14" y="3" width="7" height="7" rx="2" fill="#fff"/>
+        <rect x="3" y="14" width="7" height="7" rx="2" fill="#fff"/><rect x="14" y="14" width="7" height="7" rx="2" fill="#fff"/></svg></div>
+      <h2 class="ob-title">Willkommen bei Start (to) count</h2>
+      <p class="ob-sub">Dein persönlicher Umsatz-Tracker für den Direktvertrieb. Ein paar kurze Fragen, dann kann’s losgehen – dauert nur eine Minute. Deine Zahlen bleiben ausschließlich auf diesem Gerät.</p>
+      <label class="ob-field"><span>Wie heißt du? (optional)</span>
+        <input class="ob-input" type="text" id="ob-name" value="${escapeHtml(ob.name)}" placeholder="Vorname" maxlength="40"
+          autocomplete="given-name" oninput="obSet('name', this.value)"></label>`;
+  } else if (step === 'rolle') {
+    body = `
+      <h2 class="ob-title">Welche Rolle hast du?</h2>
+      <p class="ob-sub">Davon hängt ab, welche Felder du im Tracker siehst.</p>
+      <div class="ob-choices">
+        <button type="button" class="ob-choice ${ob.role === 'vertreter' ? 'active' : ''}" onclick="obSetRole('vertreter')">
+          <b>Vertreter</b><span>Ich schreibe Neu- und Bestandskunden selbst.</span></button>
+        <button type="button" class="ob-choice ${ob.role === 'teamleiter' ? 'active' : ''}" onclick="obSetRole('teamleiter')">
+          <b>Teamleiter</b><span>Ich habe ein Team und bekomme zusätzlich Overhead auf dessen Aufträge.</span></button>
+      </div>`;
+  } else if (step === 'provision') {
+    body = `
+      <h2 class="ob-title">Welche Provision bekommst du?</h2>
+      <p class="ob-sub">${ob.role === 'teamleiter' ? 'Das ist deine Provision für Aufträge, die du selbst schreibst. ' : ''}Tippe ein, wie viel du in € pro Auftrag bekommst.${edit ? ' Änderungen gelten rückwirkend für alle bisherigen Einträge.' : ''}</p>
+      ${obInput('preisNeu', 'Pro Neukunde', { placeholder: 'z. B. 110' })}
+      ${obInput('preisBestand', 'Pro Bestandskunde', { placeholder: 'z. B. 15' })}`;
+  } else if (step === 'overhead') {
+    body = `
+      <h2 class="ob-title">Dein Team-Overhead</h2>
+      <p class="ob-sub">Was bekommst du pro Auftrag, den dein Team schreibt? Die Team-Aufträge trägst du später im Tracker über die violetten Team-Karten ein.</p>
+      ${obInput('overheadNeu', 'Overhead pro Neukunden-Auftrag', { placeholder: 'z. B. 15', chips: [5, 15] })}
+      ${obInput('overheadBestand', 'Overhead pro Bestandskunden-Auftrag (optional)', { placeholder: 'z. B. 5', chips: [5, 15] })}`;
+  } else if (step === 'weiteres') {
+    body = `
+      <h2 class="ob-title">Noch ein paar Details</h2>
+      <p class="ob-sub">Damit dir die App auch Netto-Zahlen und dein Ziel anzeigen kann.</p>
+      ${obInput('steuer', 'Steuersatz', { unit: '%', placeholder: '30', hint: 'Wird für die Netto-Anzeige abgezogen.' })}
+      ${obInput('fixkosten', 'Fixkosten pro Abrechnungszeitraum (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Zeitraum (1.–15. bzw. 16.–Monatsende). Steuern schlägt die App automatisch drauf – bei Erreichen gibt’s ein Feuerwerk 🎆' })}`;
+  } else {
+    primaryLabel = edit ? 'Speichern' : 'Speichern & starten';
+    primaryAction = 'obFinish()';
+    const rows = [];
+    if (ob.name.trim()) rows.push(['Name', escapeHtml(ob.name.trim())]);
+    rows.push(['Rolle', ob.role === 'teamleiter' ? 'Teamleiter' : 'Vertreter']);
+    rows.push(['Neukunde', fmtNumPlain(parseNum(ob.preisNeu) || 0)]);
+    rows.push(['Bestandskunde', fmtNumPlain(parseNum(ob.preisBestand) || 0)]);
+    if (ob.role === 'teamleiter') {
+      rows.push(['Overhead Neukunde (Team)', fmtNumPlain(parseNum(ob.overheadNeu) || 0)]);
+      rows.push(['Overhead Bestand (Team)', fmtNumPlain(parseNum(ob.overheadBestand) || 0)]);
+    }
+    rows.push(['Steuersatz', (parseNum(ob.steuer) || 0).toLocaleString('de-DE') + ' %']);
+    rows.push(['Fixkosten / Zeitraum', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
+    body = `
+      <h2 class="ob-title">${edit ? 'Alles korrekt?' : 'Alles bereit!'}</h2>
+      <p class="ob-sub">${edit ? 'Prüfe deine Angaben und speichere sie.' : 'Das hast du eingestellt – du kannst es jederzeit über das ⚙️ oben rechts ändern.'}</p>
+      <div class="ob-summary">${rows.map(r => `<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}</div>`;
+  }
+
+  const showBack = ob.step > (edit ? 1 : 0);
+  const root = getObRoot();
+  root.innerHTML = `
+    <div class="ob-overlay">
+      <div class="card ob-card">
+        <div class="ob-dots">${dots}</div>
+        ${body}
+        <div class="ob-error">${ob.error ? escapeHtml(ob.error) : ''}</div>
+        <div class="ob-actions">
+          ${showBack ? '<button type="button" class="ob-btn secondary" onclick="obBack()">Zurück</button>' : ''}
+          <button type="button" class="ob-btn" onclick="${primaryAction}">${primaryLabel}</button>
+        </div>
+        ${edit ? '<button type="button" class="ob-link" onclick="closeOnboarding()">Abbrechen</button>' : ''}
+        ${!edit && step === 'welcome' ? '<button type="button" class="ob-link" onclick="obSkip()">Später einrichten (Standardwerte)</button>' : ''}
+      </div>
+    </div>`;
+}
+
+function updateHeaderGreeting() {
+  const el = document.getElementById('header-eyebrow');
+  if (!el) return;
+  const role = isTeamleiter() ? 'Teamleiter' : 'Vertreter';
+  el.textContent = settings.name ? `Hi ${settings.name} · ${role}` : 'Energie Direktvertrieb';
+}
+
 (async function init() {
   setupManifest();
   await loadTheme();
   await loadData();
   render();
+  if (!settings.onboarded) openOnboarding('first');
 })();
 </script>
 </body>
