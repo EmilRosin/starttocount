@@ -155,10 +155,14 @@
   }
   .nav-tab.active { color: #fff; }
   .nav-tab { padding-left:4px; padding-right:4px; white-space:nowrap; }
-  .abr-month { margin-bottom:16px; }
+  .abr-month { margin-bottom:0; }
+  .abr-grid { display:grid; grid-template-columns:1fr; gap:16px; align-items:start; }
+  @media (min-width: 900px) { .abr-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1100px) { .abr-grid { grid-template-columns: repeat(3, 1fr); } }
   .abr-row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
   .abr-row small { display:block; color:var(--text-dim); font-size:12px; margin-top:2px; }
   .abr-row > div { text-align:left; }
+  .abr-sum span { white-space:nowrap; }
   .abr-row b { color:var(--text); font-variant-numeric:tabular-nums; font-size:16px; white-space:nowrap; }
   .abr-row.missing b { color:var(--text-dim) !important; font-weight:600; font-size:13px; }
   .abr-sum { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:12px 0 2px; border-top:1.5px solid var(--text-dim); margin-top:2px; }
@@ -2840,7 +2844,7 @@ function renderAbrechnungenContent() {
     const rows = parts.map(p => `
       <div class="abr-row ${p.has ? '' : 'missing'}">
         <div>Abrechnung ${p.nr}<small>geschrieben ${p.range}</small></div>
-        <b>${p.has ? fmtEuro(p.sum) : 'noch nicht abgerechnet'}</b>
+        <b>${p.has ? fmtEuro(p.sum) : 'noch offen'}</b>
       </div>`).join('');
     const anyHas = parts.some(p => p.has);
     return `
@@ -2864,7 +2868,7 @@ function renderAbrechnungenContent() {
         <div><div class="dash-card-title">Meine Abrechnungen</div><div class="dash-card-sub">Pro Monat: was dir für die beiden Abrechnungen ausgezahlt wurde (Brutto).</div></div>
         <button class="today-btn" onclick="settlementsOpen = true; switchPage('dashboard')">➕ Abrechnung hinzufügen</button>
       </div>
-      ${blocks}${looseHtml}
+      <div class="abr-grid">${blocks}${looseHtml}</div>
     </div>`;
 }
 
@@ -2886,7 +2890,7 @@ function render() {
   lastRenderedPage = currentPage;
 
   const wrapEl = document.getElementById('wrap');
-  if (wrapEl) wrapEl.classList.toggle('wrap-wide', currentPage === 'dashboard');
+  if (wrapEl) wrapEl.classList.toggle('wrap-wide', currentPage === 'dashboard' || currentPage === 'abrechnungen');
 
   if (currentPage === 'tracker') {
     const dp = document.getElementById('datePicker');
