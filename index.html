@@ -1541,8 +1541,23 @@ function toggleSettlements() {
   render();
 }
 
-function nettoOf(brutto) {
-  return brutto * (1 - STEUER_PROZENT / 100);
+// Steuern fallen nur auf den GEWINN an: Brutto minus Fixkosten (n = Anzahl Abrechnungszeiträume,
+// Fixkosten gelten pro Zeitraum). Ohne Gewinn keine Steuer. Zurück: Brutto abzüglich Steuer
+// (die Fixkosten selbst werden von den Aufrufern separat abgezogen).
+function steuerOf(brutto, n = 1) {
+  const gewinn = brutto - (settings.fixkosten || 0) * n;
+  return gewinn > 0 ? gewinn * STEUER_PROZENT / 100 : 0;
+}
+function nettoOf(brutto, n = 1) {
+  return brutto - steuerOf(brutto, n);
+}
+// Wie viele Abrechnungszeiträume deckt die gewählte Dashboard-Ansicht ab?
+function periodWindowCount() {
+  const now = new Date();
+  const elapsed = 2 * now.getMonth() + (now.getDate() >= 16 ? 2 : 1);
+  if (statsPeriod === 'jahr') return jahrOffset === 0 ? elapsed : 24;
+  if (statsPeriod === 'monat') return 2;
+  return 1;
 }
 
 // Durchschnittliche Storno-Quote über alle Abrechnungen, in denen Neu-/Bestandskunden-Mengen
@@ -1682,7 +1697,9 @@ function goalPerWindow() {
 function zielAufbauCalc(p) {
   const fix = p.fix || 0, goal = p.goal || 0, mine = p.mine || 0;
   const base = fix + goal + mine;
-  const withTax = base * (1 + (p.taxPct || 0) / 100);
+  // Steuer nur auf den Gewinn: Fixkosten sind steuerfrei, aufs Ziel kommt Steuer drauf (Ziel ÷ (1 − Steuersatz))
+  const t = Math.min(Math.max(p.taxPct || 0, 0), 99) / 100;
+  const withTax = fix + (goal + mine) / (1 - t);
   const raw = withTax * (1 + (p.stornoPct || 0) / 100);
   const total = p.runden && raw > 0 ? Math.ceil(raw / 10 - 1e-9) * 10 : raw;
   return { fix, goal, mine, base, tax: withTax - base, storno: raw - withTax, raw, round: total - raw, total };
@@ -3171,7 +3188,7 @@ function renderDashboardContent(b, animate) {
               <div class="top"><span>📈 Geschätzter Umsatz (Brutto)</span><b>${fmtEuro(fixLiveBrutto)}</b></div>
               ${(settings.fixkosten || 0) > 0 ? `<div><span>🏠 Fixkosten abziehen</span><b>${fmtEuro(settings.fixkosten)}</b></div>` : ''}
               ${fixAufbau.goal > 0 ? `<div><span>🎯 Finanzziel${settings.goalName ? ' (' + escapeHtml(settings.goalName) + ')' : ''} zurücklegen</span><b>${fmtEuro(fixAufbau.goal)}</b></div>` : ''}
-              ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}%)</span><b>${fmtEuro(fixLiveBrutto * (1 - fixStornoPct / 100) * STEUER_PROZENT / 100)}</b></div>` : ''}
+              ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}% vom Gewinn)</span><b>${fmtEuro(steuerOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>` : ''}
               ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (Quote aller Abrechnungen, ${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
               <div class="pocket"><span>💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 || fixAufbau.goal > 0 ? ' (nach Abzügen)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0) - fixAufbau.goal)}</b></div>
               ${settings.ustPflicht ? `<div class="ust-row"><span>🏛️ + Umsatzsteuer 19 % (wird mitüberwiesen) – ans Finanzamt weiterleiten</span><b>${fmtEuro(fixLiveBrutto * 0.19)}</b></div>` : ''}
@@ -3226,8 +3243,8 @@ function renderDashboardContent(b, animate) {
             </div>
             <div class="dash-card-sub">${totalCardSub}</div>
             <div class="dash-total-value">${fmtEuro(totalCardValue)}</div>
-            ${(STEUER_PROZENT > 0 || stornoAufschlagPct() > 0) && !isAusgezahltView && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue * (1 - stornoAufschlagPct() / 100)))} ${STEUER_PROZENT > 0 ? 'netto' : 'erwartet'} (${[stornoAufschlagPct() > 0 ? '−' + fmtPct(stornoAufschlagPct()) + ' Ø Storno' : '', STEUER_PROZENT > 0 ? '−' + STEUER_PROZENT + '% Steuer' : ''].filter(Boolean).join(', ')})</div>` : ''}
-            ${isAusgezahltView && STEUER_PROZENT > 0 && periodSettlements.length && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(periodPaid))} netto (−${STEUER_PROZENT}% Steuer)</div>` : ''}
+            ${(STEUER_PROZENT > 0 || stornoAufschlagPct() > 0) && !isAusgezahltView && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue * (1 - stornoAufschlagPct() / 100), periodWindowCount()))} ${STEUER_PROZENT > 0 ? 'netto' : 'erwartet'} (${[stornoAufschlagPct() > 0 ? '−' + fmtPct(stornoAufschlagPct()) + ' Ø Storno' : '', STEUER_PROZENT > 0 ? '−' + STEUER_PROZENT + '% Steuer auf den Gewinn' : ''].filter(Boolean).join(', ')})</div>` : ''}
+            ${isAusgezahltView && STEUER_PROZENT > 0 && periodSettlements.length && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(periodPaid, periodSettlements.length))} netto (−${STEUER_PROZENT}% Steuer auf den Gewinn)</div>` : ''}
             ${!isAusgezahltView ? trendBadge : ''}
             <div class="dash-chip-row">
               ${totalCardChips.map(c => `<div class="dash-chip"><div class="dash-chip-value">${c.value}</div><div class="dash-chip-label">${c.label}</div></div>`).join('')}
@@ -3266,7 +3283,7 @@ function renderDashboardContent(b, animate) {
               <div class="dash-kv-row"><span>Getrackt (Brutto, gesamt)</span><b>${fmtEuro(trackedAll)}</b></div>
               <div class="dash-kv-row"><span>Ausgezahlt (Brutto, gesamt)</span><b>${fmtEuro(settlePaidTotal)}</b></div>
               <div class="dash-kv-row"><span>Differenz</span><b style="color:${settleDiff < 0 ? 'var(--danger)' : 'var(--green)'};">${settleDiff >= 0 ? '+' : ''}${fmtEuro(settleDiff)}</b></div>
-              ${STEUER_PROZENT > 0 ? `<div class="dash-kv-row"><span>Ausgezahlt netto (−${STEUER_PROZENT}% Steuer)</span><b>${fmtEuro(nettoOf(settlePaidTotal))}</b></div>` : ''}
+              ${STEUER_PROZENT > 0 ? `<div class="dash-kv-row"><span>Ausgezahlt netto (−${STEUER_PROZENT}% Steuer auf den Gewinn)</span><b>${fmtEuro(nettoOf(settlePaidTotal, settlements.length))}</b></div>` : ''}
             </div>
             <div class="dash-settle-upload">
               <input type="file" id="settlementPdfInput" accept="application/pdf" multiple style="display:none;" onchange="handlePdfUpload(event)">
@@ -3302,7 +3319,8 @@ const ABR_MONTHS_LONG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', '
 
 // Umsatzsteuer: ist der Betrag aus der Abrechnung inkl. 19 %, steckt darin Betrag − Betrag/1,19 (gehört dem Finanzamt)
 function abrUst(total) { return settings.ustPflicht ? total - total / 1.19 : 0; }
-function abrNet(total) { return nettoOf(total - abrUst(total)); }
+function abrNet(total, n = 1) { return nettoOf(total - abrUst(total), n); }
+function abrN(d) { return (d.hasA ? 1 : 0) + (d.hasB ? 1 : 0); }
 
 function abrYearData(y) {
   return Array.from({ length: 12 }, (_, i) => {
@@ -3453,7 +3471,7 @@ function renderAbrechnungenContent() {
         ${rows}
         <div class="abr-sum"><span>Verdient im ${ABR_MONTHS_LONG[d.i]}</span><b>${d.has ? fmtEuro(d.total) : '–'}</b></div>
         ${d.has && settings.ustPflicht ? `<div class="abr-net">🏛️ darin Umsatzsteuer (19 %): ${fmtEuro(abrUst(d.total))} – ans Finanzamt</div>` : ''}
-        ${d.has && STEUER_PROZENT > 0 ? `<div class="abr-net">≈ ${fmtEuro(abrNet(d.total))} netto (−${STEUER_PROZENT}% Steuer${settings.ustPflicht ? ', ohne USt' : ''})</div>` : ''}
+        ${d.has && STEUER_PROZENT > 0 ? `<div class="abr-net">≈ ${fmtEuro(abrNet(d.total, abrN(d)))} netto (−${STEUER_PROZENT}% Steuer auf den Gewinn${settings.ustPflicht ? ', ohne USt' : ''})</div>` : ''}
       </div>`;
   }).join('');
   const loose = settlements.filter(x => !x.windowId || !/^\d{4}-\d{2}-[AB]$/.test(x.windowId));
@@ -3742,9 +3760,9 @@ async function downloadAbrechnungenPdf() {
     for (let i = 0; i < 11; i++) if (data[i].has && data[i + 1].has) line(px(i), py(fn(data[i])), px(i + 1), py(fn(data[i + 1])), rgb, w, dash);
   };
   seg(d => d.total, BLUE, 1.8);
-  if (withTax) seg(d => abrNet(d.total), GREEN, 1.4, true);
+  if (withTax) seg(d => abrNet(d.total, abrN(d)), GREEN, 1.4, true);
   data.filter(d => d.has).forEach(d => {
-    if (withTax) circle(px(d.i), py(abrNet(d.total)), 2.4, GREEN);
+    if (withTax) circle(px(d.i), py(abrNet(d.total, abrN(d))), 2.4, GREEN);
     circle(px(d.i), py(d.total), 2.8, BLUE);
     text(Math.round(d.total).toLocaleString('de-DE'), px(d.i) - pdfTextW(Math.round(d.total).toLocaleString('de-DE'), 7) / 2, py(d.total) + 6, 7, true);
   });
@@ -3765,14 +3783,14 @@ async function downloadAbrechnungenPdf() {
     text(d.hasA ? pdfEuro(d.a) : 'offen', cA, ty, 10, false, true, d.hasA ? undefined : GREY);
     text(d.hasB ? pdfEuro(d.b) : 'offen', cB, ty, 10, false, true, d.hasB ? undefined : GREY);
     text(pdfEuro(d.total), cT + 40, ty, 10, true, true);
-    if (withTax) text(pdfEuro(abrNet(d.total)), cN + 45, ty, 10, false, true);
+    if (withTax) text(pdfEuro(abrNet(d.total, abrN(d))), cN + 45, ty, 10, false, true);
     ty -= 6; line(50, ty, 545, ty, LIGHT, 0.5); ty -= 16;
   });
   const total = data.reduce((t, d) => t + d.total, 0);
   line(50, ty + 10, 545, ty + 10, GREY, 1);
   text('Summe ' + y, 50, ty - 6, 11, true);
   text(pdfEuro(total), cT + 40, ty - 6, 11, true, true);
-  if (withTax) text(pdfEuro(abrNet(total)), cN + 45, ty - 6, 11, true, true);
+  if (withTax) text(pdfEuro(data.reduce((t, d) => t + abrNet(d.total, abrN(d)), 0)), cN + 45, ty - 6, 11, true, true);
   if (settings.ustPflicht) text('Darin enthaltene Umsatzsteuer (19 %): ' + pdfEuro(abrUst(total)) + ' – ans Finanzamt weiterleiten', 50, ty - 24, 9, false, false, GREY);
   text('Beträge sind die ausgezahlten Brutto-Beträge aus deinen Abrechnungen.' + (withTax ? ' Netto = abzüglich ' + STEUER_PROZENT + '% Steuer (Schätzung).' : ''), 50, 40, 8, false, false, GREY);
 
@@ -4122,7 +4140,7 @@ function obBreakdownInner() {
     ${a.fix > 0 ? `<div><span>Fixkosten</span><b>${fmtEuro(a.fix)}</b></div>` : ''}
     ${a.mine > 0 ? `<div><span>Nur für mich übrig (Monatsbetrag ÷ 2)</span><b>+ ${fmtEuro(a.mine)}</b></div>` : ''}
     ${a.goal > 0 ? `<div><span>Persönliches Ziel${gname ? ' (' + escapeHtml(gname) + ')' : ''}</span><b>+ ${fmtEuro(a.goal)}</b></div>` : ''}
-    ${taxPct > 0 ? `<div><span>Steuer (+${taxPct}%)</span><b>+ ${fmtEuro(a.tax)}</b></div>` : ''}
+    ${taxPct > 0 && a.tax > 0.005 ? `<div><span>Steuer (${taxPct}% vom Gewinn)</span><b>+ ${fmtEuro(a.tax)}</b></div>` : ''}
     ${stPct > 0 ? `<div><span>Storno-Puffer (+${fmtPct(stPct)})</span><b>+ ${fmtEuro(a.storno)}</b></div>` : ''}
     ${a.round > 0.005 ? `<div><span>Aufgerundet (auf volle 10 €)</span><b>+ ${fmtEuro(a.round)}</b></div>` : ''}
     <div class="sum"><span>= Brutto-Ziel pro Abrechnungsperiode</span><b>${fmtEuro(a.total)}</b></div>`
@@ -4477,7 +4495,7 @@ function obStepContent(step) {
         <small class="ob-hint">Bei „Ja“ werden die 19 % Umsatzsteuer mit überwiesen. Die App zeigt dir, wie viel du davon zur Seite legen und ans Finanzamt weiterleiten musst – das Geld gehört nicht dir.</small>
       </div>
       ${obInput('steuer', 'Steuersatz (optional)', { unit: '%', placeholder: 'z. B. 30', hint: 'Wird für die Netto-Anzeige abgezogen. Leer lassen = es werden keine Steuern angezeigt.' })}
-      ${obInput('fixkosten', 'Fixkosten pro Abrechnungsperiode (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Abrechnungsperiode (1.–15. bzw. 16.–Monatsende). Steuern schlägt die App automatisch drauf – bei Erreichen gibt’s ein Feuerwerk 🎆' })}
+      ${obInput('fixkosten', 'Fixkosten pro Abrechnungsperiode (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Abrechnungsperiode (1.–15. bzw. 16.–Monatsende). Die Steuer rechnet die App nur auf deinen Gewinn (Umsatz minus Fixkosten) – bei Erreichen gibt’s ein Feuerwerk 🎆' })}
       <label class="ob-check">
         <input type="checkbox" ${ob.stornoAufschlag ? 'checked' : ''} onchange="obSet('stornoAufschlag', this.checked)">
         <span>Ø Storno-Quote als Puffer auf das Ziel aufschlagen<small>${(() => { const a = avgStornoQuote(); return a.count > 0 ? `Aktuell ${fmtPct(a.pct)} im Schnitt aus ${a.count} Abrechnung${a.count === 1 ? '' : 'en'} – so planst du schon ein, dass ein Teil der Aufträge noch storniert wird.` : 'Sobald du Abrechnungen eingescannt hast, berechnet die App deine durchschnittliche Storno-Quote und schlägt sie auf.'; })()}</small></span>
