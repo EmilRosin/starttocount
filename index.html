@@ -225,6 +225,10 @@
   .ag-chip b { margin-left:6px; cursor:pointer; opacity:.7; }
   .ag-row { display:flex; gap:8px; align-items:center; }
   .ag-row .ob-input { flex:1; }
+  .ag-prog { margin:2px 0 10px; font-size:12px; font-weight:700; color:var(--text-dim); }
+  .ag-bar { height:6px; border-radius:99px; background:var(--toggle-bg); margin-top:6px; overflow:hidden; }
+  .ag-bar i { display:block; height:100%; background:var(--blue); border-radius:99px; transition:width .25s; }
+  .ag-q { min-height:170px; margin-top:6px; }
   .ag-row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .inv-page .abr-hero-value { font-size:48px; }
   .inv-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px; }
@@ -1361,16 +1365,17 @@ function defaultSettings() {
 // ---- Agenturinhaber: Auswahlmöglichkeiten ----
 const AG_VERTRIEB = [['d2d', 'Haustür (D2D)'], ['b2b', 'B2B / Gewerbe'], ['cold', 'Cold Calls / Telefon'], ['stand', 'Stand / Messe / Promotion'], ['online', 'Online / Leads'], ['laden', 'Ladengeschäft / Retail'], ['empf', 'Empfehlung / Netzwerk'], ['sonst', 'Sonstiges']];
 const AG_PRODUKT = [['energie', 'Strom & Gas'], ['telko', 'Telekom / DSL / Mobilfunk'], ['vers', 'Versicherung'], ['solar', 'Solar / Wärmepumpe'], ['fin', 'Finanzen / Kredit'], ['spende', 'Spenden / NGO'], ['sonst', 'Sonstiges']];
-const AG_RHYTHM = [['woechentlich', 'Wöchentlich'], ['zweiwoechentlich', 'Alle 2 Wochen'], ['halbmonatlich', 'Halbmonatlich (1.–15. / 16.–Ende)'], ['monatlich', 'Monatlich']];
+const AG_RHYTHM = [['woechentlich', 'Wöchentlich'], ['zweiwoechentlich', 'Alle 2 Wochen'], ['halbmonatlich', 'Halbmonatlich (1.–15. / 16.–Ende)'], ['monatlich', 'Monatlich'], ['custom', 'Benutzerdefiniert']];
 const AG_STORNO = [['rueckbuchung', 'Rückbuchung vom Mitarbeiter'], ['verrechnung', 'Mit nächster Auszahlung verrechnen'], ['agentur', 'Agentur trägt das Storno']];
 const AG_KPI = [['kontakte', 'Türen / Kontakte'], ['anrufe', 'Anrufe'], ['erreicht', 'Erreichte Kontakte'], ['termine', 'Termine'], ['angebote', 'Angebote'], ['abschluesse', 'Abschlüsse'], ['leads', 'Leads']];
 const AG_DAYS = [['mo', 'Mo'], ['di', 'Di'], ['mi', 'Mi'], ['do', 'Do'], ['fr', 'Fr'], ['sa', 'Sa'], ['so', 'So']];
+function agRhythm(key, text) { return key === 'custom' ? (String(text || '').trim() || 'Benutzerdefiniert') : agLabel(AG_RHYTHM, key); }
 function agLabel(list, key) { const f = list.find(x => x[0] === key); return f ? f[1] : key; }
 function defaultAgency() {
   return {
     vertrieb: [], produkt: [], partners: [],
-    rechnungRhythm: 'halbmonatlich', rechnungFrist: '3', zahlungsziel: '14', haftungMonate: '12', einbehaltPct: '',
-    maRhythm: 'halbmonatlich', maTag: '', maNeu: '', maBestand: '', stornoRegel: 'verrechnung',
+    rechnungRhythm: 'halbmonatlich', rechnungRhythmText: '', rechnungFrist: '3', zahlungsziel: '14', haftungMonate: '12', einbehaltPct: '',
+    maRhythm: 'halbmonatlich', maRhythmText: '', maTag: '', maNeu: '', maBestand: '', stornoRegel: 'verrechnung',
     tage: ['mo', 'di', 'mi', 'do', 'fr'], schichtVon: '', schichtBis: '', tagesziel: '',
     kpi: [], notiz: ''
   };
@@ -1591,6 +1596,7 @@ function isoWeekOf(d) {
 }
 
 function goalCardHtml() {
+  if (isAgentur()) return '';
   const amount = settings.goalAmount || 0;
   if (!(amount > 0)) {
     // Kein Finanzziel festgelegt: Karte klappt zu einem schmalen Streifen zur Seite, die andere Karte nutzt den Platz
@@ -3008,7 +3014,7 @@ function renderDashboardContent(b, animate) {
     <div class="dashboard-page ${animate ? 'animate-in' : ''}">
       <div class="dash-grid">
         <div class="dash-main">
-      <div class="dash-top${(settings.goalAmount || 0) > 0 ? '' : ' goal-collapsed'}">
+      <div class="dash-top${(settings.goalAmount || 0) > 0 && !isAgentur() ? '' : ' goal-collapsed'}">
           <div class="card dash-card dash-fix-card">
             <div class="dash-card-head">
               <div>
@@ -3886,7 +3892,7 @@ function fmtNumPlain(n) {
 }
 
 function obSteps() {
-  if (ob && ob.role === 'agentur') return ['welcome', 'prinzip', 'rolle', 'agentur', 'provision', 'weiteres', 'fertig'];
+  if (ob && ob.role === 'agentur') return ['welcome', 'prinzip', 'rolle', 'agentur', 'provision', 'fertig'];
   return ob && ob.role === 'teamleiter'
     ? ['welcome', 'prinzip', 'rolle', 'provision', 'overhead', 'weiteres', 'fertig']
     : ['welcome', 'prinzip', 'rolle', 'provision', 'weiteres', 'fertig'];
@@ -3915,6 +3921,7 @@ function openOnboarding(mode) {
     name: settings.name || '',
     role: roleOf(settings.role),
     ag: agencyToForm(agencyCfg()),
+    agQ: 0,
     // Beim ersten Mal bewusst leer, damit jeder SEINE Provision eintippt (statt Standardwerte zu übernehmen)
     preisNeu: prefill ? fmtNumInput(settings.preisNeu) : '',
     preisBestand: prefill ? fmtNumInput(settings.preisBestand) : '',
@@ -4000,7 +4007,7 @@ function obToggleRunden() {
 
 // ---- Agentur-Einrichtung ----
 function agencyToForm(a) {
-  return { ...a, vertrieb: [...(a.vertrieb || [])], produkt: [...(a.produkt || [])], partners: [...(a.partners || [])], tage: [...(a.tage || [])], kpi: [...(a.kpi || [])], newPartner: '' };
+  return { ...a, vertrieb: [...(a.vertrieb || [])], produkt: [...(a.produkt || [])], partners: [...(a.partners || [])], tage: [...(a.tage || [])], kpi: [...(a.kpi || [])], newPartner: '', new_vertrieb: '', new_produkt: '' };
 }
 function agencyFromForm(f) {
   const d = defaultAgency(), o = {};
@@ -4010,6 +4017,8 @@ function agencyFromForm(f) {
   if (np && !o.partners.includes(np)) o.partners.push(np);
   ['rechnungFrist', 'zahlungsziel', 'haftungMonate', 'einbehaltPct', 'maNeu', 'maBestand', 'tagesziel'].forEach(k => { o[k] = String(o[k] == null ? '' : o[k]).trim(); });
   o.notiz = String(o.notiz || '').slice(0, 300);
+  ['vertrieb', 'produkt'].forEach(k => { const t = String(f['new_' + k] || '').trim(); if (t && !o[k].includes(t)) o[k].push(t); });
+  o.rechnungRhythmText = String(o.rechnungRhythmText || '').trim().slice(0, 60); o.maRhythmText = String(o.maRhythmText || '').trim().slice(0, 60);
   return o;
 }
 function agSet(field, value) { if (!ob) return; ob.ag[field] = value; ob.error = ''; }
@@ -4028,42 +4037,53 @@ function agAddPartner() {
   renderOnboarding();
 }
 function agRemovePartner(i) { if (ob) { ob.ag.partners.splice(i, 1); renderOnboarding(); } }
-function agencyStepHtml() {
+const AG_QUIZ = ['vertrieb', 'produkt', 'partner', 'rechnung', 'zahlung', 'haftung', 'ausz', 'maprov', 'storno', 'ust'];
+function agAddCustom(field) {
+  if (!ob) return;
+  const v = String(ob.ag['new_' + field] || '').trim();
+  if (v && !ob.ag[field].includes(v)) ob.ag[field].push(v);
+  ob.ag['new_' + field] = '';
+  renderOnboarding();
+}
+function agQuestionHtml(q) {
   const a = ob.ag;
-  const multi = (field, list) => `<div class="ag-chips">${list.map(([k, l]) => `<button type="button" class="ag-chip ${a[field].includes(k) ? 'on' : ''}" onclick="agToggle('${field}','${k}')">${l}</button>`).join('')}</div>`;
+  const extras = (field, list) => a[field].filter(k => !list.some(x => x[0] === k));
+  const multi = (field, list, custom) => `<div class="ag-chips">${list.map(([k, l]) => `<button type="button" class="ag-chip ${a[field].includes(k) ? 'on' : ''}" onclick="agToggle('${field}','${k}')">${l}</button>`).join('')}${extras(field, list).map(k => `<button type="button" class="ag-chip on" onclick="agToggle('${field}','${escapeHtml(k).replace(/'/g, '&#39;')}')">${escapeHtml(k)} <b>×</b></button>`).join('')}</div>
+    ${custom ? `<div class="ag-row"><input class="ob-input" type="text" maxlength="40" value="${escapeHtml(a['new_' + field])}" placeholder="Eigene Option (Benutzerdefiniert)" oninput="agSet('new_${field}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();agAddCustom('${field}');}"><button type="button" class="tm-btn" onclick="agAddCustom('${field}')">Hinzufügen</button></div>` : ''}`;
   const single = (field, list) => `<div class="ag-chips">${list.map(([k, l]) => `<button type="button" class="ag-chip ${a[field] === k ? 'on' : ''}" onclick="agPick('${field}','${k}')">${l}</button>`).join('')}</div>`;
+  const customRhythm = (field) => a[field] === 'custom' ? `<input class="ob-input" type="text" maxlength="60" id="ag-${field}Text" value="${escapeHtml(a[field + 'Text'])}" placeholder="z. B. alle 10 Tage, immer freitags" oninput="agSet('${field}Text', this.value)">` : '';
   const num = (field, label, unit, ph, hint) => `<label class="ob-field"><span>${label}</span><div class="ob-input-wrap"><input class="ob-input" type="text" inputmode="decimal" value="${escapeHtml(a[field])}" placeholder="${ph || ''}" oninput="agSet('${field}', this.value)"><span class="ob-unit">${unit}</span></div>${hint ? `<small>${hint}</small>` : ''}</label>`;
-  const txt = (field, label, ph, type) => `<label class="ob-field"><span>${label}</span><input class="ob-input" type="${type || 'text'}" value="${escapeHtml(a[field])}" placeholder="${ph || ''}" oninput="agSet('${field}', this.value)"></label>`;
-  return `
-    <h2 class="ob-title">Deine Agentur</h2>
-    <p class="ob-sub">Hier legst du die Regeln deiner Agentur fest. Sie gelten für dein ganzes Team, sobald du eins gegründet hast, und bilden die Basis für Tracker, Rechnungen und Auswertungen.</p>
-    <div class="ag-sec"><div class="ob-section-title">🎯 Vertriebsart <em>(mehrere möglich)</em></div>${multi('vertrieb', AG_VERTRIEB)}</div>
-    <div class="ag-sec"><div class="ob-section-title">📦 Produkt / Branche <em>(mehrere möglich)</em></div>${multi('produkt', AG_PRODUKT)}</div>
-    <div class="ag-sec"><div class="ob-section-title">🏢 Deine Anbieter (Auftraggeber)</div>
+  const txt = (field, label, ph) => `<label class="ob-field"><span>${label}</span><input class="ob-input" type="text" value="${escapeHtml(a[field])}" placeholder="${ph || ''}" oninput="agSet('${field}', this.value)"></label>`;
+  if (q === 'vertrieb') return `<div class="ob-section-title">🎯 Welche Vertriebsart machst du? <em>(mehrere möglich)</em></div>${multi('vertrieb', AG_VERTRIEB, true)}`;
+  if (q === 'produkt') return `<div class="ob-section-title">📦 Welches Produkt / welche Branche? <em>(mehrere möglich)</em></div>${multi('produkt', AG_PRODUKT, true)}`;
+  if (q === 'partner') return `<div class="ob-section-title">🏢 Wer sind deine Anbieter (Auftraggeber)?</div>
       <div class="ag-chips">${a.partners.map((p, i) => `<span class="ag-chip on">${escapeHtml(p)} <b onclick="agRemovePartner(${i})" title="Entfernen">×</b></span>`).join('')}</div>
-      <div class="ag-row"><input class="ob-input" type="text" value="${escapeHtml(a.newPartner)}" placeholder="Name des Anbieters" oninput="agSet('newPartner', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();agAddPartner();}"><button type="button" class="tm-btn" onclick="agAddPartner()">Hinzufügen</button></div>
-    </div>
-    <div class="ag-sec"><div class="ob-section-title">🧾 Abrechnung mit dem Anbieter</div>
-      <div class="ob-field"><span>Wie oft stellst du Rechnung?</span></div>${single('rechnungRhythm', AG_RHYTHM)}
-      ${num('rechnungFrist', 'Rechnung stellen innerhalb von … Tagen nach Zeitraum-Ende', 'Tage', '3')}
-      ${num('zahlungsziel', 'Zahlungsziel des Anbieters', 'Tage', '14', 'Daraus berechnet die App, wann das Geld spätestens da sein muss.')}
+      <div class="ag-row"><input class="ob-input" type="text" value="${escapeHtml(a.newPartner)}" placeholder="Name des Anbieters" oninput="agSet('newPartner', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();agAddPartner();}"><button type="button" class="tm-btn" onclick="agAddPartner()">Hinzufügen</button></div>`;
+  if (q === 'rechnung') return `<div class="ob-section-title">🧾 Wie oft rechnest du mit dem Anbieter ab?</div>${single('rechnungRhythm', AG_RHYTHM)}${customRhythm('rechnungRhythm')}
+      ${num('rechnungFrist', 'Rechnung stellen innerhalb von … Tagen nach Zeitraum-Ende', 'Tage', '3')}`;
+  if (q === 'zahlung') return `<div class="ob-section-title">⏳ Wann zahlt der Anbieter?</div>
+      ${num('zahlungsziel', 'Zahlungsziel des Anbieters', 'Tage', '14', 'Daraus berechnet die App, wann das Geld spätestens da sein muss.')}`;
+  if (q === 'haftung') return `<div class="ob-section-title">🛡️ Storno-Haftung beim Anbieter</div>
       ${num('haftungMonate', 'Storno-Haftungszeit', 'Monate', '12', 'So lange kann der Anbieter Provision zurückfordern.')}
-      ${num('einbehaltPct', 'Einbehalt / Stornoreserve (optional)', '%', 'z. B. 10')}
-    </div>
-    <div class="ag-sec"><div class="ob-section-title">💶 Auszahlung an deine Mitarbeiter</div>
-      <div class="ob-field"><span>Wie oft zahlst du aus?</span></div>${single('maRhythm', AG_RHYTHM)}
-      ${txt('maTag', 'Auszahlungstag(e)', 'z. B. 25. des Monats oder freitags')}
-      ${num('maNeu', 'Provision pro Neukunde für Mitarbeiter', '€', 'z. B. 80', 'Wird im Team als Vorgabe verteilt.')}
-      ${num('maBestand', 'Provision pro Bestandskunde für Mitarbeiter', '€', 'z. B. 10')}
-      <div class="ob-field"><span>Was passiert bei einem Storno?</span></div>${single('stornoRegel', AG_STORNO)}
-    </div>
-    <div class="ag-sec"><div class="ob-section-title">🕒 Arbeitsweise</div>
-      <div class="ob-field"><span>Arbeitstage</span></div>${multi('tage', AG_DAYS)}
-      <div class="ag-row2">${txt('schichtVon', 'Beginn', '', 'time')}${txt('schichtBis', 'Ende', '', 'time')}</div>
-      ${num('tagesziel', 'Tagesziel pro Mitarbeiter (optional)', 'Aufträge', 'z. B. 3')}
-    </div>
-    <div class="ag-sec"><div class="ob-section-title">📊 Was soll erfasst werden? <em>(wird später im Tracker ergänzt)</em></div>${multi('kpi', AG_KPI)}</div>
-    <div class="ag-sec"><label class="ob-field"><span>Notizen zur Agentur (optional)</span><textarea class="ob-input" rows="2" maxlength="300" oninput="agSet('notiz', this.value)" placeholder="z. B. Gebiet, Besonderheiten im Vertrag">${escapeHtml(a.notiz)}</textarea></label></div>`;
+      ${num('einbehaltPct', 'Einbehalt / Stornoreserve (optional)', '%', 'z. B. 10')}`;
+  if (q === 'ausz') return `<div class="ob-section-title">💶 Wie oft zahlst du an deine Mitarbeiter aus?</div>${single('maRhythm', AG_RHYTHM)}${customRhythm('maRhythm')}
+      ${txt('maTag', 'Auszahlungstag(e) (optional)', 'z. B. 25. des Monats oder freitags')}`;
+  if (q === 'maprov') return `<div class="ob-section-title">💰 Was bekommen deine Mitarbeiter pro Auftrag?</div>
+      ${num('maNeu', 'Provision pro Neukunde', '€', 'z. B. 80', 'Wird im Team als Vorgabe verteilt.')}
+      ${num('maBestand', 'Provision pro Bestandskunde', '€', 'z. B. 10')}`;
+  if (q === 'storno') return `<div class="ob-section-title">↩️ Was passiert bei einem Storno?</div>${single('stornoRegel', AG_STORNO)}`;
+  if (q === 'ust') return `<div class="ob-section-title">🧾 Umsatzsteuerpflichtig (19 %)?</div>
+      <div class="ob-chips" style="margin-top:6px"><button type="button" class="ob-chip ${ob.ust ? 'active' : ''}" onclick="obSetUst(true);renderOnboarding()">Ja</button><button type="button" class="ob-chip ${!ob.ust ? 'active' : ''}" onclick="obSetUst(false);renderOnboarding()">Nein</button></div>
+      <small class="ob-hint">Bei „Ja“ rechnet die App die 19 % als Geld, das nicht dir gehört.</small>`;
+  return '';
+}
+function agencyStepHtml() {
+  const head = `<h2 class="ob-title">Deine Agentur</h2>`;
+  if (ob.mode === 'settings') return AG_QUIZ.map(q => `<div class="ag-sec">${agQuestionHtml(q)}</div>`).join('');
+  const n = AG_QUIZ.length, k = Math.min(ob.agQ || 0, n - 1);
+  return `${head}<div class="ag-prog"><span>Frage ${k + 1} von ${n}</span><div class="ag-bar"><i style="width:${Math.round((k + 1) / n * 100)}%"></i></div></div>
+    <p class="ob-sub">Nur Finanzen, Abschlüsse, Stornos und Auszahlungen – damit deine Mitarbeiter ihre Zahlen inkl. Steuern und Stornos im Blick haben.</p>
+    <div class="ag-q">${agQuestionHtml(AG_QUIZ[k])}</div>`;
 }
 
 function obSetRole(role) {
@@ -4074,6 +4094,11 @@ function obSetRole(role) {
 function obValidateStep() { return obValidate(obSteps()[ob.step]); }
 
 function obValidate(step) {
+  if (step === 'agentur') {
+    if (ob.ag.rechnungRhythm === 'custom' && !String(ob.ag.rechnungRhythmText || '').trim()) return 'Bitte beschreibe, wie oft du abrechnest.';
+    if (ob.ag.maRhythm === 'custom' && !String(ob.ag.maRhythmText || '').trim()) return 'Bitte beschreibe, wie oft du auszahlst.';
+    return '';
+  }
   if (step === 'provision') {
     const n = parseNum(ob.preisNeu), b = parseNum(ob.preisBestand);
     if (!(n >= 0) || !(b >= 0)) return 'Bitte gib beide Beträge in € ein (z. B. 110 und 15).';
@@ -4099,6 +4124,7 @@ function obNext() {
   const err = obValidateStep();
   if (err) { ob.error = err; renderOnboarding(); return; }
   const steps = obSteps();
+  if (steps[ob.step] === 'agentur' && ob.mode !== 'settings' && (ob.agQ || 0) < AG_QUIZ.length - 1) { ob.agQ = (ob.agQ || 0) + 1; renderOnboarding(); return; }
   if (ob.step < steps.length - 1) ob.step++;
   renderOnboarding();
 }
@@ -4106,7 +4132,9 @@ function obNext() {
 function obBack() {
   if (!ob) return;
   const min = obFirstStep();
+  if (obSteps()[ob.step] === 'agentur' && ob.mode !== 'settings' && (ob.agQ || 0) > 0) { ob.agQ--; ob.error = ''; renderOnboarding(); return; }
   if (ob.step > min) ob.step--;
+  if (obSteps()[ob.step] === 'agentur') ob.agQ = AG_QUIZ.length - 1;
   ob.error = '';
   renderOnboarding();
 }
@@ -4149,7 +4177,7 @@ function openSettings() { openOnboarding('settings'); }
 
 function obSaveSettings() {
   if (!ob) return;
-  const toCheck = ['provision'].concat(ob.role === 'teamleiter' ? ['overhead'] : []).concat(['weiteres']);
+  const toCheck = ['provision'].concat(ob.role === 'teamleiter' ? ['overhead'] : []).concat(ob.role === 'agentur' ? ['agentur'] : ['weiteres']);
   for (const st of toCheck) {
     const err = obValidate(st);
     if (err) { ob.error = err; renderSettingsPage(); return; }
@@ -4178,11 +4206,11 @@ function renderSettingsPage() {
         ${sec('💶 Provision', 'provision')}
         ${ob.role === 'agentur' ? sec('🏢 Agentur', 'agentur') : ''}
         ${tl ? sec('👥 Team-Overhead', 'overhead') : ''}
-        ${sec('🎯 Ziele & Kosten', 'weiteres')}
-        <section class="ob-set-sec"><div class="ob-set-title">🧮 So setzt sich dein Ziel zusammen</div>
+        ${ob.role === 'agentur' ? '' : sec('🎯 Ziele & Kosten', 'weiteres')}
+        ${ob.role === 'agentur' ? '' : `<section class="ob-set-sec"><div class="ob-set-title">🧮 So setzt sich dein Ziel zusammen</div>
           <div class="dash-fix-reserve build" id="ob-breakdown">${obBreakdownInner()}</div>
           <label class="ob-check" style="margin-top:10px;"><input type="checkbox" ${ob.runden ? 'checked' : ''} onchange="obSetRunden(this.checked)"><span>Auf volle 10 € aufrunden</span></label>
-        </section>
+        </section>`}
         </div>
         <div class="ob-error">${ob.error ? escapeHtml(ob.error) : ''}</div>
         <div class="ob-actions ob-settings-actions">
@@ -4326,6 +4354,9 @@ function obStepContent(step) {
       rows.push(['Overhead pro Neukunde (Team)', fmtNumPlain(parseNum(ob.overheadNeu) || 0)]);
     }
     rows.push(['Umsatzsteuerpflichtig (19 %)', ob.ust ? 'Ja' : 'Nein']);
+    if (ob.role === 'agentur') {
+      rows.push(['Abrechnung mit Anbieter', agRhythm(ob.ag.rechnungRhythm, ob.ag.rechnungRhythmText)], ['Auszahlung an Mitarbeiter', agRhythm(ob.ag.maRhythm, ob.ag.maRhythmText)], ['Bei Storno', agLabel(AG_STORNO, ob.ag.stornoRegel)]);
+    } else {
     rows.push(['Steuersatz', parseNum(ob.steuer) > 0 ? parseNum(ob.steuer).toLocaleString('de-DE') + ' %' : '–']);
     rows.push(['Fixkosten pro Abrechnungsperiode', parseNum(ob.fixkosten) > 0 ? fmtNumPlain(parseNum(ob.fixkosten)) : '–']);
     rows.push(['Nur für mich / Monat', parseNum(ob.mine) > 0 ? fmtNumPlain(parseNum(ob.mine)) : '–']);
@@ -4347,6 +4378,7 @@ function obStepContent(step) {
     const roundBtn = obAufbau.raw > 0
       ? `<button type="button" class="ob-round ${ob.runden ? 'active' : ''}" onclick="obToggleRunden()">${ob.runden ? '✓ Aufgerundet' : '⬆️ Aufrunden'}</button>` : '';
     rows.push(['Brutto-Ziel pro Abrechnungsperiode', obAufbau.total > 0 ? fmtEuro(obAufbau.total) + roundBtn : '–']);
+    }
     body = `
       <h2 class="ob-title">${edit ? 'Alles korrekt?' : 'Alles bereit!'}</h2>
       <p class="ob-sub">${edit ? 'Prüfe deine Angaben und speichere sie.' : 'Das hast du eingestellt – du kannst es jederzeit über das ⚙️ oben rechts ändern.'}</p>
@@ -4900,7 +4932,7 @@ function teamDayCmp(stats) {
 // Regeln der Agentur: Agenturinhaber (Teamleiter des Teams) legt fest, alle im Team übernehmen sie
 function agencyRulesPayload() {
   const a = agencyCfg();
-  return { vertrieb: a.vertrieb, produkt: a.produkt, maRhythm: a.maRhythm, maTag: a.maTag, maNeu: parseNum(a.maNeu) || 0, maBestand: parseNum(a.maBestand) || 0,
+  return { vertrieb: a.vertrieb, produkt: a.produkt, maRhythm: a.maRhythm, maRhythmText: a.maRhythmText, maTag: a.maTag, maNeu: parseNum(a.maNeu) || 0, maBestand: parseNum(a.maBestand) || 0,
     stornoRegel: a.stornoRegel, haftungMonate: parseNum(a.haftungMonate) || 0, tage: a.tage, schichtVon: a.schichtVon, schichtBis: a.schichtBis, tagesziel: parseNum(a.tagesziel) || 0, kpi: a.kpi, agentur: settings.name || '' };
 }
 async function teamPushRules() {
@@ -4923,9 +4955,8 @@ function teamRulesCard() {
     ${row('Vertriebsart', (r.vertrieb || []).map(k => agLabel(AG_VERTRIEB, k)).join(', '))}
     ${row('Produkt', (r.produkt || []).map(k => agLabel(AG_PRODUKT, k)).join(', '))}
     ${row('Provision Neukunde', r.maNeu ? fmtEuro(r.maNeu) : '')}${row('Provision Bestandskunde', r.maBestand ? fmtEuro(r.maBestand) : '')}
-    ${row('Auszahlung', agLabel(AG_RHYTHM, r.maRhythm) + (r.maTag ? ' · ' + r.maTag : ''))}
+    ${row('Auszahlung', agRhythm(r.maRhythm, r.maRhythmText) + (r.maTag ? ' · ' + r.maTag : ''))}
     ${row('Bei Storno', agLabel(AG_STORNO, r.stornoRegel))}${row('Storno-Haftungszeit', r.haftungMonate ? r.haftungMonate + ' Monate' : '')}
-    ${row('Arbeitstage', days)}${row('Arbeitszeit', r.schichtVon && r.schichtBis ? r.schichtVon + ' – ' + r.schichtBis + ' Uhr' : '')}${row('Tagesziel', r.tagesziel ? r.tagesziel + ' Aufträge' : '')}
     ${teamIsLeader() ? '' : `<label class="ob-check" style="margin-top:10px;"><input type="checkbox" ${settings.followAgency !== false ? 'checked' : ''} onchange="settings.followAgency=this.checked;saveData();teamApplyRules();render()"><span>Provision der Agentur automatisch übernehmen</span></label>`}</div>`;
 }
 function teamByUser(rows) { const o = {}; (rows || []).forEach(r => { o[r.user_id] = r; }); return o; }
