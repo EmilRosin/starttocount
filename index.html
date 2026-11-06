@@ -1595,6 +1595,34 @@ function isoWeekOf(d) {
   return Math.ceil(((t - y0) / 86400000 + 1) / 7);
 }
 
+// Agenturinhaber: Umsatz vom Anbieter minus Auszahlung an die Mitarbeiter = eigener Verdienst (Marge)
+function agentMargin(neu, bestand, umsatz) {
+  const a = agencyCfg();
+  const mn = parseNum(a.maNeu) || 0, mb = parseNum(a.maBestand) || 0;
+  const payout = neu * mn + bestand * mb;
+  const marge = umsatz - payout;
+  return { payout, marge, netto: nettoOf(marge), set: mn > 0 || mb > 0, perNeu: (settings.preisNeu || 0) - mn, perBestand: (settings.preisBestand || 0) - mb };
+}
+function agentMarginCardHtml(b) {
+  const m = agentMargin(b.neuCount, b.bestandCount, b.periodTotal);
+  const row = (l, v, cls) => `<div class="${cls || ''}"><span>${l}</span><b>${v}</b></div>`;
+  return `<div class="card dash-card dash-fix-card">
+    <div class="dash-card-head"><div>
+      <div class="dash-card-title">Dein Verdienst</div>
+      <div class="dash-card-sub">${m.set ? 'Umsatz minus Auszahlung an Mitarbeiter · ' + selectedPeriodText() : 'Trage in den ⚙️ Einstellungen die Mitarbeiter-Provision ein'}</div>
+    </div></div>
+    <div class="dash-fix-saldo pos">${fmtEuro(m.marge)}</div>
+    <div class="dash-fix-sub">${m.set ? `Pro Neukunde bleiben dir ${fmtEuro(m.perNeu)}${(parseNum(agencyCfg().maBestand) || 0) > 0 ? ', pro Bestandskunde ' + fmtEuro(m.perBestand) : ''}` : ''}</div>
+    <div class="dash-fix-reserve">
+      ${row('📈 Umsatz vom Anbieter', fmtEuro(b.periodTotal), 'top')}
+      ${row('👥 Auszahlung an Mitarbeiter', '− ' + fmtEuro(m.payout))}
+      ${STEUER_PROZENT > 0 ? row('🧾 Für Steuern zurücklegen (' + STEUER_PROZENT + '%)', fmtEuro(m.marge - m.netto)) : ''}
+      ${row('💶 Davon wirklich deins' + (STEUER_PROZENT > 0 ? ' (nach Steuern)' : ''), fmtEuro(m.netto), 'pocket')}
+      ${settings.ustPflicht ? row('🏛️ + Umsatzsteuer 19 % (ans Finanzamt weiterleiten)', fmtEuro(b.periodTotal * 0.19), 'ust-row') : ''}
+    </div>
+  </div>`;
+}
+
 function goalCardHtml() {
   if (isAgentur()) return '';
   const amount = settings.goalAmount || 0;
@@ -3015,7 +3043,7 @@ function renderDashboardContent(b, animate) {
       <div class="dash-grid">
         <div class="dash-main">
       <div class="dash-top${(settings.goalAmount || 0) > 0 && !isAgentur() ? '' : ' goal-collapsed'}">
-          <div class="card dash-card dash-fix-card">
+          ${isAgentur() ? agentMarginCardHtml(b) : `          <div class="card dash-card dash-fix-card">
             <div class="dash-card-head">
               <div>
                 <div class="dash-card-title">Ziel ${fixMonthLabel}</div>
@@ -3038,6 +3066,7 @@ function renderDashboardContent(b, animate) {
             </div>` : ''}
             ` : ''}
           </div>
+          `}
 
           ${goalCardHtml()}
       </div>
@@ -3085,8 +3114,8 @@ function renderDashboardContent(b, animate) {
             </div>
             <div class="dash-card-sub">${totalCardSub}</div>
             <div class="dash-total-value">${fmtEuro(totalCardValue)}</div>
-            ${(STEUER_PROZENT > 0 || stornoAufschlagPct() > 0) && !isAusgezahltView ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue * (1 - stornoAufschlagPct() / 100)))} ${STEUER_PROZENT > 0 ? 'netto' : 'erwartet'} (${[stornoAufschlagPct() > 0 ? '−' + fmtPct(stornoAufschlagPct()) + ' Ø Storno' : '', STEUER_PROZENT > 0 ? '−' + STEUER_PROZENT + '% Steuer' : ''].filter(Boolean).join(', ')})</div>` : ''}
-            ${isAusgezahltView && STEUER_PROZENT > 0 && periodSettlements.length ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(periodPaid))} netto (−${STEUER_PROZENT}% Steuer)</div>` : ''}
+            ${(STEUER_PROZENT > 0 || stornoAufschlagPct() > 0) && !isAusgezahltView && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue * (1 - stornoAufschlagPct() / 100)))} ${STEUER_PROZENT > 0 ? 'netto' : 'erwartet'} (${[stornoAufschlagPct() > 0 ? '−' + fmtPct(stornoAufschlagPct()) + ' Ø Storno' : '', STEUER_PROZENT > 0 ? '−' + STEUER_PROZENT + '% Steuer' : ''].filter(Boolean).join(', ')})</div>` : ''}
+            ${isAusgezahltView && STEUER_PROZENT > 0 && periodSettlements.length && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(periodPaid))} netto (−${STEUER_PROZENT}% Steuer)</div>` : ''}
             ${!isAusgezahltView ? trendBadge : ''}
             <div class="dash-chip-row">
               ${totalCardChips.map(c => `<div class="dash-chip"><div class="dash-chip-value">${c.value}</div><div class="dash-chip-label">${c.label}</div></div>`).join('')}
