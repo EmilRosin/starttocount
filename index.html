@@ -225,6 +225,20 @@
   .ag-chip b { margin-left:6px; cursor:pointer; opacity:.7; }
   .ag-row { display:flex; gap:8px; align-items:center; }
   .ag-row .ob-input { flex:1; }
+  .rep-card { padding:0; overflow:hidden; }
+  .rep-head { width:100%; display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border:none; background:none; font:inherit; font-weight:700; font-size:15px; color:var(--text); cursor:pointer; }
+  .rep-head em { font-style:normal; color:var(--text-dim); font-size:12px; }
+  .rep-card > :not(.rep-head) { margin-left:20px; margin-right:20px; }
+  .rep-card > :last-child { margin-bottom:18px; }
+  .rep-sub { font-size:13px; color:var(--text-dim); margin:0 20px 10px; }
+  .rep-ta { width:calc(100% - 40px); box-sizing:border-box; resize:vertical; font-size:13px; }
+  .rep-err { color:var(--danger); font-size:13px; min-height:18px; }
+  .rep-prev { margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+  .rep-row { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:14px; }
+  .rep-row span { color:var(--text-dim); }
+  .rep-row select { max-width:60%; }
+  .rep-hint { font-size:12px; color:var(--text-dim); }
+  .rep-done { margin-bottom:6px; padding:10px 14px; border-radius:12px; background:var(--green-soft, #e7f7ee); color:var(--green); font-weight:600; font-size:13px; }
   .ag-prog { margin:2px 0 10px; font-size:12px; font-weight:700; color:var(--text-dim); }
   .ag-bar { height:6px; border-radius:99px; background:var(--toggle-bg); margin-top:6px; overflow:hidden; }
   .ag-bar i { display:block; height:100%; background:var(--blue); border-radius:99px; transition:width .25s; }
@@ -2489,6 +2503,103 @@ function buildStatsData() {
   };
 }
 
+// ---- Tagesreport aus der Gruppe einfügen: Text lesen, Neu-/Bestandskunden automatisch eintragen ----
+let rep = { open: false, text: '', parsed: null, name: '', error: '', done: '' };
+const REP_MONTHS = ['januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
+function parseDailyReport(text) {
+  const lines = String(text || '').replace(/\r/g, '').split('\n').map(l => l.trim());
+  // Datum aus der Kopfzeile, z. B. "DONNERSTAG, 5. NOVEMBER"
+  let date = '';
+  for (const l of lines.slice(0, 12)) {
+    const m = /(\d{1,2})\.\s*([A-Za-zÄÖÜäöü]+)/.exec(l);
+    if (m) {
+      const mi = REP_MONTHS.indexOf(m[2].toLowerCase().replace('maerz', 'märz'));
+      if (mi >= 0) {
+        const y = new Date().getFullYear(), d = new Date(y, mi, +m[1]);
+        date = todayKey(d); break;
+      }
+    }
+  }
+  // Abschnitt "Einzelleistungen" heute (bis zum nächsten Block mit 📈 / ━━━)
+  let start = lines.findIndex(l => /EINZELLEISTUNG/i.test(l));
+  let end = lines.length;
+  if (start >= 0) {
+    for (let i = start + 1; i < lines.length; i++) { if (/^━+$/.test(lines[i]) || /^📈/.test(lines[i])) { end = i; break; } }
+  } else start = 0;
+  const people = [];
+  let lastName = '';
+  const cleanName = t => t.replace(/[^\p{L}\p{N}\s.'-]/gu, '').replace(/\s+/g, ' ').trim();
+  for (let i = start + 1; i < end; i++) {
+    const l = lines[i]; if (!l) continue;
+    const m = /(\d+)\s*NK\s*[|·,]?\s*(?:🔄\s*)?(\d+)\s*BK/i.exec(l);
+    if (m) {
+      if (!lastName) continue;
+      let prov = null;
+      for (let j = i + 1; j < Math.min(i + 3, end); j++) { const pm = /💰\s*([\d.,]+)\s*€/.exec(lines[j] || ''); if (pm) { prov = parseNum(pm[1].replace(/\./g, '')); break; } }
+      people.push({ name: lastName, nk: +m[1], bk: +m[2], prov });
+      lastName = '';
+    } else if (!/[📌💰📊━]/u.test(l) && !/\d/.test(l)) {
+      const n = cleanName(l); if (n) lastName = n;
+    }
+  }
+  return { date, people };
+}
+function reportOpen() { rep.open = !rep.open; render(); }
+function reportParse() {
+  const t = String(rep.text || '').trim();
+  rep.done = '';
+  if (!t) { rep.error = 'Füge zuerst den Text aus der Gruppe ein.'; rep.parsed = null; render(); return; }
+  const p = parseDailyReport(t);
+  if (!p.people.length) { rep.error = 'Ich finde keine Zeilen wie „6 NK | 13 BK“ im Text.'; rep.parsed = null; render(); return; }
+  rep.error = ''; rep.parsed = p;
+  const mine = String(settings.reportName || settings.name || '').toLowerCase();
+  const hit = p.people.find(x => mine && x.name.toLowerCase() === mine) || p.people.find(x => mine && x.name.toLowerCase().startsWith(mine));
+  rep.name = hit ? hit.name : '';
+  render();
+}
+function reportPick(name) { rep.name = name; render(); }
+async function reportApply() {
+  const p = rep.parsed; if (!p) return;
+  const who = p.people.find(x => x.name === rep.name);
+  if (!who) { rep.error = 'Bitte wähle zuerst deinen Namen aus.'; render(); return; }
+  const day = p.date || selectedDate;
+  const entry = getEntry(day);
+  entry.neu = who.nk; entry.bestand = who.bk;
+  if (isEntryEmpty(entry)) delete data[day];
+  settings.reportName = who.name;
+  selectedDate = day;
+  await saveData();
+  rep.done = `Eingetragen für ${fmtDateLabel(day)}: ${who.nk} Neukunden, ${who.bk} Bestandskunden.`;
+  rep.parsed = null; rep.text = ''; rep.error = '';
+  render();
+  checkFireworksTrigger();
+}
+function reportCardHtml() {
+  const p = rep.parsed;
+  let inner = '';
+  if (rep.open) {
+    inner = `<p class="rep-sub">Kopiere den Tagesreport aus der Gruppe und füge ihn hier ein. Die App liest deine Neu- und Bestandskunden heraus und trägt sie automatisch ein.</p>
+      <textarea class="ob-input rep-ta" id="rep-text" rows="6" placeholder="Tagesreport hier einfügen …" oninput="rep.text=this.value">${escapeHtml(rep.text)}</textarea>
+      <div class="rep-err">${rep.error ? escapeHtml(rep.error) : ''}</div>
+      <button type="button" class="tm-btn" onclick="reportParse()">Text auslesen</button>`;
+    if (p) {
+      const who = p.people.find(x => x.name === rep.name);
+      const day = p.date || selectedDate;
+      const cur = data[day] ? getEntry(day) : blankEntry();
+      const mine = who ? who.nk * PREIS_NEUKUNDE + who.bk * PREIS_BESTANDSKUNDE : 0;
+      inner += `<div class="rep-prev">
+        <div class="rep-row"><span>Datum</span><b>${fmtDateLabel(day)}${p.date ? '' : ' (nicht erkannt – gewähltes Datum)'}</b></div>
+        <label class="rep-row"><span>Wer bist du?</span><select class="ob-input" onchange="reportPick(this.value)"><option value="">– Namen wählen –</option>${p.people.map(x => `<option value="${escapeHtml(x.name)}" ${x.name === rep.name ? 'selected' : ''}>${escapeHtml(x.name)} · ${x.nk} NK | ${x.bk} BK</option>`).join('')}</select></label>
+        ${who ? `<div class="rep-row"><span>Report</span><b>${who.nk} Neukunden · ${who.bk} Bestand · ${fmtEuro(mine)}</b></div>
+        ${who.prov != null && Math.round(who.prov) !== Math.round(mine) ? `<div class="rep-hint">Im Report stehen ${fmtEuro(who.prov)} – deine Provisionssätze in der App ergeben ${fmtEuro(mine)}.</div>` : ''}
+        <div class="rep-row"><span>Bisher eingetragen</span><b>${cur.neu} Neukunden · ${cur.bestand} Bestand</b></div>
+        <button type="button" class="ob-btn" onclick="reportApply()">${(cur.neu || cur.bestand) ? 'Zahlen ersetzen & übernehmen' : 'Übernehmen'}</button>` : ''}
+      </div>`;
+    }
+  }
+  return `<div class="card rep-card"><button type="button" class="rep-head" onclick="reportOpen()"><span>📋 Tagesreport einfügen</span><em>${rep.open ? '▲' : '▼'}</em></button>${rep.done ? `<div class="rep-done">✅ ${escapeHtml(rep.done)}</div>` : ''}${inner}</div>`;
+}
+
 function renderTrackerContent() {
   const entry = data[selectedDate] ? getEntry(selectedDate) : blankEntry();
   const total = dayTotal(entry);
@@ -2565,6 +2676,7 @@ function renderTrackerContent() {
       <input type="date" id="datePicker" value="${selectedDate}">
       <button class="today-btn" onclick="setToday()">Heute</button>
     </div>
+    ${reportCardHtml()}
 
     <div class="tr-inputs ${teamMode ? 'has-team' : ''}">
     <div class="cards">
