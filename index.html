@@ -272,13 +272,6 @@
   .inv-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
   .today-btn.danger { color:var(--danger); background:var(--danger-soft); }
   .inv-pay { background:var(--toggle-bg); border-radius:12px; padding:12px; margin-top:10px; }
-  .auth-or { display:flex; align-items:center; gap:12px; margin:22px 0 14px; color:var(--text-faint); font-size:12px; }
-  .auth-or::before, .auth-or::after { content:''; flex:1; height:1px; background:var(--border); }
-  .auth-btn.sec { background:transparent; color:var(--blue); border:1.5px solid var(--blue); box-shadow:none; }
-  .auth-local-list { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; }
-  .auth-local-chip { display:inline-flex; align-items:center; border:1px solid var(--border); border-radius:999px; background:var(--toggle-bg); overflow:hidden; }
-  .auth-local-chip button { border:none; background:none; color:var(--text); font:inherit; font-size:13px; font-weight:600; padding:7px 4px 7px 14px; cursor:pointer; }
-  .auth-local-chip b { padding:7px 12px 7px 6px; cursor:pointer; color:var(--text-dim); }
   .abr-year-nav { display:flex; align-items:center; justify-content:center; gap:10px; }
   .abr-hero { text-align:center; margin-bottom:6px; }
   .abr-hero .dash-card-title { margin-top:8px; }
@@ -4594,7 +4587,6 @@ function renderProfiles() {
       <div class="ob-card card">
         <h2 class="ob-title">Konto</h2>
         ${cloudSectionHtml()}
-        ${!cl.session && profiles.active !== 'main' ? `<div class="cl-sub" style="text-align:center">Du nutzt das lokale Test-Profil „${escapeHtml(activeProfile().name)}“.</div><div class="ob-actions"><button type="button" class="ob-btn secondary" onclick="leaveLocal()">Zur Anmeldung / Profil wechseln</button></div>` : ''}
         <div class="ob-actions"><button type="button" class="ob-btn secondary" onclick="closeProfiles()">Schließen</button></div>
       </div>
     </div>`;
@@ -4891,7 +4883,7 @@ async function initCloud() {
   const sb = cloudCfg() ? getCloud() : null;
   if (sb) {
     try {
-      const { data: d } = await sb.auth.getSession();
+      const { data: d } = await Promise.race([sb.auth.getSession(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
       cl.session = d && d.session ? d.session : null;
       if (cl.session) { await cloudReconcile(); if (!cl.conflict) { await startApp(); return; } }
     } catch (e) { cl.err = 'Keine Verbindung zum Server. Bitte Internetverbindung prüfen.'; }
@@ -4932,51 +4924,6 @@ function authFormHtml() {
     ${signup ? '' : '<button type="button" class="auth-link" onclick="cloudAuth(\'reset\')">Passwort vergessen?</button>'}
     <div class="auth-switch">${signup ? 'Schon ein Konto?' : 'Noch kein Konto?'} <button type="button" class="auth-link inline" onclick="cl.mode='${signup ? 'login' : 'signup'}';cl.err='';cl.msg='';cloudRerender()">${signup ? 'Anmelden' : 'Registrieren'}</button></div>`;
 }
-// ---- Lokales Test-Profil: nur mit einem Namen, ohne Konto, Daten bleiben auf diesem Gerät ----
-function localTestHtml() {
-  if (cl.session || cl.recovery) return '';
-  const list = profiles.list.filter(p => p.id !== 'main');
-  return `<div class="auth-or"><span>oder</span></div>
-    <div class="auth-p" style="margin:0 0 10px">Nur zum Testen: ohne Konto, die Daten bleiben nur auf diesem Gerät.</div>
-    ${list.length ? `<div class="auth-local-list">${list.map(p => `<span class="auth-local-chip"><button type="button" onclick="localOpen('${p.id}')">${escapeHtml(p.name)}</button><b onclick="localDelete('${p.id}')" title="Profil löschen">×</b></span>`).join('')}</div>` : ''}
-    <label class="auth-l">Name für das Test-Profil
-      <input class="auth-in" id="local-name" type="text" maxlength="40" placeholder="z. B. Test Anna" onkeydown="if(event.key==='Enter')localStart()"></label>
-    <div class="ob-error" id="local-err"></div>
-    <button type="button" class="auth-btn sec" onclick="localStart()">Lokal testen</button>`;
-}
-async function localOpen(id) {
-  if (!profiles.list.some(p => p.id === id)) return;
-  profiles.active = id; saveProfiles(); STORAGE_KEY = storageKeyFor(id);
-  selectedDate = todayKey(); monatOffset = 0; zeitraumOffset = 0; jahrOffset = 0; statsPeriod = 'woche'; dashboardView = 'brutto'; settlementsOpen = false; currentPage = 'dashboard';
-  await startApp();
-}
-async function localStart() {
-  const el = document.getElementById('local-name');
-  const name = String(el ? el.value : '').trim().slice(0, 40);
-  const err = document.getElementById('local-err');
-  if (!name) { if (err) err.textContent = 'Bitte gib einen Namen ein.'; return; }
-  let prof = profiles.list.find(p => p.name.toLowerCase() === name.toLowerCase());
-  if (!prof) {
-    prof = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name };
-    profiles.list.push(prof);
-  }
-  await localOpen(prof.id);
-}
-function localDelete(id) {
-  const p = profiles.list.find(x => x.id === id); if (!p || id === 'main') return;
-  if (!confirm('Test-Profil „' + p.name + '“ mit allen Daten löschen?')) return;
-  try { localStorage.removeItem(storageKeyFor(id)); } catch (e) { /* ignorieren */ }
-  profiles.list = profiles.list.filter(x => x.id !== id);
-  if (profiles.active === id) { profiles.active = 'main'; STORAGE_KEY = storageKeyFor('main'); }
-  saveProfiles();
-  renderGate();
-}
-// Aus dem Test-Profil zurück zur Anmeldung
-function leaveLocal() {
-  profiles.active = 'main'; saveProfiles(); STORAGE_KEY = storageKeyFor('main');
-  closeProfiles(); showGate();
-}
-
 function renderGate() {
   const simple = cl.session || cl.recovery || !cloudCfg() || !cloudAvailable();
   getGateRoot().innerHTML = `<div class="auth-page">
@@ -4987,7 +4934,6 @@ function renderGate() {
     </div>
     <div class="auth-card2">
       ${cl.loading ? '<div class="cl-sub" style="text-align:center;margin:0">Lade …</div>' : simple ? cloudSectionHtml() : authFormHtml()}
-      ${localTestHtml()}
     </div></div>`;
 }
 function showGate() {
