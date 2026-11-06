@@ -2542,7 +2542,13 @@ function parseDailyReport(text) {
       const n = cleanName(l); if (n) lastName = n;
     }
   }
-  return { date, people };
+  // Gesamtzahlen der ganzen Agentur (Kopf des Reports: "49 Neukunden", "51 Bestandskunden")
+  let total = null;
+  const headEnd = lines.findIndex(l => /^━+$/.test(l));
+  const head = lines.slice(0, headEnd > 0 ? headEnd : 15).join('\n');
+  const tn = /(\d+)\s*Neukunden/i.exec(head), tb = /(\d+)\s*Bestandskunden/i.exec(head);
+  if (tn && tb) total = { nk: +tn[1], bk: +tb[1] };
+  return { date, people, total };
 }
 function reportOpen() { rep.open = !rep.open; render(); }
 function reportParse() {
@@ -2550,7 +2556,7 @@ function reportParse() {
   rep.done = '';
   if (!t) { rep.error = 'Füge zuerst den Text aus der Gruppe ein.'; rep.parsed = null; render(); return; }
   const p = parseDailyReport(t);
-  if (!p.people.length) { rep.error = 'Ich finde keine Zeilen wie „6 NK | 13 BK“ im Text.'; rep.parsed = null; render(); return; }
+  if (isAgentur() ? !p.total : !p.people.length) { rep.error = isAgentur() ? 'Ich finde die Gesamtzahlen („49 Neukunden“, „51 Bestandskunden“) nicht im Text.' : 'Ich finde keine Zeilen wie „6 NK | 13 BK“ im Text.'; rep.parsed = null; render(); return; }
   rep.error = ''; rep.parsed = p;
   const mine = String(settings.reportName || settings.name || '').toLowerCase();
   const hit = p.people.find(x => mine && x.name.toLowerCase() === mine) || p.people.find(x => mine && x.name.toLowerCase().startsWith(mine));
@@ -2560,16 +2566,16 @@ function reportParse() {
 function reportPick(name) { rep.name = name; render(); }
 async function reportApply() {
   const p = rep.parsed; if (!p) return;
-  const who = p.people.find(x => x.name === rep.name);
+  const who = isAgentur() ? p.total : p.people.find(x => x.name === rep.name);
   if (!who) { rep.error = 'Bitte wähle zuerst deinen Namen aus.'; render(); return; }
   const day = p.date || selectedDate;
   const entry = getEntry(day);
   entry.neu = who.nk; entry.bestand = who.bk;
   if (isEntryEmpty(entry)) delete data[day];
-  settings.reportName = who.name;
+  if (!isAgentur()) settings.reportName = who.name;
   selectedDate = day;
   await saveData();
-  rep.done = `Eingetragen für ${fmtDateLabel(day)}: ${who.nk} Neukunden, ${who.bk} Bestandskunden.`;
+  rep.done = `Eingetragen für ${fmtDateLabel(day)}: ${who.nk} Neukunden, ${who.bk} Bestandskunden${isAgentur() ? ' (ganze Agentur)' : ''}.`;
   rep.parsed = null; rep.text = ''; rep.error = '';
   render();
   checkFireworksTrigger();
@@ -2578,20 +2584,21 @@ function reportCardHtml() {
   const p = rep.parsed;
   let inner = '';
   if (rep.open) {
-    inner = `<p class="rep-sub">Kopiere den Tagesreport aus der Gruppe und füge ihn hier ein. Die App liest deine Neu- und Bestandskunden heraus und trägt sie automatisch ein.</p>
+    inner = `<p class="rep-sub">${isAgentur() ? 'Kopiere den Tagesreport aus der Gruppe und füge ihn hier ein. Die App liest die Gesamtzahl an Neu- und Bestandskunden deiner Agentur heraus und trägt sie automatisch ein.' : 'Kopiere den Tagesreport aus der Gruppe und füge ihn hier ein. Die App liest deine Neu- und Bestandskunden heraus und trägt sie automatisch ein.'}</p>
       <textarea class="ob-input rep-ta" id="rep-text" rows="6" placeholder="Tagesreport hier einfügen …" oninput="rep.text=this.value">${escapeHtml(rep.text)}</textarea>
       <div class="rep-err">${rep.error ? escapeHtml(rep.error) : ''}</div>
       <button type="button" class="tm-btn" onclick="reportParse()">Text auslesen</button>`;
     if (p) {
-      const who = p.people.find(x => x.name === rep.name);
+      const ag = isAgentur();
+      const who = ag ? p.total : p.people.find(x => x.name === rep.name);
       const day = p.date || selectedDate;
       const cur = data[day] ? getEntry(day) : blankEntry();
       const mine = who ? who.nk * PREIS_NEUKUNDE + who.bk * PREIS_BESTANDSKUNDE : 0;
       inner += `<div class="rep-prev">
         <div class="rep-row"><span>Datum</span><b>${fmtDateLabel(day)}${p.date ? '' : ' (nicht erkannt – gewähltes Datum)'}</b></div>
-        <label class="rep-row"><span>Wer bist du?</span><select class="ob-input" onchange="reportPick(this.value)"><option value="">– Namen wählen –</option>${p.people.map(x => `<option value="${escapeHtml(x.name)}" ${x.name === rep.name ? 'selected' : ''}>${escapeHtml(x.name)} · ${x.nk} NK | ${x.bk} BK</option>`).join('')}</select></label>
-        ${who ? `<div class="rep-row"><span>Report</span><b>${who.nk} Neukunden · ${who.bk} Bestand · ${fmtEuro(mine)}</b></div>
-        ${who.prov != null && Math.round(who.prov) !== Math.round(mine) ? `<div class="rep-hint">Im Report stehen ${fmtEuro(who.prov)} – deine Provisionssätze in der App ergeben ${fmtEuro(mine)}.</div>` : ''}
+        ${ag ? '' : `<label class="rep-row"><span>Wer bist du?</span><select class="ob-input" onchange="reportPick(this.value)"><option value="">– Namen wählen –</option>${p.people.map(x => `<option value="${escapeHtml(x.name)}" ${x.name === rep.name ? 'selected' : ''}>${escapeHtml(x.name)} · ${x.nk} NK | ${x.bk} BK</option>`).join('')}</select></label>`}
+        ${who ? `<div class="rep-row"><span>${ag ? 'Ganze Agentur laut Report' : 'Report'}</span><b>${who.nk} Neukunden · ${who.bk} Bestand · ${fmtEuro(mine)}</b></div>
+        ${!ag && who.prov != null && Math.round(who.prov) !== Math.round(mine) ? `<div class="rep-hint">Im Report stehen ${fmtEuro(who.prov)} – deine Provisionssätze in der App ergeben ${fmtEuro(mine)}.</div>` : ''}
         <div class="rep-row"><span>Bisher eingetragen</span><b>${cur.neu} Neukunden · ${cur.bestand} Bestand</b></div>
         <button type="button" class="ob-btn" onclick="reportApply()">${(cur.neu || cur.bestand) ? 'Zahlen ersetzen & übernehmen' : 'Übernehmen'}</button>` : ''}
       </div>`;
@@ -2682,7 +2689,7 @@ function renderTrackerContent() {
     <div class="cards">
       <div class="card qcard neu">
         <div class="qcard-head">
-          <div class="qcard-title">Neukunde</div>
+          <div class="qcard-title">${isAgentur() ? 'Neukunden (Agentur)' : 'Neukunde'}</div>
         </div>
         <div class="qcard-price">${fmtPrice(PREIS_NEUKUNDE)}</div>
         <div class="qcard-count">${entry.neu}</div>
@@ -2693,7 +2700,7 @@ function renderTrackerContent() {
       </div>
       <div class="card qcard bestand">
         <div class="qcard-head">
-          <div class="qcard-title">Bestandskunde</div>
+          <div class="qcard-title">${isAgentur() ? 'Bestandskunden (Agentur)' : 'Bestandskunde'}</div>
         </div>
         <div class="qcard-price">${fmtPrice(PREIS_BESTANDSKUNDE)}</div>
         <div class="qcard-count">${entry.bestand}</div>
