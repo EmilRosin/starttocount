@@ -1354,6 +1354,7 @@ function defaultSettings() {
     preisNeu: 110,        // € Provision pro Neukunde
     preisBestand: 15,     // € Provision pro Bestandskunde
     steuer: 30,           // % Steuern
+    rentePflicht: false,  // rentenversicherungspflichtig? 18,6 % vom Gewinn werden zurückgelegt
     ustPflicht: false,    // umsatzsteuerpflichtig? 19 % USt werden mitüberwiesen und müssen ans Finanzamt
     overheadNeu: 0,       // € Overhead pro Neukunden-Auftrag des Teams (nur Teamleiter)
     stornoAufschlag: false, // Ø Storno-Quote der Abrechnungen auf die Fixkosten-Schwelle aufschlagen?
@@ -1548,8 +1549,19 @@ function steuerOf(brutto, n = 1) {
   const gewinn = brutto - (settings.fixkosten || 0) * n;
   return gewinn > 0 ? gewinn * STEUER_PROZENT / 100 : 0;
 }
+// Rentenversicherungspflicht (z. B. selbständige Vertreter): 18,6 % vom Gewinn
+const RENTE_PROZENT = 18.6;
+function rentePct() { return settings.rentePflicht ? RENTE_PROZENT : 0; }
+function abgabenPct() { return STEUER_PROZENT + rentePct(); }
+function renteOf(brutto, n = 1) {
+  const gewinn = brutto - (settings.fixkosten || 0) * n;
+  return gewinn > 0 ? gewinn * rentePct() / 100 : 0;
+}
+function abgabenText() {
+  return [STEUER_PROZENT > 0 ? '−' + fmtPct(STEUER_PROZENT) + ' Steuer' : '', rentePct() > 0 ? '−' + fmtPct(rentePct()) + ' Rente' : ''].filter(Boolean).join(', ') + ' auf den Gewinn';
+}
 function nettoOf(brutto, n = 1) {
-  return brutto - steuerOf(brutto, n);
+  return brutto - steuerOf(brutto, n) - renteOf(brutto, n);
 }
 // Wie viele Abrechnungszeiträume deckt die gewählte Dashboard-Ansicht ab?
 function periodWindowCount() {
@@ -1638,8 +1650,8 @@ function agentMarginCardHtml(b) {
     <div class="dash-fix-reserve">
       ${row('📈 Umsatz vom Anbieter', fmtEuro(b.periodTotal), 'top')}
       ${row('👥 Auszahlung an Mitarbeiter', '− ' + fmtEuro(m.payout))}
-      ${STEUER_PROZENT > 0 ? row('🧾 Für Steuern zurücklegen (' + STEUER_PROZENT + '%)', fmtEuro(m.marge - m.netto)) : ''}
-      ${row('💶 Davon wirklich deins' + (STEUER_PROZENT > 0 ? ' (nach Steuern)' : ''), fmtEuro(m.netto), 'pocket')}
+      ${abgabenPct() > 0 ? row('🧾 Für ' + (rentePct() > 0 ? 'Steuern & Rente' : 'Steuern') + ' zurücklegen (' + fmtPct(abgabenPct()) + ')', fmtEuro(m.marge - m.netto)) : ''}
+      ${row('💶 Davon wirklich deins' + (abgabenPct() > 0 ? ' (nach Abgaben)' : ''), fmtEuro(m.netto), 'pocket')}
       ${settings.ustPflicht ? row('🏛️ + Umsatzsteuer 19 % (ans Finanzamt weiterleiten)', fmtEuro(b.periodTotal * 0.19), 'ust-row') : ''}
     </div>
   </div>`;
@@ -1710,7 +1722,7 @@ function zielAufbau() {
     fix: settings.fixkosten || 0,
     goal: goalPerWindow(),
     mine: (settings.mineAmount || 0) / 2, // Monatsbetrag -> halber Monat pro Abrechnungszeitraum
-    taxPct: STEUER_PROZENT,
+    taxPct: abgabenPct(),
     stornoPct: stornoAufschlagPct(),
     runden: !!settings.zielAufrunden,
   });
@@ -3183,12 +3195,13 @@ function renderDashboardContent(b, animate) {
             <div class="dash-fix-track"><div class="dash-fix-fill ${fixReached ? 'reached' : ''}" style="width:${fixPct}%;"></div></div>
             <div class="dash-fix-saldo ${fixReached ? 'pos' : 'neg'}">${fixReached ? '+' : '−'}${fmtEuro(Math.abs(fixSaldo))}</div>
             <div class="dash-fix-sub">Bisher ${fmtEuro(fixLiveBrutto)} Brutto</div>
-            ${(STEUER_PROZENT > 0 || fixStornoPct > 0 || (settings.fixkosten || 0) > 0 || fixAufbau.goal > 0) && fixLiveBrutto > 0 ? `
+            ${(abgabenPct() > 0 || fixStornoPct > 0 || (settings.fixkosten || 0) > 0 || fixAufbau.goal > 0) && fixLiveBrutto > 0 ? `
             <div class="dash-fix-reserve">
               <div class="top"><span>📈 Geschätzter Umsatz (Brutto)</span><b>${fmtEuro(fixLiveBrutto)}</b></div>
               ${(settings.fixkosten || 0) > 0 ? `<div><span>🏠 Fixkosten abziehen</span><b>${fmtEuro(settings.fixkosten)}</b></div>` : ''}
               ${fixAufbau.goal > 0 ? `<div><span>🎯 Finanzziel${settings.goalName ? ' (' + escapeHtml(settings.goalName) + ')' : ''} zurücklegen</span><b>${fmtEuro(fixAufbau.goal)}</b></div>` : ''}
-              ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${STEUER_PROZENT}% vom Gewinn)</span><b>${fmtEuro(steuerOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>` : ''}
+              ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${fmtPct(STEUER_PROZENT)} vom Gewinn)</span><b>${fmtEuro(steuerOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>` : ''}
+              ${rentePct() > 0 ? `<div><span>🏦 Rentenversicherung zurücklegen (${fmtPct(rentePct())} vom Gewinn)</span><b>${fmtEuro(renteOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>` : ''}
               ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (Quote aller Abrechnungen, ${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
               <div class="pocket"><span>💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 || fixAufbau.goal > 0 ? ' (nach Abzügen)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0) - fixAufbau.goal)}</b></div>
               ${settings.ustPflicht ? `<div class="ust-row"><span>🏛️ + Umsatzsteuer 19 % (wird mitüberwiesen) – ans Finanzamt weiterleiten</span><b>${fmtEuro(fixLiveBrutto * 0.19)}</b></div>` : ''}
@@ -3243,8 +3256,8 @@ function renderDashboardContent(b, animate) {
             </div>
             <div class="dash-card-sub">${totalCardSub}</div>
             <div class="dash-total-value">${fmtEuro(totalCardValue)}</div>
-            ${(STEUER_PROZENT > 0 || stornoAufschlagPct() > 0) && !isAusgezahltView && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue * (1 - stornoAufschlagPct() / 100), periodWindowCount()))} ${STEUER_PROZENT > 0 ? 'netto' : 'erwartet'} (${[stornoAufschlagPct() > 0 ? '−' + fmtPct(stornoAufschlagPct()) + ' Ø Storno' : '', STEUER_PROZENT > 0 ? '−' + STEUER_PROZENT + '% Steuer auf den Gewinn' : ''].filter(Boolean).join(', ')})</div>` : ''}
-            ${isAusgezahltView && STEUER_PROZENT > 0 && periodSettlements.length && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(periodPaid, periodSettlements.length))} netto (−${STEUER_PROZENT}% Steuer auf den Gewinn)</div>` : ''}
+            ${(abgabenPct() > 0 || stornoAufschlagPct() > 0) && !isAusgezahltView && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(totalCardValue * (1 - stornoAufschlagPct() / 100), periodWindowCount()))} ${abgabenPct() > 0 ? 'netto' : 'erwartet'} (${[stornoAufschlagPct() > 0 ? '−' + fmtPct(stornoAufschlagPct()) + ' Ø Storno' : '', abgabenPct() > 0 ? abgabenText() : ''].filter(Boolean).join(', ')})</div>` : ''}
+            ${isAusgezahltView && abgabenPct() > 0 && periodSettlements.length && !isAgentur() ? `<div class="dash-total-netto">≈ ${fmtEuro(nettoOf(periodPaid, periodSettlements.length))} netto (${abgabenText()})</div>` : ''}
             ${!isAusgezahltView ? trendBadge : ''}
             <div class="dash-chip-row">
               ${totalCardChips.map(c => `<div class="dash-chip"><div class="dash-chip-value">${c.value}</div><div class="dash-chip-label">${c.label}</div></div>`).join('')}
@@ -3283,7 +3296,7 @@ function renderDashboardContent(b, animate) {
               <div class="dash-kv-row"><span>Getrackt (Brutto, gesamt)</span><b>${fmtEuro(trackedAll)}</b></div>
               <div class="dash-kv-row"><span>Ausgezahlt (Brutto, gesamt)</span><b>${fmtEuro(settlePaidTotal)}</b></div>
               <div class="dash-kv-row"><span>Differenz</span><b style="color:${settleDiff < 0 ? 'var(--danger)' : 'var(--green)'};">${settleDiff >= 0 ? '+' : ''}${fmtEuro(settleDiff)}</b></div>
-              ${STEUER_PROZENT > 0 ? `<div class="dash-kv-row"><span>Ausgezahlt netto (−${STEUER_PROZENT}% Steuer auf den Gewinn)</span><b>${fmtEuro(nettoOf(settlePaidTotal, settlements.length))}</b></div>` : ''}
+              ${abgabenPct() > 0 ? `<div class="dash-kv-row"><span>Ausgezahlt netto (${abgabenText()})</span><b>${fmtEuro(nettoOf(settlePaidTotal, settlements.length))}</b></div>` : ''}
             </div>
             <div class="dash-settle-upload">
               <input type="file" id="settlementPdfInput" accept="application/pdf" multiple style="display:none;" onchange="handlePdfUpload(event)">
@@ -3471,7 +3484,7 @@ function renderAbrechnungenContent() {
         ${rows}
         <div class="abr-sum"><span>Verdient im ${ABR_MONTHS_LONG[d.i]}</span><b>${d.has ? fmtEuro(d.total) : '–'}</b></div>
         ${d.has && settings.ustPflicht ? `<div class="abr-net">🏛️ darin Umsatzsteuer (19 %): ${fmtEuro(abrUst(d.total))} – ans Finanzamt</div>` : ''}
-        ${d.has && STEUER_PROZENT > 0 ? `<div class="abr-net">≈ ${fmtEuro(abrNet(d.total, abrN(d)))} netto (−${STEUER_PROZENT}% Steuer auf den Gewinn${settings.ustPflicht ? ', ohne USt' : ''})</div>` : ''}
+        ${d.has && abgabenPct() > 0 ? `<div class="abr-net">≈ ${fmtEuro(abrNet(d.total, abrN(d)))} netto (${abgabenText()}${settings.ustPflicht ? ', ohne USt' : ''})</div>` : ''}
       </div>`;
   }).join('');
   const loose = settlements.filter(x => !x.windowId || !/^\d{4}-\d{2}-[AB]$/.test(x.windowId));
@@ -3727,7 +3740,7 @@ function pdfTextW(str, size) {
 async function downloadAbrechnungenPdf() {
   const y = abrYear;
   const data = abrYearData(y);
-  const withTax = STEUER_PROZENT > 0;
+  const withTax = abgabenPct() > 0;
   const ops = [];
   const text = (str, x, yy, size, bold, rightAlign, rgb) => {
     const xx = rightAlign ? x - pdfTextW(str, size) : x;
@@ -3767,7 +3780,7 @@ async function downloadAbrechnungenPdf() {
     text(Math.round(d.total).toLocaleString('de-DE'), px(d.i) - pdfTextW(Math.round(d.total).toLocaleString('de-DE'), 7) / 2, py(d.total) + 6, 7, true);
   });
   circle(x0 + 4, yTop + 14, 3, BLUE); text('Brutto', x0 + 12, yTop + 11, 8, false, false, GREY);
-  if (withTax) { circle(x0 + 60, yTop + 14, 3, GREEN); text('Netto (−' + STEUER_PROZENT + '% Steuer)', x0 + 68, yTop + 11, 8, false, false, GREY); }
+  if (withTax) { circle(x0 + 60, yTop + 14, 3, GREEN); text('Netto (' + abgabenText().replace(' auf den Gewinn', '') + ')', x0 + 68, yTop + 11, 8, false, false, GREY); }
 
   // Tabelle
   let ty = 520;
@@ -3792,7 +3805,7 @@ async function downloadAbrechnungenPdf() {
   text(pdfEuro(total), cT + 40, ty - 6, 11, true, true);
   if (withTax) text(pdfEuro(data.reduce((t, d) => t + abrNet(d.total, abrN(d)), 0)), cN + 45, ty - 6, 11, true, true);
   if (settings.ustPflicht) text('Darin enthaltene Umsatzsteuer (19 %): ' + pdfEuro(abrUst(total)) + ' – ans Finanzamt weiterleiten', 50, ty - 24, 9, false, false, GREY);
-  text('Beträge sind die ausgezahlten Brutto-Beträge aus deinen Abrechnungen.' + (withTax ? ' Netto = abzüglich ' + STEUER_PROZENT + '% Steuer (Schätzung).' : ''), 50, 40, 8, false, false, GREY);
+  text('Beträge sind die ausgezahlten Brutto-Beträge aus deinen Abrechnungen.' + (withTax ? ' Netto = abzüglich ' + abgabenText().replace(/−/g, '').replace(' auf den Gewinn', '') + ' vom Gewinn (Schätzung).' : ''), 50, 40, 8, false, false, GREY);
 
   const content = ops.join('\n');
   const objs = [
@@ -4088,6 +4101,7 @@ function openOnboarding(mode) {
     steuer: !prefill ? '' : (settings.steuer > 0 ? fmtNumInput(settings.steuer) : ''),
     fixkosten: settings.fixkosten ? fmtNumInput(settings.fixkosten) : '',
     ust: !!settings.ustPflicht,
+    rente: !!settings.rentePflicht,
     stornoAufschlag: !!settings.stornoAufschlag,
     runden: !!settings.zielAufrunden,
     goalName: settings.goalName || '',
@@ -4129,18 +4143,21 @@ function obBreakdownInner() {
     : per === 'custom' ? amt / goalCustomMonths(ob.goalCount, ob.goalUnit) : amt;
   const stPct = ob.stornoAufschlag ? avgStornoQuote().pct : 0;
   const taxPct = Math.max(0, parseNum(ob.steuer) || 0);
+  const rPct = ob.rente ? RENTE_PROZENT : 0;
   const a = zielAufbauCalc({
     fix: Math.max(0, parseNum(ob.fixkosten) || 0),
     goal: monthly / 2,
     mine: Math.max(0, parseNum(ob.mine) || 0) / 2,
-    taxPct, stornoPct: stPct, runden: !!ob.runden,
+    taxPct: taxPct + rPct, stornoPct: stPct, runden: !!ob.runden,
   });
+  const taxShare = taxPct + rPct > 0 ? taxPct / (taxPct + rPct) : 1;
   const gname = String(ob.goalName || '').trim();
   return a.total > 0 ? `
     ${a.fix > 0 ? `<div><span>Fixkosten</span><b>${fmtEuro(a.fix)}</b></div>` : ''}
     ${a.mine > 0 ? `<div><span>Nur für mich übrig (Monatsbetrag ÷ 2)</span><b>+ ${fmtEuro(a.mine)}</b></div>` : ''}
     ${a.goal > 0 ? `<div><span>Persönliches Ziel${gname ? ' (' + escapeHtml(gname) + ')' : ''}</span><b>+ ${fmtEuro(a.goal)}</b></div>` : ''}
-    ${taxPct > 0 && a.tax > 0.005 ? `<div><span>Steuer (${taxPct}% vom Gewinn)</span><b>+ ${fmtEuro(a.tax)}</b></div>` : ''}
+    ${taxPct > 0 && a.tax > 0.005 ? `<div><span>Steuer (${taxPct}% vom Gewinn)</span><b>+ ${fmtEuro(a.tax * taxShare)}</b></div>` : ''}
+    ${rPct > 0 && a.tax > 0.005 ? `<div><span>Rentenversicherung (${fmtPct(rPct)} vom Gewinn)</span><b>+ ${fmtEuro(a.tax * (1 - taxShare))}</b></div>` : ''}
     ${stPct > 0 ? `<div><span>Storno-Puffer (+${fmtPct(stPct)})</span><b>+ ${fmtEuro(a.storno)}</b></div>` : ''}
     ${a.round > 0.005 ? `<div><span>Aufgerundet (auf volle 10 €)</span><b>+ ${fmtEuro(a.round)}</b></div>` : ''}
     <div class="sum"><span>= Brutto-Ziel pro Abrechnungsperiode</span><b>${fmtEuro(a.total)}</b></div>`
@@ -4149,6 +4166,12 @@ function obBreakdownInner() {
 
 function obSetChip(field, value) {
   obSet(field, value);
+  renderOnboarding();
+}
+
+function obSetRente(on) {
+  if (!ob) return;
+  ob.rente = !!on;
   renderOnboarding();
 }
 
@@ -4313,6 +4336,7 @@ async function obFinish() {
   settings.fixkosten = parseNum(ob.fixkosten) >= 0 ? parseNum(ob.fixkosten) : 0;
   settings.stornoAufschlag = !!ob.stornoAufschlag;
   settings.ustPflicht = !!ob.ust;
+  settings.rentePflicht = !!ob.rente;
   settings.zielAufrunden = !!ob.runden;
   settings.goalName = String(ob.goalName || '').trim().slice(0, 40);
   settings.mineAmount = parseNum(ob.mine) >= 0 ? parseNum(ob.mine) : 0;
@@ -4494,6 +4518,10 @@ function obStepContent(step) {
         <div class="ob-chips" style="margin-top:4px"><button type="button" class="ob-chip ${ob.ust ? 'active' : ''}" onclick="obSetUst(true)">Ja</button><button type="button" class="ob-chip ${!ob.ust ? 'active' : ''}" onclick="obSetUst(false)">Nein</button></div>
         <small class="ob-hint">Bei „Ja“ werden die 19 % Umsatzsteuer mit überwiesen. Die App zeigt dir, wie viel du davon zur Seite legen und ans Finanzamt weiterleiten musst – das Geld gehört nicht dir.</small>
       </div>
+      <div class="ob-field"><span>Rentenversicherungspflichtig (18,6 %)?</span>
+        <div class="ob-chips" style="margin-top:4px"><button type="button" class="ob-chip ${ob.rente ? 'active' : ''}" onclick="obSetRente(true)">Ja</button><button type="button" class="ob-chip ${!ob.rente ? 'active' : ''}" onclick="obSetRente(false)">Nein</button></div>
+        <small class="ob-hint">Bei „Ja“ legt die App zusätzlich 18,6 % deines Gewinns (Umsatz minus Fixkosten) für die Rentenkasse zurück und zieht sie vom Netto ab.</small>
+      </div>
       ${obInput('steuer', 'Steuersatz (optional)', { unit: '%', placeholder: 'z. B. 30', hint: 'Wird für die Netto-Anzeige abgezogen. Leer lassen = es werden keine Steuern angezeigt.' })}
       ${obInput('fixkosten', 'Fixkosten pro Abrechnungsperiode (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Abrechnungsperiode (1.–15. bzw. 16.–Monatsende). Die Steuer rechnet die App nur auf deinen Gewinn (Umsatz minus Fixkosten) – bei Erreichen gibt’s ein Feuerwerk 🎆' })}
       <label class="ob-check">
@@ -4513,6 +4541,7 @@ function obStepContent(step) {
       rows.push(['Overhead pro Neukunde (Team)', fmtNumPlain(parseNum(ob.overheadNeu) || 0)]);
     }
     rows.push(['Umsatzsteuerpflichtig (19 %)', ob.ust ? 'Ja' : 'Nein']);
+    if (ob.role !== 'agentur') rows.push(['Rentenversicherungspflichtig (18,6 %)', ob.rente ? 'Ja' : 'Nein']);
     if (ob.role === 'agentur') {
       rows.push(['Abrechnung mit Anbieter', agRhythm(ob.ag.rechnungRhythm, ob.ag.rechnungRhythmText)], ['Auszahlung an Mitarbeiter', agRhythm(ob.ag.maRhythm, ob.ag.maRhythmText)], ['Bei Storno', agLabel(AG_STORNO, ob.ag.stornoRegel)]);
     } else {
