@@ -239,6 +239,23 @@
   .rep-row select { max-width:60%; }
   .rep-hint { font-size:12px; color:var(--text-dim); }
   .rep-done { margin-bottom:6px; padding:10px 14px; border-radius:12px; background:var(--green-soft, #e7f7ee); color:var(--green); font-weight:600; font-size:13px; }
+  .mp-card { max-height:90vh; overflow:auto; }
+  .mp-emoji { text-align:center; font-size:42px; line-height:1; margin-bottom:6px; }
+  .mp-sub { text-align:center; font-size:14px; color:var(--text-dim); margin:4px 0 14px; }
+  .mp-total { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-radius:14px; background:var(--toggle-bg); font-size:15px; margin-bottom:10px; }
+  .mp-row { padding:10px 12px; border-radius:12px; border:1px solid var(--border); margin-bottom:8px; }
+  .mp-top { display:flex; align-items:center; gap:8px; font-size:14px; }
+  .mp-top b { margin-left:auto; white-space:nowrap; padding-left:6px; }
+  .mp-l { font-weight:600; }
+  .mp-n { width:20px; height:20px; border-radius:50%; background:var(--blue); color:#fff; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+  .mp-bar { height:5px; border-radius:99px; background:var(--toggle-bg); margin:7px 0 5px; overflow:hidden; }
+  .mp-bar i { display:block; height:100%; background:var(--green); border-radius:99px; }
+  .mp-row.part .mp-bar i { background:#f59e0b; }
+  .mp-row.none .mp-bar i { background:var(--danger); }
+  .mp-note { font-size:12px; color:var(--text-dim); }
+  .mp-row.rest { border-color:var(--green); background:rgba(22,163,74,.07); }
+  .mp-row.rest .mp-top b { color:var(--green); font-size:16px; }
+  .mp-tip { font-size:13px; padding:10px 12px; border-radius:12px; background:var(--toggle-bg); margin:6px 0 4px; }
   .ag-prog { margin:2px 0 10px; font-size:12px; font-weight:700; color:var(--text-dim); }
   .ag-bar { height:6px; border-radius:99px; background:var(--toggle-bg); margin-top:6px; overflow:hidden; }
   .ag-bar i { display:block; height:100%; background:var(--blue); border-radius:99px; transition:width .25s; }
@@ -1903,6 +1920,58 @@ function setFixkosten(v) {
   checkFireworksTrigger();
 }
 
+// ---- Geld-Verteilung nach neuer Abrechnung: Glückwunsch + wohin welches Geld muss (nach Priorität) ----
+// Reihenfolge: Umsatzsteuer → Fixkosten → Steuer → Rente → Storno-Puffer → Nur für mich → Sparziel → Rest.
+// Reicht das Geld nicht, werden die hinteren Posten zuerst gekürzt.
+function moneyPlanCalc(betrag, n = 1) {
+  const t = STEUER_PROZENT / 100, r = rentePct() / 100;
+  let rest = betrag;
+  const rows = [];
+  const take = (key, icon, label, need, note, always) => {
+    const got = always ? need : Math.min(Math.max(rest, 0), need);
+    rest -= got;
+    if (need > 0.005) rows.push({ key, icon, label, need, got, note, full: got >= need - 0.005 });
+    return got;
+  };
+  const ust = settings.ustPflicht ? betrag - betrag / 1.19 : 0;
+  take('ust', '🏛️', 'Umsatzsteuer (19 %)', ust, 'Gehört dem Finanzamt – sofort zur Seite legen.', true);
+  const fix = take('fix', '🏠', 'Fixkosten', (settings.fixkosten || 0) * n, 'Laufende Kosten zuerst – ohne sie läuft nichts.');
+  const gewinn = Math.max(rest, 0);
+  take('steuer', '🧾', `Steuer-Rücklage (${fmtPct(STEUER_PROZENT)} vom Gewinn)`, gewinn * t, 'Pflicht – lieber sofort weglegen, bevor das Geld weg ist.', true);
+  take('rente', '🏦', `Rentenversicherung (${fmtPct(rentePct())} vom Gewinn)`, gewinn * r, 'Pflichtbeitrag – nicht ausgeben.', true);
+  const stPct = stornoAufschlagPct();
+  take('storno', '↩️', `Storno-Puffer (${fmtPct(stPct)})`, (betrag - ust) * stPct / 100, 'Reserve, falls Aufträge storniert werden.');
+  take('mine', '👤', 'Nur für mich', ((settings.mineAmount || 0) / 2) * n, 'Dein Geld zum Leben.');
+  take('goal', '🎯', (settings.goalName ? 'Sparziel: ' + settings.goalName : 'Sparziel'), goalPerWindow() * n, 'Dein Ziel – wächst mit jeder Abrechnung.');
+  return { betrag, n, rows, rest: Math.max(rest, 0), schwelle: fixkostenSchwelle() * n };
+}
+function moneyPlanHtml(plan, label) {
+  const reached = plan.schwelle <= 0 || plan.betrag >= plan.schwelle - 0.005;
+  const missing = plan.schwelle - plan.betrag;
+  const open = plan.rows.filter(r => !r.full);
+  const head = reached
+    ? `<div class="mp-emoji">🎉</div><h2 class="ob-title">Glückwunsch!</h2><p class="mp-sub">${escapeHtml(label)} ist drin – ${plan.schwelle > 0 ? 'dein Ziel ist erreicht. Stark gemacht! 💪' : 'stark gemacht! 💪'}</p>`
+    : `<div class="mp-emoji">💪</div><h2 class="ob-title">Abrechnung gespeichert</h2><p class="mp-sub">${escapeHtml(label)} ist drin. Das Ziel ist diesmal noch nicht ganz erreicht – es fehlen ${fmtEuro(missing)}. Kopf hoch, so setzt du das Geld jetzt klug ein:</p>`;
+  const rowsHtml = plan.rows.map((r, i) => `<div class="mp-row ${r.full ? 'ok' : r.got > 0.005 ? 'part' : 'none'}">
+      <div class="mp-top"><span class="mp-n">${i + 1}</span><span class="mp-l">${r.icon} ${r.label}</span><b>${fmtEuro(r.got)}</b></div>
+      <div class="mp-bar"><i style="width:${Math.min(100, r.need > 0 ? Math.round(r.got / r.need * 100) : 100)}%"></i></div>
+      <div class="mp-note">${r.full ? '✅ ' : r.got > 0.005 ? '⚠️ nur teilweise – es fehlen ' + fmtEuro(r.need - r.got) + '. ' : '❌ diesmal nichts übrig. '}${r.note}</div>
+    </div>`).join('');
+  const tip = open.length ? `<div class="mp-tip">📌 <b>Prioritäten:</b> Erst Pflichtposten (Umsatzsteuer, Fixkosten, Steuer${rentePct() > 0 ? ', Rente' : ''}), dann Storno-Puffer, dann dein Geld, zuletzt das Sparziel. Gekürzt wurde: ${open.map(r => r.label.replace(/ \(.*\)/, '')).join(', ')}.</div>` : '';
+  return `${head}<div class="mp-total"><span>Ausgezahlt</span><b>${fmtEuro(plan.betrag)}</b></div>${rowsHtml}
+    <div class="mp-row rest"><div class="mp-top"><span class="mp-n">★</span><span class="mp-l">💶 Frei verfügbar</span><b>${fmtEuro(plan.rest)}</b></div><div class="mp-note">${plan.rest > 0.005 ? 'Der Rest gehört dir – gönn dir was oder pack es aufs Sparziel.' : 'Diesmal ist alles verplant.'}</div></div>${tip}`;
+}
+function showMoneyPlan(betrag, n, label) {
+  if (typeof document === 'undefined' || !document.body || !(betrag > 0)) return;
+  let root = document.getElementById('plan-root');
+  if (!root) { root = document.createElement('div'); root.id = 'plan-root'; document.body.appendChild(root); }
+  const plan = moneyPlanCalc(betrag, n || 1);
+  root.innerHTML = `<div class="ob-overlay" onclick="if(event.target===this)closeMoneyPlan()"><div class="ob-card card mp-card">${moneyPlanHtml(plan, label || 'Deine Abrechnung')}
+    <div class="ob-actions"><button type="button" class="ob-btn" onclick="closeMoneyPlan()">Verstanden</button></div></div></div>`;
+  if (plan.schwelle <= 0 || betrag >= plan.schwelle - 0.005) { try { playFireworks(); } catch (e) { /* ignorieren */ } }
+}
+function closeMoneyPlan() { const r = document.getElementById('plan-root'); if (r) r.innerHTML = ''; }
+
 function addSettlement() {
   const labelEl = document.getElementById('settlementLabel');
   const betragEl = document.getElementById('settlementBetrag');
@@ -1932,6 +2001,7 @@ function addSettlement() {
   });
   saveData();
   render();
+  if (!isAgentur()) showMoneyPlan(betrag, 1, label);
 }
 
 function deleteSettlement(id) {
@@ -2224,11 +2294,13 @@ async function handleBulkPdfUpload(files, statusEl) {
     }
   }
   if (added.length) saveData();
+  const addedSum = settlements.slice(settlements.length - added.length).reduce((t, x) => t + (x.betrag || 0), 0);
   bulkUploadStatus = `✅ ${added.length} Abrechnung${added.length === 1 ? '' : 'en'} hinzugefügt`
     + (skipped.length ? ` · ${skipped.length} schon vorhanden (übersprungen)` : '')
     + (failed.length ? ` · ⚠️ nicht lesbar: ${failed.join(', ')}` : '')
     + (added.length ? ' – bitte unten kurz prüfen.' : '');
   render();
+  if (added.length && !isAgentur()) showMoneyPlan(addedSum, added.length, added.length === 1 ? added[0] : added.length + ' Abrechnungen');
 }
 
 function weekKeyOf(key) {
