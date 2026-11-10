@@ -256,6 +256,16 @@
   .mp-row.rest { border-color:var(--green); background:rgba(22,163,74,.07); }
   .mp-row.rest .mp-top b { color:var(--green); font-size:16px; }
   .mp-tip { font-size:13px; padding:10px 12px; border-radius:12px; background:var(--toggle-bg); margin:6px 0 4px; }
+  .dg-card { padding:16px 20px; }
+  .dg-card.dg-empty { padding:0; }
+  .dg-set { width:100%; padding:14px 20px; border:none; background:none; font:inherit; font-weight:700; font-size:14px; color:var(--blue); cursor:pointer; text-align:left; }
+  .dg-set em { color:var(--text-dim); font-weight:500; font-style:normal; }
+  .dg-head { display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:15px; }
+  .dg-actions button { border:none; background:none; color:var(--text-dim); font:inherit; font-size:12px; cursor:pointer; padding:2px 6px; }
+  .dg-num { margin:8px 0 2px; font-size:14px; color:var(--text-dim); }
+  .dg-num b { font-size:26px; color:var(--text); }
+  .dg-card.done { border-color:var(--green); }
+  .dg-card.done .mp-bar i { background:var(--green); }
   .ag-prog { margin:2px 0 10px; font-size:12px; font-weight:700; color:var(--text-dim); }
   .ag-bar { height:6px; border-radius:99px; background:var(--toggle-bg); margin-top:6px; overflow:hidden; }
   .ag-bar i { display:block; height:100%; background:var(--blue); border-radius:99px; transition:width .25s; }
@@ -1785,7 +1795,85 @@ function currentWindowBruttoLive() {
   return sum;
 }
 
+// ---- Tagesziel (optional): beim ersten Öffnen des Tages abfragen, im Tracker mit Fortschritt zeigen ----
+const DG_UNITS = [['neu', 'Neukunden'], ['auftraege', 'Aufträge'], ['umsatz', 'Umsatz (€)']];
+let dg = { unit: 'neu', value: '' };
+function dgUnitLabel(u) { return (DG_UNITS.find(x => x[0] === u) || DG_UNITS[0])[1]; }
+function dayGoalToday() {
+  const g = settings.dayGoal;
+  return g && g.day === todayKey() && g.value > 0 ? g : null;
+}
+function dayGoalCurrent(g) {
+  const e = data[todayKey()];
+  if (!e) return 0;
+  if (g.unit === 'umsatz') return dayTotal(e);
+  if (g.unit === 'auftraege') return (e.neu || 0) + (e.bestand || 0);
+  return e.neu || 0;
+}
+function dayGoalFmt(g, v) { return g.unit === 'umsatz' ? fmtEuro(v) : String(Math.round(v)); }
+function maybeAskDayGoal() {
+  if (!settings.onboarded || settings.dayGoalAsked === todayKey()) return;
+  const last = settings.dayGoalLast || {};
+  dg = { unit: last.unit || 'neu', value: last.value ? String(last.value) : '' };
+  showDayGoalDialog(true);
+}
+function showDayGoalDialog(first) {
+  let root = document.getElementById('dg-root');
+  if (!root) { root = document.createElement('div'); root.id = 'dg-root'; document.body.appendChild(root); }
+  const cur = dayGoalToday();
+  if (!first && cur) dg = { unit: cur.unit, value: String(cur.value) };
+  root.innerHTML = `<div class="ob-overlay" onclick="if(event.target===this)dayGoalSkip()"><div class="ob-card card">
+    <div class="mp-emoji">🎯</div>
+    <h2 class="ob-title">${first ? 'Guten Tag! ' : ''}Dein Tagesziel</h2>
+    <p class="mp-sub">Was willst du heute erreichen? <em>(optional)</em></p>
+    <div class="ob-chips" style="justify-content:center;margin-bottom:12px">${DG_UNITS.map(([k, l]) => `<button type="button" class="ob-chip ${dg.unit === k ? 'active' : ''}" onclick="dgSetUnit('${k}')">${l}</button>`).join('')}</div>
+    <div class="ob-input-wrap"><input class="ob-input" id="dg-value" type="text" inputmode="decimal" value="${escapeHtml(dg.value)}" placeholder="${dg.unit === 'umsatz' ? 'z. B. 800' : 'z. B. 5'}" oninput="dg.value=this.value" onkeydown="if(event.key==='Enter')dayGoalSave()"><span class="ob-unit">${dg.unit === 'umsatz' ? '€' : ''}</span></div>
+    <div class="ob-actions"><button type="button" class="ob-btn secondary" onclick="dayGoalSkip()">${first ? 'Überspringen' : 'Schließen'}</button><button type="button" class="ob-btn" onclick="dayGoalSave()">Ziel setzen</button></div>
+  </div></div>`;
+  setTimeout(() => { const el = document.getElementById('dg-value'); if (el) el.focus(); }, 50);
+}
+function dgSetUnit(u) { dg.unit = u; showDayGoalDialog(false); }
+function closeDayGoal() { const r = document.getElementById('dg-root'); if (r) r.innerHTML = ''; }
+function dayGoalSkip() {
+  settings.dayGoalAsked = todayKey();
+  saveData(); closeDayGoal();
+}
+function dayGoalSave() {
+  const v = parseNum(dg.value);
+  settings.dayGoalAsked = todayKey();
+  if (v > 0) {
+    settings.dayGoal = { day: todayKey(), unit: dg.unit, value: v };
+    settings.dayGoalLast = { unit: dg.unit, value: v };
+  }
+  saveData(); closeDayGoal(); render();
+}
+function dayGoalClear() {
+  settings.dayGoal = null; saveData(); render();
+}
+function dayGoalCheck() {
+  const g = dayGoalToday();
+  if (!g || settings.dayGoalFired === todayKey()) return;
+  if (dayGoalCurrent(g) >= g.value) {
+    settings.dayGoalFired = todayKey();
+    saveData();
+    try { playFireworks(); } catch (e) { /* ignorieren */ }
+  }
+}
+function dayGoalCardHtml() {
+  if (selectedDate !== todayKey()) return '';
+  const g = dayGoalToday();
+  if (!g) return `<div class="card dg-card dg-empty"><button type="button" class="dg-set" onclick="showDayGoalDialog(false)">🎯 Tagesziel für heute setzen <em>(optional)</em></button></div>`;
+  const cur = dayGoalCurrent(g), pct = Math.min(100, Math.round(cur / g.value * 100)), done = cur >= g.value;
+  return `<div class="card dg-card ${done ? 'done' : ''}">
+    <div class="dg-head"><span>🎯 Tagesziel</span><span class="dg-actions"><button type="button" onclick="showDayGoalDialog(false)">ändern</button><button type="button" onclick="dayGoalClear()">entfernen</button></span></div>
+    <div class="dg-num"><b>${dayGoalFmt(g, cur)}</b> <span>von ${dayGoalFmt(g, g.value)} ${g.unit === 'umsatz' ? '' : dgUnitLabel(g.unit)}</span></div>
+    <div class="mp-bar"><i style="width:${pct}%"></i></div>
+    <div class="mp-note">${done ? '🎉 Tagesziel erreicht – stark! Alles weitere ist Bonus.' : 'Noch ' + dayGoalFmt(g, g.value - cur) + (g.unit === 'umsatz' ? '' : ' ' + dgUnitLabel(g.unit)) + ' bis zum Ziel.'}</div>
+  </div>`;
+}
+
 function checkFireworksTrigger() {
+  dayGoalCheck();
   const schwelle = fixkostenSchwelle();
   if (schwelle <= 0) return;
   const win = payoutWindowOf(todayKey());
@@ -2777,6 +2865,7 @@ function renderTrackerContent() {
       <input type="date" id="datePicker" value="${selectedDate}">
       <button class="today-btn" onclick="setToday()">Heute</button>
     </div>
+    ${dayGoalCardHtml()}
     ${reportCardHtml()}
 
     <div class="tr-inputs ${teamMode ? 'has-team' : ''}">
@@ -5527,7 +5616,7 @@ async function startApp() {
   await loadData();
   render();
   updateHeaderGreeting();
-  if (!settings.onboarded) openOnboarding('first');
+  if (!settings.onboarded) openOnboarding('first'); else maybeAskDayGoal();
   teamInit();
 }
 
