@@ -1381,7 +1381,7 @@ function defaultSettings() {
     preisNeu: 110,        // € Provision pro Neukunde
     preisBestand: 15,     // € Provision pro Bestandskunde
     steuer: 30,           // % Steuern
-    rentePflicht: false,  // rentenversicherungspflichtig? 18,6 % vom Gewinn werden zurückgelegt
+    rentePflicht: false,  // rentenversicherungspflichtig? 18,6 % vom Umsatz werden zurückgelegt
     ustPflicht: false,    // umsatzsteuerpflichtig? 19 % USt werden mitüberwiesen und müssen ans Finanzamt
     overheadNeu: 0,       // € Overhead pro Neukunden-Auftrag des Teams (nur Teamleiter)
     stornoAufschlag: false, // Ø Storno-Quote der Abrechnungen auf die Fixkosten-Schwelle aufschlagen?
@@ -1570,22 +1570,20 @@ function toggleSettlements() {
 }
 
 // Steuern fallen nur auf den GEWINN an: Brutto minus Fixkosten (n = Anzahl Abrechnungszeiträume,
-// Fixkosten gelten pro Zeitraum). Ohne Gewinn keine Steuer. Zurück: Brutto abzüglich Steuer
+// Die Steuer fällt IMMER auf den eingehenden Umsatz an (Fixkosten sind private Ausgaben, kein Abzug). Zurück: Brutto abzüglich Steuer
 // (die Fixkosten selbst werden von den Aufrufern separat abgezogen).
 function steuerOf(brutto, n = 1) {
-  const gewinn = brutto - (settings.fixkosten || 0) * n;
-  return gewinn > 0 ? gewinn * STEUER_PROZENT / 100 : 0;
+  return brutto > 0 ? brutto * STEUER_PROZENT / 100 : 0; // immer vom Umsatz – Fixkosten sind private Ausgaben
 }
-// Rentenversicherungspflicht (z. B. selbständige Vertreter): 18,6 % vom Gewinn
+// Rentenversicherungspflicht (z. B. selbständige Vertreter): 18,6 % vom Umsatz
 const RENTE_PROZENT = 18.6;
 function rentePct() { return settings.rentePflicht ? RENTE_PROZENT : 0; }
 function abgabenPct() { return STEUER_PROZENT + rentePct(); }
 function renteOf(brutto, n = 1) {
-  const gewinn = brutto - (settings.fixkosten || 0) * n;
-  return gewinn > 0 ? gewinn * rentePct() / 100 : 0;
+  return brutto > 0 ? brutto * rentePct() / 100 : 0;
 }
 function abgabenText() {
-  return [STEUER_PROZENT > 0 ? '−' + fmtPct(STEUER_PROZENT) + ' Steuer' : '', rentePct() > 0 ? '−' + fmtPct(rentePct()) + ' Rente' : ''].filter(Boolean).join(', ') + ' auf den Gewinn';
+  return [STEUER_PROZENT > 0 ? '−' + fmtPct(STEUER_PROZENT) + ' Steuer' : '', rentePct() > 0 ? '−' + fmtPct(rentePct()) + ' Rente' : ''].filter(Boolean).join(', ') + ' vom Umsatz';
 }
 function nettoOf(brutto, n = 1) {
   return brutto - steuerOf(brutto, n) - renteOf(brutto, n);
@@ -1736,9 +1734,9 @@ function goalPerWindow() {
 function zielAufbauCalc(p) {
   const fix = p.fix || 0, goal = p.goal || 0, mine = p.mine || 0;
   const base = fix + goal + mine;
-  // Steuer nur auf den Gewinn: Fixkosten sind steuerfrei, aufs Ziel kommt Steuer drauf (Ziel ÷ (1 − Steuersatz))
+  // Steuer (und Rente) immer vom Umsatz: Brutto = (Fixkosten + Ziel) ÷ (1 − Abgabensatz)
   const t = Math.min(Math.max(p.taxPct || 0, 0), 99) / 100;
-  const withTax = fix + (goal + mine) / (1 - t);
+  const withTax = (fix + goal + mine) / (1 - t);
   const raw = withTax * (1 + (p.stornoPct || 0) / 100);
   const total = p.runden && raw > 0 ? Math.ceil(raw / 10 - 1e-9) * 10 : raw;
   return { fix, goal, mine, base, tax: withTax - base, storno: raw - withTax, raw, round: total - raw, total };
@@ -2009,7 +2007,7 @@ function setFixkosten(v) {
 }
 
 // ---- Geld-Verteilung nach neuer Abrechnung: Glückwunsch + wohin welches Geld muss (nach Priorität) ----
-// Reihenfolge: Umsatzsteuer → Fixkosten → Steuer → Rente → Storno-Puffer → Nur für mich → Sparziel → Rest.
+// Reihenfolge: Umsatzsteuer → Steuer → Rente → Storno-Puffer → Fixkosten (privat) → Nur für mich → Sparziel → Rest.
 // Reicht das Geld nicht, werden die hinteren Posten zuerst gekürzt.
 function moneyPlanCalc(betrag, n = 1) {
   const t = STEUER_PROZENT / 100, r = rentePct() / 100;
@@ -2023,12 +2021,12 @@ function moneyPlanCalc(betrag, n = 1) {
   };
   const ust = settings.ustPflicht ? betrag - betrag / 1.19 : 0;
   take('ust', '🏛️', 'Umsatzsteuer (19 %)', ust, 'Gehört dem Finanzamt – sofort zur Seite legen.', true);
-  const fix = take('fix', '🏠', 'Fixkosten', (settings.fixkosten || 0) * n, 'Laufende Kosten zuerst – ohne sie läuft nichts.');
-  const gewinn = Math.max(rest, 0);
-  take('steuer', '🧾', `Steuer-Rücklage (${fmtPct(STEUER_PROZENT)} vom Gewinn)`, gewinn * t, 'Pflicht – lieber sofort weglegen, bevor das Geld weg ist.', true);
-  take('rente', '🏦', `Rentenversicherung (${fmtPct(rentePct())} vom Gewinn)`, gewinn * r, 'Pflichtbeitrag – nicht ausgeben.', true);
+  const umsatz = betrag - ust;
+  take('steuer', '🧾', `Steuer-Rücklage (${fmtPct(STEUER_PROZENT)} vom Umsatz)`, umsatz * t, 'Immer zuerst – egal was sonst ansteht.', true);
+  take('rente', '🏦', `Rentenversicherung (${fmtPct(rentePct())} vom Umsatz)`, umsatz * r, 'Pflichtbeitrag – nicht ausgeben.', true);
   const stPct = stornoAufschlagPct();
-  take('storno', '↩️', `Storno-Puffer (${fmtPct(stPct)})`, (betrag - ust) * stPct / 100, 'Reserve, falls Aufträge storniert werden.');
+  take('storno', '↩️', `Storno-Puffer (${fmtPct(stPct)})`, umsatz * stPct / 100, 'Reserve, falls Aufträge storniert werden.');
+  take('fix', '🏠', 'Fixkosten (privat)', (settings.fixkosten || 0) * n, 'Miete, Versicherungen, Lebenshaltung – kommt aus dem, was nach Abgaben übrig ist.');
   take('mine', '👤', 'Nur für mich', ((settings.mineAmount || 0) / 2) * n, 'Dein Geld zum Leben.');
   take('goal', '🎯', (settings.goalName ? 'Sparziel: ' + settings.goalName : 'Sparziel'), goalPerWindow() * n, 'Dein Ziel – wächst mit jeder Abrechnung.');
   return { betrag, n, rows, rest: Math.max(rest, 0), schwelle: fixkostenSchwelle() * n };
@@ -2045,7 +2043,7 @@ function moneyPlanHtml(plan, label) {
       <div class="mp-bar"><i style="width:${Math.min(100, r.need > 0 ? Math.round(r.got / r.need * 100) : 100)}%"></i></div>
       <div class="mp-note">${r.full ? '✅ ' : r.got > 0.005 ? '⚠️ nur teilweise – es fehlen ' + fmtEuro(r.need - r.got) + '. ' : '❌ diesmal nichts übrig. '}${r.note}</div>
     </div>`).join('');
-  const tip = open.length ? `<div class="mp-tip">📌 <b>Prioritäten:</b> Erst Pflichtposten (Umsatzsteuer, Fixkosten, Steuer${rentePct() > 0 ? ', Rente' : ''}), dann Storno-Puffer, dann dein Geld, zuletzt das Sparziel. Gekürzt wurde: ${open.map(r => r.label.replace(/ \(.*\)/, '')).join(', ')}.</div>` : '';
+  const tip = open.length ? `<div class="mp-tip">📌 <b>Prioritäten:</b> Erst Abgaben (Umsatzsteuer, Steuer${rentePct() > 0 ? ', Rente' : ''}), dann Storno-Puffer, dann deine Fixkosten, dann „Nur für mich“, zuletzt das Sparziel. Gekürzt wurde: ${open.map(r => r.label.replace(/ \(.*\)/, '')).join(', ')}.</div>` : '';
   return `${head}<div class="mp-total"><span>Ausgezahlt</span><b>${fmtEuro(plan.betrag)}</b></div>${rowsHtml}
     <div class="mp-row rest"><div class="mp-top"><span class="mp-n">★</span><span class="mp-l">💶 Frei verfügbar</span><b>${fmtEuro(plan.rest)}</b></div><div class="mp-note">${plan.rest > 0.005 ? 'Der Rest gehört dir – gönn dir was oder pack es aufs Sparziel.' : 'Diesmal ist alles verplant.'}</div></div>${tip}`;
 }
@@ -3361,8 +3359,8 @@ function renderDashboardContent(b, animate) {
               <div class="top"><span>📈 Geschätzter Umsatz (Brutto)</span><b>${fmtEuro(fixLiveBrutto)}</b></div>
               ${(settings.fixkosten || 0) > 0 ? `<div><span>🏠 Fixkosten abziehen</span><b>${fmtEuro(settings.fixkosten)}</b></div>` : ''}
               ${fixAufbau.goal > 0 ? `<div><span>🎯 Finanzziel${settings.goalName ? ' (' + escapeHtml(settings.goalName) + ')' : ''} zurücklegen</span><b>${fmtEuro(fixAufbau.goal)}</b></div>` : ''}
-              ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${fmtPct(STEUER_PROZENT)} vom Gewinn)</span><b>${fmtEuro(steuerOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>` : ''}
-              ${rentePct() > 0 ? `<div><span>🏦 Rentenversicherung zurücklegen (${fmtPct(rentePct())} vom Gewinn)</span><b>${fmtEuro(renteOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>` : ''}
+              ${STEUER_PROZENT > 0 ? `<div><span>🧾 Für Steuern zurücklegen (${fmtPct(STEUER_PROZENT)} vom Umsatz)</span><b>${fmtEuro(steuerOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>` : ''}
+              ${rentePct() > 0 ? `<div><span>🏦 Rentenversicherung zurücklegen (${fmtPct(rentePct())} vom Umsatz)</span><b>${fmtEuro(renteOf(fixLiveBrutto * (1 - fixStornoPct / 100)))}</b></div>` : ''}
               ${fixStornoPct > 0 ? `<div><span>🛡️ Storno-Puffer (Quote aller Abrechnungen, ${fmtPct(fixStornoPct)})</span><b>${fmtEuro(fixLiveBrutto * fixStornoPct / 100)}</b></div>` : ''}
               <div class="pocket"><span>💶 Davon wirklich deins${(settings.fixkosten || 0) > 0 || fixAufbau.goal > 0 ? ' (nach Abzügen)' : ''}</span><b>${fmtEuro(nettoOf(fixLiveBrutto * (1 - fixStornoPct / 100)) - (settings.fixkosten || 0) - fixAufbau.goal)}</b></div>
               ${settings.ustPflicht ? `<div class="ust-row"><span>🏛️ + Umsatzsteuer 19 % (wird mitüberwiesen) – ans Finanzamt weiterleiten</span><b>${fmtEuro(fixLiveBrutto * 0.19)}</b></div>` : ''}
@@ -3941,7 +3939,7 @@ async function downloadAbrechnungenPdf() {
     text(Math.round(d.total).toLocaleString('de-DE'), px(d.i) - pdfTextW(Math.round(d.total).toLocaleString('de-DE'), 7) / 2, py(d.total) + 6, 7, true);
   });
   circle(x0 + 4, yTop + 14, 3, BLUE); text('Brutto', x0 + 12, yTop + 11, 8, false, false, GREY);
-  if (withTax) { circle(x0 + 60, yTop + 14, 3, GREEN); text('Netto (' + abgabenText().replace(' auf den Gewinn', '') + ')', x0 + 68, yTop + 11, 8, false, false, GREY); }
+  if (withTax) { circle(x0 + 60, yTop + 14, 3, GREEN); text('Netto (' + abgabenText().replace(' vom Umsatz', '') + ')', x0 + 68, yTop + 11, 8, false, false, GREY); }
 
   // Tabelle
   let ty = 520;
@@ -3966,7 +3964,7 @@ async function downloadAbrechnungenPdf() {
   text(pdfEuro(total), cT + 40, ty - 6, 11, true, true);
   if (withTax) text(pdfEuro(data.reduce((t, d) => t + abrNet(d.total, abrN(d)), 0)), cN + 45, ty - 6, 11, true, true);
   if (settings.ustPflicht) text('Darin enthaltene Umsatzsteuer (19 %): ' + pdfEuro(abrUst(total)) + ' – ans Finanzamt weiterleiten', 50, ty - 24, 9, false, false, GREY);
-  text('Beträge sind die ausgezahlten Brutto-Beträge aus deinen Abrechnungen.' + (withTax ? ' Netto = abzüglich ' + abgabenText().replace(/−/g, '').replace(' auf den Gewinn', '') + ' vom Gewinn (Schätzung).' : ''), 50, 40, 8, false, false, GREY);
+  text('Beträge sind die ausgezahlten Brutto-Beträge aus deinen Abrechnungen.' + (withTax ? ' Netto = abzüglich ' + abgabenText().replace(/−/g, '').replace(' vom Umsatz', '') + ' vom Umsatz (Schätzung).' : ''), 50, 40, 8, false, false, GREY);
 
   const content = ops.join('\n');
   const objs = [
@@ -4317,8 +4315,8 @@ function obBreakdownInner() {
     ${a.fix > 0 ? `<div><span>Fixkosten</span><b>${fmtEuro(a.fix)}</b></div>` : ''}
     ${a.mine > 0 ? `<div><span>Nur für mich übrig (Monatsbetrag ÷ 2)</span><b>+ ${fmtEuro(a.mine)}</b></div>` : ''}
     ${a.goal > 0 ? `<div><span>Persönliches Ziel${gname ? ' (' + escapeHtml(gname) + ')' : ''}</span><b>+ ${fmtEuro(a.goal)}</b></div>` : ''}
-    ${taxPct > 0 && a.tax > 0.005 ? `<div><span>Steuer (${taxPct}% vom Gewinn)</span><b>+ ${fmtEuro(a.tax * taxShare)}</b></div>` : ''}
-    ${rPct > 0 && a.tax > 0.005 ? `<div><span>Rentenversicherung (${fmtPct(rPct)} vom Gewinn)</span><b>+ ${fmtEuro(a.tax * (1 - taxShare))}</b></div>` : ''}
+    ${taxPct > 0 && a.tax > 0.005 ? `<div><span>Steuer (${taxPct}% vom Umsatz)</span><b>+ ${fmtEuro(a.tax * taxShare)}</b></div>` : ''}
+    ${rPct > 0 && a.tax > 0.005 ? `<div><span>Rentenversicherung (${fmtPct(rPct)} vom Umsatz)</span><b>+ ${fmtEuro(a.tax * (1 - taxShare))}</b></div>` : ''}
     ${stPct > 0 ? `<div><span>Storno-Puffer (+${fmtPct(stPct)})</span><b>+ ${fmtEuro(a.storno)}</b></div>` : ''}
     ${a.round > 0.005 ? `<div><span>Aufgerundet (auf volle 10 €)</span><b>+ ${fmtEuro(a.round)}</b></div>` : ''}
     <div class="sum"><span>= Brutto-Ziel pro Abrechnungsperiode</span><b>${fmtEuro(a.total)}</b></div>`
@@ -4681,10 +4679,10 @@ function obStepContent(step) {
       </div>
       <div class="ob-field"><span>Rentenversicherungspflichtig (18,6 %)?</span>
         <div class="ob-chips" style="margin-top:4px"><button type="button" class="ob-chip ${ob.rente ? 'active' : ''}" onclick="obSetRente(true)">Ja</button><button type="button" class="ob-chip ${!ob.rente ? 'active' : ''}" onclick="obSetRente(false)">Nein</button></div>
-        <small class="ob-hint">Bei „Ja“ legt die App zusätzlich 18,6 % deines Gewinns (Umsatz minus Fixkosten) für die Rentenkasse zurück und zieht sie vom Netto ab.</small>
+        <small class="ob-hint">Bei „Ja“ legt die App zusätzlich 18,6 % deines Umsatzes für die Rentenkasse zurück und zieht sie vom Netto ab.</small>
       </div>
       ${obInput('steuer', 'Steuersatz (optional)', { unit: '%', placeholder: 'z. B. 30', hint: 'Wird für die Netto-Anzeige abgezogen. Leer lassen = es werden keine Steuern angezeigt.' })}
-      ${obInput('fixkosten', 'Fixkosten pro Abrechnungsperiode (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Abrechnungsperiode (1.–15. bzw. 16.–Monatsende). Die Steuer rechnet die App nur auf deinen Gewinn (Umsatz minus Fixkosten) – bei Erreichen gibt’s ein Feuerwerk 🎆' })}
+      ${obInput('fixkosten', 'Fixkosten pro Abrechnungsperiode (optional)', { placeholder: 'z. B. 500', hint: 'Deine Fixkosten pro Abrechnungsperiode (1.–15. bzw. 16.–Monatsende). Fixkosten sind private Ausgaben: Die Steuer wird immer vom vollen Umsatz abgezogen, unabhängig davon – bei Erreichen gibt’s ein Feuerwerk 🎆' })}
       <label class="ob-check">
         <input type="checkbox" ${ob.stornoAufschlag ? 'checked' : ''} onchange="obSet('stornoAufschlag', this.checked)">
         <span>Ø Storno-Quote als Puffer auf das Ziel aufschlagen<small>${(() => { const a = avgStornoQuote(); return a.count > 0 ? `Aktuell ${fmtPct(a.pct)} im Schnitt aus ${a.count} Abrechnung${a.count === 1 ? '' : 'en'} – so planst du schon ein, dass ein Teil der Aufträge noch storniert wird.` : 'Sobald du Abrechnungen eingescannt hast, berechnet die App deine durchschnittliche Storno-Quote und schlägt sie auf.'; })()}</small></span>
